@@ -1,0 +1,60 @@
+name: Version
+
+on:
+  push:
+    branches: [ "main", "master", "prod", "production", "stag", "staging", "qa", "test", "testing", "dev", "develop", "development" ]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: version-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out complete history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v4
+        with:
+          versionSpec: 6.8.x
+
+      - name: Calculate semantic version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v4
+        with:
+          useConfigFile: true
+          configFilePath: GitVersion.yml
+
+      - name: Create and push tag
+        shell: bash
+        env:
+          VERSION_TAG: v${{ steps.gitversion.outputs.semVer }}
+        run: |
+          set -euo pipefail
+
+          git fetch --force --tags origin
+          target_sha="$(git rev-parse HEAD)"
+
+          if git show-ref --verify --quiet "refs/tags/${VERSION_TAG}"; then
+            tagged_sha="$(git rev-list -n 1 "${VERSION_TAG}")"
+            if [[ "${tagged_sha}" == "${target_sha}" ]]; then
+              echo "Tag ${VERSION_TAG} already points to ${target_sha}."
+              exit 0
+            fi
+
+            echo "Tag ${VERSION_TAG} already points to ${tagged_sha}; refusing to move it." >&2
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag --annotate "${VERSION_TAG}" --message "GitVersion ${VERSION_TAG} from ${GITHUB_REF_NAME}"
+          git push origin "refs/tags/${VERSION_TAG}"

@@ -12,6 +12,7 @@
 
 - Bash build pipeline in `build.sh`.
 - GitVersion uses `GitVersion.yml`, GitFlow branches, and Conventional Commits for semantic versions.
+- `.github/workflows/version.yml` automatically tags pushes to develop, stable, QA, test, and staging branches.
 - JDK 17 or newer (`javac`, `keytool`).
 - Android SDK platform 34 or newer.
 - Android Build Tools 34 or newer: `aapt2`, `d8`, `zipalign`, and `apksigner`.
