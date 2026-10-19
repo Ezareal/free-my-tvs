@@ -57,6 +57,25 @@ final class Scene {
         flatRim.setStrokeWidth(1.5f);
     }
 
+    /** Frees the GPU bitmaps and shaders; call when the owning screen is destroyed, not while it is visible. */
+    void release() {
+        aurora = null;
+        glass = null;
+        liquid = null;
+        auroraPaint.setShader(null);
+        glassPaint.setShader(null);
+        liquidPaint.setShader(null);
+        auroraNode.discardDisplayList();
+        glassShaderA = null;
+        recycle(frostImage); frostImage = null;
+        recycle(glassA); glassA = null;
+        recycle(glassB); glassB = null;
+    }
+
+    private static void recycle(Bitmap b) {
+        if (b != null && !b.isRecycled()) b.recycle();
+    }
+
     void setSize(int width, int height) {
         w = Math.max(1, width);
         h = Math.max(1, height);

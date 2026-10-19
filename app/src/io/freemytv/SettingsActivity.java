@@ -62,6 +62,12 @@ public class SettingsActivity extends Activity {
         super.onPause();
     }
 
+    @Override protected void onDestroy() {
+        closePreview();
+        if (view != null) view.release();
+        super.onDestroy();
+    }
+
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
         if (preview != null) {
             // Like the real screensaver: arrows, OK or Back close it (other keys go on to the system).
@@ -153,6 +159,11 @@ public class SettingsActivity extends Activity {
             running = false;
             handler.removeCallbacks(poll);
             Choreographer.getInstance().removeFrameCallback(this);
+        }
+
+        void release() {
+            pause();
+            scene.release();
         }
 
         @Override public void doFrame(long frameTimeNanos) {
@@ -439,7 +450,12 @@ public class SettingsActivity extends Activity {
                     }
                     return true;
                 case KeyEvent.KEYCODE_BACK:
-                    if (screen == MAIN) return false;   // leaves the settings
+                    if (screen == MAIN) {
+                        // Leave without destroying the window: each new task/window retained ~9 MB of graphics
+                        // (measured 101 -> 191 MB over 10 opens). One instance is reused instead.
+                        if (!down) activity.moveTaskToBack(true);
+                        return true;
+                    }
                     if (down) {
                         if (e.getRepeatCount() == 0) backDown = true;
                     } else {
