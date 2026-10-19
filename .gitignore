@@ -6,6 +6,10 @@ config.properties
 # Build output
 out/
 *.apk
+graphify-out/
+
+# Local implementation plans
+/docs/plan-*-*.md
 
 # macOS
 .DS_Store
