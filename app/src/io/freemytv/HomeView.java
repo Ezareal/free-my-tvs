@@ -135,6 +135,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         TILE_STYLE.put("prime", new int[] {0xFF2AA8FF, 0xFF0A68D4, 1});
         TILE_STYLE.put("disney", new int[] {0xFF173584, 0xFF08143F, 0});
         TILE_STYLE.put("max", new int[] {0xFF5C30E8, 0xFF221684, 0});
+        TILE_STYLE.put("plex", new int[] {0xFF252525, 0xFF090909, 0});
         TILE_STYLE.put("appletv", new int[] {0xFF1C1C1E, 0xFF000000, 0});
     }
     private final android.graphics.PorterDuffColorFilter whiteLogo =
