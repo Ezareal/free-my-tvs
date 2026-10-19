@@ -41,6 +41,9 @@ final class HomeMode {
 
     /** Google TV's home screen: the fallback when the TV's own one wasn't recorded. */
     static final String GOOGLE_HOME = "com.google.android.apps.tv.launcherx/.home.HomeActivity";
+    /** Classic Android TV's home screen; its recommendations service crashes on the screensaver while it's off. */
+    static final String TV_LAUNCHER = "com.google.android.tvlauncher";
+    static final String TV_RECOMMENDATIONS = "com.google.android.tvrecommendations";
     /** Google TV has a RecoveryActivity that would take over the home screen without its launcher. */
     static final String GOOGLE_SETUP = "com.google.android.tungsten.setupwraith";
 
@@ -70,7 +73,12 @@ final class HomeMode {
         "com.tcl.useragreement", "com.tcl.factory.view", "com.tcl.guard", "com.tcl.t_solo",
         "com.google.android.gms", "com.google.android.gsf", "com.android.vending", "com.google.android.apps.mediashell",
         "com.google.android.tv.remote.service", "com.google.android.inputmethod.latin", "com.google.android.webview",
-        "com.android.tv.settings", "com.android.systemui", "android", PKG));
+        "com.android.tv.settings", "com.android.systemui", "android", PKG,
+        // Philips (TP Vision) and MediaTek: system, Ambilight, live TV and inputs, setup, factory menu
+        "org.droidtv", "org.droidtv.ambisvc", "org.droidtv.ui.strings", "org.droidtv.tv.packageinfo", "org.droidtv.icp",
+        "org.droidtv.gel", "org.droidtv.eum", "com.mediatek.tv.service", "com.mediatek.tvinput", "com.mediatek.network",
+        "com.mediatek.wwtv.tvcenter", "com.mediatek.wwtv.setupwizard", "com.mediatek.tv.factory",
+        "mediatek.factorymenu.ui", "com.tpv.xmic.ots.cms.client"));
 
     /** One switch at a time (jobs can overlap: a boot check and a button press). */
     private static final Object RUN = new Object();
@@ -213,7 +221,7 @@ final class HomeMode {
             if (adb.shell("cmd package set-home-activity " + home).contains("Success")) return true;
         }
         adb.shell("cmd role remove-role-holder --user 0 android.app.role.HOME " + PKG);
-        return !adb.shell("cmd role get-role-holders --user 0 android.app.role.HOME").contains(PKG);
+        return !homeHolder(adb).equals(PKG);
     }
 
     /** Safety net: our home screen crashed 3 times in a row. Only the home screen goes back; the rest stays. */
@@ -277,7 +285,7 @@ final class HomeMode {
                         fixed.add(pkg);
                     }
                 }
-                if (!reverted && !adb.shell("cmd role get-role-holders --user 0 android.app.role.HOME").contains(PKG)) {
+                if (!reverted && !homeHolder(adb).equals(PKG)) {
                     adb.shell("cmd package set-home-activity " + HOME_ACTIVITY);
                     fixed.add(Ui.tr("o Início", "the home screen"));
                 }
@@ -306,7 +314,9 @@ final class HomeMode {
         List<String> out = new ArrayList<>();
         String homePkg = packageOf(home);
         if (homePkg != null && !homePkg.equals(PKG)) out.add(homePkg);
-        out.add(GOOGLE_SETUP);
+        if (TV_LAUNCHER.equals(homePkg)) out.add(TV_RECOMMENDATIONS);
+        // Only Google TV's: on classic Android TV (Android 11) setupwraith is the setup wizard, not a recovery home.
+        if (homePkg == null || homePkg.equals(packageOf(GOOGLE_HOME))) out.add(GOOGLE_SETUP);
         String dreamPkg = packageOf(dream);
         if (dreamPkg != null && !dreamPkg.equals(PKG) && !dreamPkg.equals(homePkg)) out.add(dreamPkg);
         out.addAll(Arrays.asList(DEBLOAT));
@@ -316,8 +326,8 @@ final class HomeMode {
 
     /** The home screen in use now ("package/activity"): the HOME role holder, among the TV's home screens. */
     private static String currentHome(Adb adb) throws IOException {
-        String holder = adb.shell("cmd role get-role-holders --user 0 android.app.role.HOME").trim();
-        if (holder.isEmpty() || holder.contains(PKG)) return null;
+        String holder = homeHolder(adb);
+        if (holder.isEmpty() || holder.equals(PKG)) return null;
         String list = adb.shell("cmd package query-activities --brief --user 0 -a android.intent.action.MAIN"
                 + " -c android.intent.category.HOME");
         for (String line : list.split("\n")) {
@@ -325,6 +335,20 @@ final class HomeMode {
             if (line.startsWith(holder + "/")) return line;
         }
         return null;
+    }
+
+    /**
+     * The package that holds the home screen now, or "". Android 12+ answers through the HOME role; Android 11 has no
+     * get-role-holders, so there we ask which activity the home intent resolves to.
+     */
+    private static String homeHolder(Adb adb) throws IOException {
+        String role = adb.shell("cmd role get-role-holders --user 0 android.app.role.HOME").trim();
+        if (role.matches("[\\w.]+(;[\\w.]+)*")) return role.split(";")[0];
+        String[] lines = adb.shell("cmd package resolve-activity --brief --user 0 -a android.intent.action.MAIN"
+                + " -c android.intent.category.HOME").trim().split("\n");
+        String last = lines[lines.length - 1].trim();
+        String pkg = packageOf(last);
+        return pkg != null && last.contains("/") && !pkg.equals("android") ? pkg : "";
     }
 
     /** The system's default screensaver ("package/service"), or "". */

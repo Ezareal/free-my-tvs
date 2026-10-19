@@ -41,7 +41,11 @@
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
 
+    <!-- The screensaver's own process is the default one: on Android 11 the system's DreamActivity runs in the default
+         process and only works next to the screensaver, and not in the same process as a home activity. The home screen
+         stays in :home, the switches and the boot check in the main process. -->
     <application
+        android:process=":dream"
         android:label="Free My TV"
         android:icon="@drawable/icon"
         android:banner="@drawable/banner"
@@ -92,7 +96,6 @@
 
         <service
             android:name=".Screensaver"
-            android:process=":home"
             android:exported="true"
             android:label="Free My TV"
             android:permission="android.permission.BIND_DREAM_SERVICE">
@@ -105,11 +108,13 @@
         <!-- The switches, as background jobs in the main process. -->
         <service
             android:name=".ModeJob"
+            android:process="io.freemytv"
             android:exported="false"
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <receiver
             android:name=".HomeReceiver"
+            android:process="io.freemytv"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
