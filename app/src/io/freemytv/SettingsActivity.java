@@ -230,6 +230,9 @@ public class SettingsActivity extends Activity {
             c.drawText("Free My TV", cx, 612 * k, title);
             c.drawText(Ui.tr("Início e tela de descanso da TV", "Your TV's home screen and screensaver"), cx, 660 * k, subtitle);
             c.drawText(versionName(getContext()), cx, 704 * k, version);
+            c.drawText(Ui.tr("Última tag ", "Latest tag ") + Config.BUILD_TAG, cx, 736 * k, version);
+            c.drawText(Ui.tr("Commit ", "Commit ") + Config.BUILD_SHA, cx, 768 * k, version);
+            c.drawText(Config.REPOSITORY_URL, cx, 800 * k, version);
 
             if (screen == MAIN) drawMain(c, seconds); else drawChoice(c);
         }
@@ -408,9 +411,9 @@ public class SettingsActivity extends Activity {
 
         private static String versionName(Context c) {
             try {
-                return "Free My TV " + c.getPackageManager().getPackageInfo(c.getPackageName(), 0).versionName;
+                return Ui.tr("Versão ", "Version ") + c.getPackageManager().getPackageInfo(c.getPackageName(), 0).versionName;
             } catch (android.content.pm.PackageManager.NameNotFoundException e) {
-                return "Free My TV";
+                return Ui.tr("Versão desconhecida", "Unknown version");
             }
         }
 

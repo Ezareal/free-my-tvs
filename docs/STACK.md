@@ -17,6 +17,7 @@
 - Android SDK platform 34 or newer.
 - Android Build Tools 34 or newer: `aapt2`, `d8`, `zipalign`, and `apksigner`.
 - APK signed with local ignored `freemytv.keystore`; same key must be retained for upgrades.
+- `build.sh` embeds repository URL, latest reachable version tag, and exact Git commit SHA in the settings screen.
 - ADB used to install APK on Android TV over local network.
 - `deploy.sh` validates TV power/ADB state, builds, installs, and reloads the active Free My TV launcher.
 

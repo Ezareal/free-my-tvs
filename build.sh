@@ -36,9 +36,27 @@ number() {
   [[ "$v" =~ ^-?[0-9]+(\.[0-9]+)?$ ]] || { echo "config.properties: $1 must be a number (got \"$v\")" >&2; exit 1; }
   printf '%s' "$v"
 }
+java_string() {
+  printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'
+}
 LAT="$(number latitude 40.7128)"
 LON="$(number longitude -74.0060)"
 ASSIST=false; [ "$(prop disable_assistant false)" = "true" ] && ASSIST=true
+
+BUILD_TAG="$(git describe --tags --abbrev=0 --match 'v[0-9]*' --match '[0-9]*' HEAD 2>/dev/null || true)"
+BUILD_TAG="${BUILD_TAG:-untagged}"
+BUILD_SHA="$(git rev-parse --verify HEAD 2>/dev/null || true)"
+BUILD_SHA="${BUILD_SHA:-unknown}"
+if [ -n "${GITHUB_REPOSITORY:-}" ]; then
+  REPOSITORY_URL="https://github.com/$GITHUB_REPOSITORY"
+else
+  REPOSITORY_URL="$(git config --get remote.origin.url 2>/dev/null || true)"
+  case "$REPOSITORY_URL" in
+    git@github.com:*) REPOSITORY_URL="https://github.com/${REPOSITORY_URL#git@github.com:}" ;;
+  esac
+  REPOSITORY_URL="$(printf '%s' "$REPOSITORY_URL" | sed -E 's#^(https?://)[^/@]+@#\1#; s#\.git$##')"
+fi
+REPOSITORY_URL="${REPOSITORY_URL:-https://github.com/ennerperez/free-my-tv}"
 
 rm -rf out && mkdir -p out/gen/io/freemytv out/classes
 cat > out/gen/io/freemytv/Config.java <<EOF
@@ -57,6 +75,9 @@ final class Config {
     static final String CURRENCY = "$(prop currency USD)";
     static final String TEMPERATURE = "$(prop temperature auto)";
     static final boolean DISABLE_ASSISTANT = $ASSIST;
+    static final String REPOSITORY_URL = "$(java_string "$REPOSITORY_URL")";
+    static final String BUILD_TAG = "$(java_string "$BUILD_TAG")";
+    static final String BUILD_SHA = "$(java_string "$BUILD_SHA")";
 }
 EOF
 
