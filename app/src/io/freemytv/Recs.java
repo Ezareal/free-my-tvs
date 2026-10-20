@@ -45,6 +45,7 @@ final class Recs {
         String kind;            // "movie" or "tv"
         String title, backdrop, meta = "", app, pkg;
         boolean detailed;
+        String link;            // the title's own page in its app (null = not looked up yet, "" = none)
     }
 
     interface Listener { void onRecs(); }
@@ -256,6 +257,11 @@ final class Recs {
                         failures++;
                         last = e.getMessage() == null ? e.toString() : e.getMessage();
                     }
+                }
+                try {
+                    fetchLinks(wanted());
+                } catch (Exception e) {
+                    AppLog.w("title links: " + e.getMessage());   // the apps still open, just not on the title
                 }
                 save();
                 if (tried > 0 && failures == tried) throw new IOException(last);
@@ -535,6 +541,57 @@ final class Recs {
         return HomeApps.launchIntent(context.getPackageManager(), pkg) != null;
     }
 
+    /**
+     * Per service: its package, the Wikidata property that holds a title's id there, and the URL the app opens on that
+     * id. Wikidata knows the ids by TMDB number, so one query per kind gives the links of every pick.
+     */
+    private static final String[][] DEEP_LINKS = {
+        {"com.netflix.ninja", "P1874", "https://www.netflix.com/title/"},
+        {"com.disney.disneyplus", "P13902", "https://www.disneyplus.com/browse/"},
+    };
+
+    /** Fills in the links of the picks that have none yet; a title Wikidata doesn't know gets "" (just open the app). */
+    private void fetchLinks(List<Pick> list) throws Exception {
+        for (String kind : new String[] {"movie", "tv"}) {
+            List<Pick> todo = new ArrayList<>();
+            for (Pick p : list) if (kind.equals(p.kind) && p.link == null && p.pkg != null) todo.add(p);
+            if (todo.isEmpty()) continue;
+            StringBuilder ids = new StringBuilder(), select = new StringBuilder(), optional = new StringBuilder();
+            for (Pick p : todo) ids.append('"').append(p.id).append("\" ");
+            for (int i = 0; i < DEEP_LINKS.length; i++) {
+                select.append(" ?s").append(i);
+                optional.append(" OPTIONAL { ?item wdt:").append(DEEP_LINKS[i][1]).append(" ?s").append(i).append(" }");
+            }
+            String query = "SELECT ?tmdb" + select + " WHERE { VALUES ?tmdb { " + ids + "} ?item wdt:"
+                    + (kind.equals("tv") ? "P4983" : "P4947") + " ?tmdb ." + optional + " }";
+            HttpURLConnection c = (HttpURLConnection) new URL("https://query.wikidata.org/sparql?format=json&query="
+                    + URLEncoder.encode(query, "UTF-8")).openConnection();
+            c.setConnectTimeout(8000);
+            c.setReadTimeout(15000);
+            c.setRequestProperty("Accept", "application/sparql-results+json");
+            c.setRequestProperty("User-Agent", "FreeMyTV/1.0 (https://github.com/simbasjungles/free-my-tv)");
+            JSONArray rows;
+            try {
+                if (c.getResponseCode() != 200) throw new IOException("Wikidata returned HTTP " + c.getResponseCode());
+                rows = new JSONObject(read(c.getInputStream())).getJSONObject("results").getJSONArray("bindings");
+            } finally {
+                c.disconnect();
+            }
+            for (Pick p : todo) {
+                String link = "";
+                for (int r = 0; r < rows.length() && link.isEmpty(); r++) {
+                    JSONObject row = rows.getJSONObject(r);
+                    if (!String.valueOf(p.id).equals(row.getJSONObject("tmdb").optString("value"))) continue;
+                    for (int i = 0; i < DEEP_LINKS.length; i++) {
+                        JSONObject id = row.optJSONObject("s" + i);
+                        if (id != null && DEEP_LINKS[i][0].equals(p.pkg)) link = DEEP_LINKS[i][2] + URLEncoder.encode(id.optString("value"), "UTF-8");
+                    }
+                }
+                p.link = link;
+            }
+        }
+    }
+
     private JSONObject get(String path) throws IOException, org.json.JSONException {
         String key = readKey();
         if (key == null) throw new IOException("no TMDB key");
@@ -632,7 +689,7 @@ final class Recs {
             for (Pick p : picks) {
                 a.put(new JSONObject().put("id", p.id).put("kind", p.kind).put("title", p.title).put("backdrop", p.backdrop)
                         .put("meta", p.meta).put("app", p.app == null ? "" : p.app).put("pkg", p.pkg == null ? "" : p.pkg)
-                        .put("detailed", p.detailed));
+                        .put("detailed", p.detailed).put("link", p.link == null ? JSONObject.NULL : p.link));
             }
             cache.edit().putString("picks", a.toString()).putInt("period", period).putLong("listAt", listAt)
                     .putBoolean("english", listEnglish)
@@ -655,6 +712,7 @@ final class Recs {
             p.app = o.optString("app").isEmpty() ? null : o.optString("app");
             p.pkg = o.optString("pkg").isEmpty() ? null : o.optString("pkg");
             p.detailed = o.optBoolean("detailed");
+            p.link = o.isNull("link") ? null : o.optString("link");
             out.add(p);
         }
         return out;

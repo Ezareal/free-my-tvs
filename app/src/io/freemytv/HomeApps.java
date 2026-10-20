@@ -22,6 +22,7 @@ import android.graphics.Shader;
 import android.graphics.drawable.AdaptiveIconDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.tv.TvContract;
+import android.net.Uri;
 import android.media.tv.TvInputInfo;
 import android.media.tv.TvInputManager;
 import android.provider.Settings;
@@ -70,6 +71,7 @@ final class HomeApps {
         float logoInk;      // fraction of the logo with ink (thin logos are drawn larger, with the same "weight")
         float logoScale = 1; // size tweak by eye (compact logos need more)
         boolean connected = true;
+        String uri;         // an app: the page to open in it (a title), if known
     }
 
     /**
@@ -172,12 +174,13 @@ final class HomeApps {
     }
 
     /** A streaming service's app (the "Watch" button of the featured pick). */
-    static Item app(String pkg, String label) {
+    static Item app(String pkg, String label, String uri) {
         Item it = new Item();
         it.kind = APP;
         it.key = pkg;
         it.pkg = pkg;
         it.label = label;
+        it.uri = uri;
         return it;
     }
 
@@ -278,7 +281,13 @@ final class HomeApps {
         Intent intent;
         switch (it.kind) {
             case APP:
-                intent = launchIntent(a.getPackageManager(), it.pkg);
+                intent = null;
+                if (it.uri != null && !it.uri.isEmpty()) {
+                    // The title's own page in the app; if the app doesn't take the link, it just opens.
+                    Intent view = new Intent(Intent.ACTION_VIEW, Uri.parse(it.uri)).setPackage(it.pkg);
+                    if (view.resolveActivity(a.getPackageManager()) != null) intent = view;
+                }
+                if (intent == null) intent = launchIntent(a.getPackageManager(), it.pkg);
                 if (intent != null) intent.addFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
                 break;
             case LIVE_TV:
