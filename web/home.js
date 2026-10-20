@@ -102,11 +102,19 @@
     box.style.background = 'linear-gradient(' + top + ', ' + bottom + ')';
     var word = el('div', 'word', box, app.title);
     if (wordSize) word.style.fontSize = wordSize + 'px';
-    if (app.icon) {
+    var icons = app.icons && app.icons.length ? app.icons.slice() : app.icon ? [app.icon] : [];
+    if (icons.length) {
       var img = el('img', '', box);
-      word.style.visibility = 'hidden';
-      img.onerror = function () { img.parentNode.removeChild(img); word.style.visibility = ''; };
-      img.src = app.icon;
+      var at = 0;
+      img.onload = function () { word.style.visibility = 'hidden'; };
+      img.onerror = function () {
+        at++;
+        if (at < icons.length) { img.src = icons[at]; return; }
+        if (img.parentNode) img.parentNode.removeChild(img);
+        word.style.visibility = '';
+        if (window.console && window.console.warn) window.console.warn('Free My TV: could not load icon for ' + app.id);
+      };
+      img.src = icons[at];
     }
   }
 
@@ -118,7 +126,9 @@
       for (var i = 0; i < chosen.length && out.length < MAX_SHELF; i++) {
         for (var j = 0; j < apps.length; j++) if (apps[j].id === chosen[i]) out.push(apps[j]);
       }
-    } else {
+    }
+    // An app update or reinstall can change its ID. Recover only a stale non-empty selection; [] deliberately hides it.
+    if (!chosen || (chosen.length && !out.length && apps.length)) {
       for (var s = 0; s < SHELF.length && out.length < MAX_SHELF; s++) {
         for (var a = 0; a < apps.length; a++) {
           if ((SHELF[s][1].test(apps[a].id) || SHELF[s][2].test(apps[a].title)) && out.indexOf(apps[a]) < 0) { out.push(apps[a]); break; }
@@ -836,6 +846,9 @@
   function loadApps(done) {
     TV.apps(function (list) {
       apps = list;
+      if (!apps.length && TV.appsError && TV.appsError()) {
+        toast(tr('Não foi possível ler os apps da TV', "Couldn't read the TV's apps", 'No se pudieron leer las apps del TV'));
+      }
       Data.setApps(apps);
       pickShelf();
       TV.inputs(function (list2) {
