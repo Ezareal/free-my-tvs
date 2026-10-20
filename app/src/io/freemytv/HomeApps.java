@@ -73,7 +73,7 @@ final class HomeApps {
     }
 
     /**
-     * Apps on the home shelf, in this order, when installed (up to MAX_SHELF): key, name, package, brand color (for
+     * Apps on the home shelf, in this order, when installed: key, name, package, brand color (for
      * its logo on glass) and how to lift the logo from the app's TV art: "tint" = a white logo takes the art's
      * background color (Prime Video, Globoplay); "play" = the white triangle inside the red button stays white
      * (YouTube); empty = the art's colors as they are. Last, a visual size tweak for the logo. Edit freely.
@@ -91,7 +91,6 @@ final class HomeApps {
         {"globoplay", "Globoplay", "com.globo.globotv", "FF5A1F", "tint", "1"},
         {"spotify", "Spotify", "com.spotify.tv.android", "1DB954", "", "1"},
     };
-    static final int MAX_SHELF = 8;
     /** Live TV apps of some brands (the antenna's channels open through the standard Android request first). */
     static final String[] LIVE_TV_APPS = {"com.tcl.tv", "com.google.android.tv", "com.mediatek.wwtv.tvcenter", "com.sony.dtv.tvx"};
     /** Kept out of "All Apps" (only hidden, still installed). Add the ones your TV shows that you never use. */
@@ -121,7 +120,6 @@ final class HomeApps {
         List<Item> items = new ArrayList<>();
         PackageManager pm = c.getPackageManager();
         for (String pkg : shelfPackages(c)) {
-            if (items.size() >= MAX_SHELF) break;
             Intent launch = launchIntent(pm, pkg);
             if (launch == null) continue;
             ResolveInfo ri = pm.resolveActivity(launch, 0);
@@ -159,7 +157,7 @@ final class HomeApps {
         if (custom != null) return custom;
         List<String> out = new ArrayList<>();
         PackageManager pm = c.getPackageManager();
-        for (String[] d : SHELF) if (out.size() < MAX_SHELF && launchIntent(pm, d[2]) != null) out.add(d[2]);
+        for (String[] d : SHELF) if (launchIntent(pm, d[2]) != null) out.add(d[2]);
         return out;
     }
 
