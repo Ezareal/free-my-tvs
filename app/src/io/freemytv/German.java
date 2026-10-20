@@ -110,6 +110,7 @@ final class German {
             case "On": return "An";
             case "Off": return "Aus";
             case "Shelf": return "Leiste";
+            case "OK adds or removes · ← → change the order": return "OK fügt hinzu oder entfernt · ← → ändern die Reihenfolge";
             case "on the shelf, place ": return "in der Leiste, Platz ";
             case "not on the shelf": return "nicht in der Leiste";
             case "Remote Buttons": return "Fernbedienungstasten";
@@ -132,10 +133,6 @@ final class German {
                 if (english.startsWith("On · ")) {
                     return "An · " + english.substring(5).replace(" titles from the TV's apps, 3 new ones every hour.",
                             " Titel aus den Apps des Fernsehers, 3 neue pro Stunde.");
-                }
-                if (english.startsWith("OK adds or removes (up to ")) {
-                    return "OK fügt hinzu oder entfernt (bis zu " + english.substring("OK adds or removes (up to ".length())
-                            .replace("). ← → change the order.", "). ← → ändern die Reihenfolge.");
                 }
                 if (english.endsWith(" min ago")) return "vor " + english.substring(0, english.length() - 8) + " Min.";
                 if (english.endsWith(" h ago")) return "vor " + english.substring(0, english.length() - 6) + " Std.";

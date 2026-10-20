@@ -70,6 +70,10 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     // them with 40 of padding (the focused icon grows 20% without touching its edge).
     private static final float SHELF_PAD = 40, TILE_GAP = 48;
     private static final float TILE_RADIUS = 22, TILE_MAX_W = 270;
+    // More apps than SHELF_VISIBLE: the shelf scrolls (a carousel). The glass spans the content width and holds seven
+    // 190 px tiles, with the neighbors peeking into the margins on each side, faded.
+    private static final int SHELF_VISIBLE = 7;
+    private static final float CAROUSEL_TILE_W = 190;
     // Tile focus (Apple TV style): it grows from the center and its shadow drops (it "rises" toward the viewer).
     private static final float FOCUS_GROW = 0.2f;
     // Corner capsule.
@@ -166,6 +170,12 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             new android.graphics.PorterDuffColorFilter(0xFFFFFFFF, android.graphics.PorterDuff.Mode.SRC_IN);
     private final RectF platterRect = new RectF();
     private int shelfIndex;
+    // Carousel: the first fully visible tile (animated, in tiles), each tile's x before scrolling, the edge fades.
+    private final Spring shelfScroll = new Spring(0.34f, 1f, 0);
+    private float[] tileX = new float[0];
+    private float tileW, tileStep, tileTop, viewLeft, viewRight;
+    private LinearGradient fadeLeft, fadeRight;
+    private final Paint fadePaint = new Paint();
 
     // Corner capsule
     private List<HomeApps.Item> statusItems = new ArrayList<>();
@@ -486,9 +496,11 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         measure(heroLayer, width, Math.round(790 * kk));
         measure(status, Math.round(1160 * kk), Math.round(240 * kk));
         // Sized to what they draw (the glass and its shadow; the grown tiles and their shadows): smaller layers are
-        // cheaper for the GPU to composite on every frame of the drawer animation.
-        measure(platter, width, Math.round(320 * kk));
-        measure(tiles, width, Math.round(270 * kk));
+        // cheaper for the GPU to composite on every frame of the drawer animation. Both reach past the bottom of the
+        // screen: a layer clips its content, and the shadows' blur cut at its edge showed as a faint line across the
+        // shelf (in full view when the drawer lifts them).
+        measure(platter, width, Math.round(400 * kk));
+        measure(tiles, width, Math.round(360 * kk));
         measure(drawerLayer, width, Math.round(600 * kk));
         measure(sheetLayer, width, height);
         measure(toastLayer, Math.round(1000 * kk), Math.round(220 * kk));
@@ -616,6 +628,10 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         long up = SystemClock.uptimeMillis();
 
         boolean tilesMoving = step(tileFocus, dt);
+        if (shelfScroll.step(dt)) {
+            placeTiles();
+            tilesMoving = true;
+        }
         boolean statusMoving = step(statusFocus, dt);
         boolean heroMoving = heroFocus.step(dt);
         boolean topMoving = step(topFocus, dt), cardsMoving = step(cardFocus, dt);
@@ -1097,19 +1113,55 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     }
 
     private void layoutShelf() {
-        int n = shelf.size();
+        int n = shelf.size(), shown = Math.min(n, SHELF_VISIBLE);
+        boolean carousel = n > SHELF_VISIBLE;
         float pad = SHELF_PAD * k, gap = TILE_GAP * k, th = L_TILE_H * k;
         float full = (CONTENT_R - MARGIN) * k;
-        float tw = Math.min(TILE_MAX_W * k, (full - Math.max(0, n - 1) * gap) / Math.max(1, n));
-        float width = n * tw + Math.max(0, n - 1) * gap, left = (w - width) / 2f;
+        float tw = carousel ? CAROUSEL_TILE_W * k
+                : Math.min(TILE_MAX_W * k, (full - Math.max(0, n - 1) * gap) / Math.max(1, n));
+        float width = shown * tw + Math.max(0, shown - 1) * gap, left = (w - width) / 2f;
         float top = L_PLATTER_TOP * k;
-        platterRect.set(left - pad, top, left + width + pad, top + th + 2 * pad);
-        float x = left, y = top + pad;
-        for (int i = 0; i < n; i++) {
-            tileRects[i].set(x, y, x + tw, y + th);
-            x += tw + gap;
+        if (carousel) platterRect.set(MARGIN * k - pad, top, CONTENT_R * k + pad, top + th + 2 * pad);
+        else platterRect.set(left - pad, top, left + width + pad, top + th + 2 * pad);
+        if (tileX.length != n) tileX = new float[n];
+        for (int i = 0; i < n; i++) tileX[i] = left + i * (tw + gap);
+        tileW = tw;
+        tileStep = tw + gap;
+        tileTop = top + pad;
+        viewLeft = left;
+        viewRight = left + width;
+        if (carousel) {
+            // Erases the tiles in the margins, fully at the glass edge (drawn DST_OUT over them).
+            fadeLeft = new LinearGradient(platterRect.left, 0, viewLeft, 0, 0xFF000000, 0, Shader.TileMode.CLAMP);
+            fadeRight = new LinearGradient(viewRight, 0, platterRect.right, 0, 0, 0xFF000000, Shader.TileMode.CLAMP);
+            fadePaint.setXfermode(new android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DST_OUT));
         }
+        placeTiles();
         crispLogos.clear();
+    }
+
+    /** The tiles where the carousel's scroll puts them (focus, nearest() and TalkBack read tileRects). */
+    private void placeTiles() {
+        if (tileX.length != tileRects.length) return;
+        float off = shelfScroll.value * tileStep, th = L_TILE_H * k;
+        for (int i = 0; i < tileX.length; i++) tileRects[i].set(tileX[i] - off, tileTop, tileX[i] - off + tileW, tileTop + th);
+    }
+
+    /** Carousel: scrolls so the focused tile keeps a neighbor on each side; returns true if the target moved. */
+    private boolean aimShelfScroll(boolean snap) {
+        float max = Math.max(0, shelf.size() - SHELF_VISIBLE), t = shelfScroll.target;
+        if (zone == Z_SHELF && max > 0) {
+            if (shelfIndex < t + 1) t = shelfIndex - 1;
+            else if (shelfIndex > t + SHELF_VISIBLE - 2) t = shelfIndex - SHELF_VISIBLE + 2;
+        }
+        t = Math.max(0, Math.min(max, t));
+        boolean changed = t != shelfScroll.target;
+        shelfScroll.target = t;
+        if (snap) {
+            shelfScroll.snap(t);
+            placeTiles();
+        }
+        return changed;
     }
 
     /** Shelf layer: the glass bar and its shadow (it only changes with the background). */
@@ -1202,6 +1254,15 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     }
 
     private void drawTiles(Canvas c) {
+        boolean carousel = shelf.size() > SHELF_VISIBLE;
+        float left = platterRect.left, right = platterRect.right, bottom = h + 200 * k;
+        int saved = 0;
+        if (carousel) {
+            // The tiles scroll under the glass edges: clipped there and faded in the margins. Android 9 to 11 only
+            // clip: an offscreen layer on every frame is too much for their GPUs. The shadows below the glass stay whole.
+            saved = Ui.LEGACY ? c.save() : c.saveLayer(left, 0, right, bottom, null);
+            c.clipRect(left, 0, right, bottom);
+        }
         // The focused one last: it grows over its neighbors without being covered by them.
         int top = -1;
         float most = 0.02f;
@@ -1214,9 +1275,26 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         for (int pass = 0; pass < 2; pass++) {
             for (int i = 0; i < shelf.size(); i++) {
                 if ((pass == 0) == (i == top)) continue;
+                if (carousel && (tileRects[i].right < left - 40 * k || tileRects[i].left > right + 40 * k)) continue;
                 drawShelfTile(c, i);
             }
         }
+        if (carousel) {
+            if (!Ui.LEGACY) {
+                float max = shelf.size() - SHELF_VISIBLE;
+                fadeEdge(c, fadeLeft, left, viewLeft, bottom, Ui.clamp(shelfScroll.value));
+                fadeEdge(c, fadeRight, viewRight, right, bottom, Ui.clamp(max - shelfScroll.value));
+            }
+            c.restoreToCount(saved);
+        }
+    }
+
+    /** Fades out what's drawn between `from` and `to`; `amount` 0 leaves it (nothing hidden on that side). */
+    private void fadeEdge(Canvas c, Shader shader, float from, float to, float bottom, float amount) {
+        if (amount <= 0.01f) return;
+        fadePaint.setShader(shader);
+        fadePaint.setAlpha(Math.round(255 * amount));
+        c.drawRect(from, 0, to, bottom, fadePaint);
     }
 
     /**
@@ -1658,6 +1736,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private void retarget(boolean snap) {
         // Only the group whose focus changed is redrawn (moving along the shelf doesn't redraw the hero or capsule).
         boolean tilesChanged = aim(tileFocus, !sheetOpen && zone == Z_SHELF ? shelfIndex : -1, snap);
+        tilesChanged |= aimShelfScroll(snap);
         boolean statusChanged = aim(statusFocus, !sheetOpen && zone == Z_STATUS ? statusIndex : -1, snap);
         boolean drawerChanged = aim(drawerFocus, !sheetOpen && zone == Z_DRAWER ? drawerIndex : -1, snap);
         boolean heroChanged = heroFocus.target != (!sheetOpen && zone == Z_HERO ? 1 : 0);

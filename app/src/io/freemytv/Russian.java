@@ -165,12 +165,6 @@ final class Russian {
                 String[] prefixes = {"Couldn't check Free My TV: ", "Couldn't turn on Free My TV: ",
                         "Couldn't go back to the original: ", "Original mode, but I couldn't turn back on: "};
                 for (String p : prefixes) if (english.startsWith(p)) return text(p) + text(english.substring(p.length()));
-                String shelfPrefix = "OK adds or removes (up to ";
-                String shelfSuffix = "). ← → change the order.";
-                if (english.startsWith(shelfPrefix) && english.endsWith(shelfSuffix)) {
-                    String n = english.substring(shelfPrefix.length(), english.length() - shelfSuffix.length());
-                    return "OK — добавить или убрать (до " + n + "). ← → — изменить порядок.";
-                }
                 String prefix = "Free My TV is on: new home screen and screensaver, ";
                 if (english.startsWith(prefix) && english.endsWith(" apps turned off.")) {
                     String n = english.substring(prefix.length(), english.length() - " apps turned off.".length());
