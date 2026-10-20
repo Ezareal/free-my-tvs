@@ -1,0 +1,10 @@
+diff a/app/src/io/freemytv/Recs.java b/app/src/io/freemytv/Recs.java	(rejected hunks)
+@@ -53,7 +54,7 @@ final class Recs {
+     private static final String IMAGES = "https://image.tmdb.org/t/p/original";
+     private static final long LIST_EVERY = 6 * 3600_000L;
+     /** Bump when what is saved for each title changes (the saved list is discarded and fetched again). */
+-    private static final int CACHE_VERSION = 3;
++    private static final int CACHE_VERSION = 4;
+     private static final int MANHA = 0, TARDE = 1, NOITE = 2;
+     static final String[] PERIOD_LABEL = {"PARA ESTA MANHÃ", "PARA ESTA TARDE", "PARA ESTA NOITE"};
+     static final String[] PERIOD_LABEL_RU = {"ЭТИМ УТРОМ", "СЕГОДНЯ ДНЁМ", "СЕГОДНЯ ВЕЧЕРОМ"};

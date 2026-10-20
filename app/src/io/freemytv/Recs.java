@@ -44,6 +44,7 @@ final class Recs {
         int id;
         String kind;            // "movie" or "tv"
         String title, backdrop, meta = "", app, pkg;
+        String jf;              // Jellyfin item id (null for TMDB picks)
         boolean detailed;
     }
 
@@ -53,7 +54,7 @@ final class Recs {
     private static final String IMAGES = "https://image.tmdb.org/t/p/original";
     private static final long LIST_EVERY = 6 * 3600_000L;
     /** Bump when what is saved for each title changes (the saved list is discarded and fetched again). */
-    private static final int CACHE_VERSION = 3;
+    private static final int CACHE_VERSION = 4;
     private static final int MANHA = 0, TARDE = 1, NOITE = 2;
     static final String[] PERIOD_LABEL = {"PARA ESTA MANHÃ", "PARA ESTA TARDE", "PARA ESTA NOITE"};
     static final String[] PERIOD_LABEL_RU = {"ЭТИМ УТРОМ", "СЕГОДНЯ ДНЁМ", "СЕГОДНЯ ВЕЧЕРОМ"};
@@ -83,6 +84,7 @@ final class Recs {
         SERVICE_NAME.put("globoplay", "Globoplay");
         SERVICE_NAME.put("max", "Max");
         SERVICE_NAME.put("appletv", "Apple TV");
+        SERVICE_NAME.put("jellyfin", "Jellyfin");
     }
     /** Country for "what streams where" (config.properties "tmdb_region", e.g. US, GB, BR). */
     private static final String REGION = Config.TMDB_REGION.trim().toUpperCase(Locale.ROOT);
@@ -129,7 +131,7 @@ final class Recs {
     void removeListener(Listener l) { listeners.remove(l); }
 
     static boolean hasKey(Context c) {
-        return !Config.TMDB_KEY.trim().isEmpty();
+        return jellyfin() || !Config.TMDB_KEY.trim().isEmpty();
     }
 
     /** Last fetch, for the settings screen: {count, error, at}. Written by the home screen (another process). */
@@ -228,7 +230,7 @@ final class Recs {
     }
 
     private File imageFile(Pick p) {
-        return new File(new File(context.getCacheDir(), "recs"), p.backdrop.replace("/", ""));
+        return new File(new File(context.getCacheDir(), "recs"), p.backdrop.replace("/", "").replaceAll("[^A-Za-z0-9._-]", "_"));
     }
 
     /** With a key: fetches the list if stale or the time of day (morning/afternoon/night) changed; then the details. */
@@ -361,16 +363,175 @@ final class Recs {
 
     /** Movies and shows are numbered separately on TMDB: a pick is identified by type + number. */
     static String key(Pick p) {
-        return p.kind + ":" + p.id;
+        return p.jf != null ? "jf:" + p.jf : p.kind + ":" + p.id;
     }
 
     private void notifyListeners() {
         main.post(() -> { for (Listener l : new ArrayList<>(listeners)) l.onRecs(); });
     }
 
+    // MARK: - Jellyfin (replaces TMDB when jellyfin_url and jellyfin_key are set in config.properties)
+
+    private static final String JF_PKG = "org.jellyfin.androidtv";
+    private volatile String jfUserId = "";
+
+    static boolean jellyfin() {
+        return !Config.JELLYFIN_URL.trim().isEmpty() && !Config.JELLYFIN_KEY.trim().isEmpty();
+    }
+
+    private static String jfBase() {
+        String u = Config.JELLYFIN_URL.trim();
+        while (u.endsWith("/")) u = u.substring(0, u.length() - 1);
+        return u;
+    }
+
+    /** Authenticated request to the Jellyfin server (the API key goes in headers only, never in a URL or the log). */
+    private HttpURLConnection jfOpen(String path) throws IOException {
+        HttpURLConnection c = (HttpURLConnection) new URL(jfBase() + path).openConnection();
+        String key = Config.JELLYFIN_KEY.trim();
+        c.setConnectTimeout(8000);
+        c.setReadTimeout(20000);
+        c.setRequestProperty("Accept", "application/json");
+        c.setRequestProperty("Authorization", "MediaBrowser Token=\"" + key + "\"");
+        c.setRequestProperty("X-Emby-Token", key);
+        return c;
+    }
+
+    private String jfGet(String path) throws IOException {
+        HttpURLConnection c = jfOpen(path);
+        try {
+            int code = c.getResponseCode();
+            if (code == 401) throw new IOException("Jellyfin rejected the API key");
+            if (code != 200) throw new IOException("Jellyfin returned HTTP " + code);
+            return read(c.getInputStream());
+        } finally {
+            c.disconnect();
+        }
+    }
+
+    /** The Jellyfin user whose library and watch history are shown ("jellyfin_user", or the first enabled user). */
+    private String jfUser() throws Exception {
+        if (!jfUserId.isEmpty()) return jfUserId;
+        JSONArray users = new JSONArray(jfGet("/Users"));
+        String want = Config.JELLYFIN_USER.trim();
+        String found = "";
+        for (int i = 0; i < users.length(); i++) {
+            JSONObject u = users.getJSONObject(i);
+            if (!want.isEmpty()) {
+                if (want.equalsIgnoreCase(u.optString("Name"))) {
+                    found = u.optString("Id");
+                    break;
+                }
+            } else if (found.isEmpty()) {
+                JSONObject policy = u.optJSONObject("Policy");
+                if (policy == null || !policy.optBoolean("IsDisabled")) found = u.optString("Id");
+            }
+        }
+        if (found.isEmpty()) throw new IOException(want.isEmpty() ? "Jellyfin has no users" : "Jellyfin user not found: " + want);
+        jfUserId = found;
+        return found;
+    }
+
+    private void fetchJellyfin(int p) throws Exception {
+        if (!installed(JF_PKG)) throw new IOException("the Jellyfin app is not installed on the TV");
+        String uid = jfUser();
+        String q = "&Fields=Genres,ChildCount&EnableTotalRecordCount=false";
+        String items = "/Users/" + uid + "/Items?Recursive=true&ImageTypes=Backdrop" + q;
+        List<Pick> watching = new ArrayList<>(), newMovies = new ArrayList<>(), newShows = new ArrayList<>();
+        List<Pick> randMovies = new ArrayList<>(), randShows = new ArrayList<>();
+        String[] errors = {
+            // What you're in the middle of, and the next episode of the shows you follow.
+            jfCollect(watching, "/Users/" + uid + "/Items/Resume?Limit=8&MediaTypes=Video" + q),
+            jfCollect(watching, "/Shows/NextUp?UserId=" + uid + "&Limit=8" + q),
+            // Recently added, then random things you haven't watched yet.
+            jfCollect(newMovies, items + "&IncludeItemTypes=Movie&SortBy=DateCreated&SortOrder=Descending&Limit=20"),
+            jfCollect(newShows, items + "&IncludeItemTypes=Series&SortBy=DateCreated&SortOrder=Descending&Limit=20"),
+            jfCollect(randMovies, items + "&IncludeItemTypes=Movie&Filters=IsUnplayed&SortBy=Random&Limit=20"),
+            jfCollect(randShows, items + "&IncludeItemTypes=Series&Filters=IsUnplayed&SortBy=Random&Limit=20"),
+        };
+        List<Pick> list = new ArrayList<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (Pick w : watching) if (list.size() < 6 && seen.add(key(w))) list.add(w);
+        alternate(list, seen, newMovies, newShows, 16);
+        alternate(list, seen, randMovies, randShows, 24);
+        if (list.isEmpty()) {
+            String last = "";
+            for (String e : errors) if (!e.isEmpty()) last = e;
+            throw new IOException(last.isEmpty() ? "Jellyfin has nothing with a backdrop image to show" : last);
+        }
+        picks = list;
+        period = p;
+        listAt = System.currentTimeMillis();
+        listLanguage = Ui.language;
+    }
+
+    /** Adds what one Jellyfin query returns; one failing query doesn't stop the others. Returns its error, or "". */
+    private String jfCollect(List<Pick> into, String path) {
+        try {
+            JSONArray items = new JSONObject(jfGet(path)).optJSONArray("Items");
+            for (int i = 0; items != null && i < items.length(); i++) jfAdd(into, items.getJSONObject(i));
+            return "";
+        } catch (Exception e) {
+            return e.getMessage() == null ? e.toString() : e.getMessage();
+        }
+    }
+
+    /** One Jellyfin movie, series or episode (an episode stands for its series) as a pick, ready to show. */
+    private static void jfAdd(List<Pick> list, JSONObject o) {
+        String type = o.optString("Type");
+        if (!type.equals("Movie") && !type.equals("Series") && !type.equals("Episode")) return;
+        String id = o.optString("Id");
+        // The item's own backdrop; episodes usually have none, so they borrow their series'.
+        String image = null;
+        JSONArray tags = o.optJSONArray("BackdropImageTags");
+        JSONArray parentTags = o.optJSONArray("ParentBackdropImageTags");
+        String parent = o.optString("ParentBackdropItemId");
+        if (tags != null && tags.length() > 0) {
+            image = "/Items/" + id + "/Images/Backdrop/0?maxWidth=1920&tag=" + tags.optString(0);
+        } else if (parentTags != null && parentTags.length() > 0 && !parent.isEmpty()) {
+            image = "/Items/" + parent + "/Images/Backdrop/0?maxWidth=1920&tag=" + parentTags.optString(0);
+        }
+        if (image == null || id.isEmpty()) return;
+        boolean episode = type.equals("Episode");
+        Pick p = new Pick();
+        p.kind = type.equals("Movie") ? "movie" : "tv";
+        p.jf = episode && !o.optString("SeriesId").isEmpty() ? o.optString("SeriesId") : id;
+        p.title = episode && !o.optString("SeriesName").isEmpty() ? o.optString("SeriesName") : o.optString("Name");
+        p.backdrop = image;
+        p.app = "jellyfin";
+        p.pkg = JF_PKG;
+        p.detailed = true;
+        List<String> parts = new ArrayList<>();
+        if (p.kind.equals("tv")) parts.add(Ui.tr("Série", "Series"));
+        if (episode && o.optInt("ParentIndexNumber") > 0 && o.optInt("IndexNumber") > 0) {
+            parts.add("S" + o.optInt("ParentIndexNumber") + "E" + o.optInt("IndexNumber"));
+        }
+        JSONArray genres = o.optJSONArray("Genres");
+        if (genres != null && genres.length() > 0) parts.add(genres.optString(0));
+        if (p.kind.equals("movie")) {
+            int minutes = (int) (o.optLong("RunTimeTicks") / 600_000_000L);
+            if (minutes > 0 && Ui.ru) parts.add(minutes >= 60 ? (minutes / 60) + " ч " + (minutes % 60) + " мин" : minutes + " мин");
+            else if (minutes > 0 && Ui.en) parts.add(minutes >= 60 ? (minutes / 60) + "h " + (minutes % 60) + "m" : minutes + "m");
+            else if (minutes > 0) parts.add(minutes >= 60 ? (minutes / 60) + " h " + (minutes % 60) + " min" : minutes + " min");
+        } else if (!episode) {
+            int seasons = o.optInt("ChildCount");
+            if (seasons > 0 && Ui.ru) parts.add(Russian.count(seasons, "сезон", "сезона", "сезонов"));
+            else if (seasons > 0 && Ui.en) parts.add(seasons == 1 ? "1 season" : seasons + " seasons");
+            else if (seasons > 0 && Ui.de) parts.add(seasons == 1 ? "1 Staffel" : seasons + " Staffeln");
+            else if (seasons > 0) parts.add(seasons == 1 ? "1 temporada" : seasons + " temporadas");
+        }
+        parts.add("Jellyfin");
+        p.meta = String.join(" · ", parts);
+        list.add(p);
+    }
+
     // MARK: - TMDB
 
     private void fetchList(int p) throws Exception {
+        if (jellyfin()) {
+            fetchJellyfin(p);
+            return;
+        }
         // The services the TV has, by their TMDB ids in your region.
         Map<Integer, String[]> services = new HashMap<>();
         JSONArray providers = get("/watch/providers/movie?language=" + lang() + "&watch_region=" + REGION).getJSONArray("results");
@@ -551,6 +712,10 @@ final class Recs {
     }
 
     private long sourceStamp() {
+        if (jellyfin()) {
+            return (Config.JELLYFIN_URL + "|" + Config.JELLYFIN_USER + "|" + Config.JELLYFIN_KEY).hashCode() * 31L
+                    + (installed(JF_PKG) ? 1 : 0);
+        }
         long stamp = Config.TMDB_KEY.hashCode() * 31L + REGION.hashCode();
         for (String[] service : SERVICES) stamp = stamp * 31L + (installed(service[2]) ? service[2].hashCode() : 0);
         return stamp;
@@ -589,7 +754,7 @@ final class Recs {
         //noinspection ResultOfMethodCallIgnored
         f.getParentFile().mkdirs();
         File part = new File(f.getPath() + ".part");
-        HttpURLConnection c = (HttpURLConnection) new URL(IMAGES + p.backdrop).openConnection();
+        HttpURLConnection c = p.jf != null ? jfOpen(p.backdrop) : (HttpURLConnection) new URL(IMAGES + p.backdrop).openConnection();
         c.setConnectTimeout(8000);
         c.setReadTimeout(20000);
         try (InputStream in = c.getInputStream(); FileOutputStream out = new FileOutputStream(part)) {
@@ -671,7 +836,7 @@ final class Recs {
         try {
             JSONArray a = new JSONArray();
             for (Pick p : picks) {
-                a.put(new JSONObject().put("id", p.id).put("kind", p.kind).put("title", p.title).put("backdrop", p.backdrop)
+                a.put(new JSONObject().put("id", p.id).put("jf", p.jf == null ? "" : p.jf).put("kind", p.kind).put("title", p.title).put("backdrop", p.backdrop)
                         .put("meta", p.meta).put("app", p.app == null ? "" : p.app).put("pkg", p.pkg == null ? "" : p.pkg)
                         .put("detailed", p.detailed));
             }
@@ -689,6 +854,7 @@ final class Recs {
             if (o == null) continue;
             Pick p = new Pick();
             p.id = o.optInt("id");
+            p.jf = o.optString("jf").isEmpty() ? null : o.optString("jf");
             p.kind = o.optString("kind");
             p.title = o.optString("title");
             p.backdrop = o.optString("backdrop");

@@ -51,6 +51,9 @@ final class Config {
 
     static final String TMDB_KEY = "$(prop tmdb_key '')";
     static final String TMDB_REGION = "$(prop tmdb_region US)";
+    static final String JELLYFIN_URL = "$(prop jellyfin_url '')";
+    static final String JELLYFIN_KEY = "$(prop jellyfin_key '')";
+    static final String JELLYFIN_USER = "$(prop jellyfin_user '')";
     static final String LATITUDE = "$LAT";
     static final String LONGITUDE = "$LON";
     static final String CITY = "$(prop city '')";
