@@ -11,6 +11,7 @@ var TV = (function () {
   var webos = typeof window.PalmServiceBridge !== 'undefined';
   var samsung = !webos && typeof window.tizen !== 'undefined' && !!window.tizen.application;
   var calls = [];   // a bridge is collected if nothing holds it before its reply arrives
+  var appsError = '';
 
   /** One Luna call; done(result) with null on failure. */
   function luna(uri, params, done) {
@@ -68,22 +69,51 @@ var TV = (function () {
 
   // MARK: - Samsung
 
+  function errorText(error) {
+    if (!error) return 'UnknownError';
+    return error.name || error.message || String(error);
+  }
+
+  function appInfoError(error) {
+    var message = errorText(error);
+    if (!appsError) appsError = message;
+    if (window.console && window.console.error) window.console.error('Free My TV: could not read installed apps: ' + message);
+  }
+
+  /** Tizen versions return either a URI or an absolute path. Try both forms without assuming the TV's Web runtime. */
+  function samsungIconPaths(path) {
+    var out = [];
+    function add(value) { if (value && out.indexOf(value) < 0) out.push(value); }
+    add(path);
+    if (path && path.indexOf('://') < 0) add(path.charAt(0) === '/' ? 'file://' + path : 'file:///' + path);
+    var count = out.length;
+    for (var i = 0; i < count; i++) {
+      try { add(encodeURI(out[i])); } catch (e) {}
+    }
+    return out;
+  }
+
   function samsungApps(done) {
+    appsError = '';
     try {
       window.tizen.application.getAppsInfo(function (list) {
         var out = [];
         for (var i = 0; i < list.length; i++) {
           var a = list[i];
-          if (!a.id || a.show === false || a.id === self || SAMSUNG_HIDDEN.test(a.id)) continue;
-          var icon = a.iconPath || '';
-          if (icon && icon.indexOf('://') < 0) icon = 'file://' + icon;
-          out.push({id: a.id, title: a.name || a.id, icon: icon, color: ''});
+          var id = '', title = '', show = true, icon = '';
+          try { id = a.id || ''; title = a.name || id; show = a.show !== false; }
+          catch (infoError) { appInfoError(infoError); continue; }
+          if (!id || !show || id === self || SAMSUNG_HIDDEN.test(id)) continue;
+          try { icon = a.iconPath || ''; } catch (iconError) { appInfoError(iconError); }
+          var icons = samsungIconPaths(icon);
+          out.push({id: id, title: title, icon: icons.length ? icons[0] : '', icons: icons, color: ''});
         }
         // Smart Hub keeps its own order, which isn't readable: the same alphabetical order as All Apps elsewhere.
         out.sort(function (x, y) { var a = x.title.toLowerCase(), b = y.title.toLowerCase(); return a < b ? -1 : a > b ? 1 : 0; });
         done(out);
-      }, function () { done([]); });
+      }, function (error) { appInfoError(error); done([]); });
     } catch (e) {
+      appInfoError(e);
       done([]);
     }
   }
@@ -181,6 +211,9 @@ var TV = (function () {
         done(out);
       });
     },
+
+    /** Last error while reading installed apps, for a visible diagnostic instead of an unexplained empty shelf. */
+    appsError: function () { return appsError; },
 
     /** Opens an app (or an input); done(ok). */
     launch: function (id, params, done) {
