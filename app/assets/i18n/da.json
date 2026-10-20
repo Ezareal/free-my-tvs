@@ -52,6 +52,7 @@
  "Mostly Clear": "Mest klart",
  "Mostly Sunny": "Mest solrigt",
  "Movies": "Film",
+ "Moving {app}, position {n} of {total}": "Flytter {app}, plads {n} af {total}",
  "NOTICES": "MEDDELELSER",
  "Netflix button": "Netflix-knap",
  "Next hours: {list}.": "De næste timer: {list}.",
@@ -116,6 +117,7 @@
  "Weather": "Vejr",
  "Weather widget": "Vejrwidget",
  "YouTube button": "YouTube-knap",
+ "YouTube, Prime Video and Google Play: the TV itself controls those buttons.": "YouTube, Prime Video og Google Play: TV’et styrer selv disse knapper.",
  "Your TV's home screen and screensaver": "Dit tv's startskærm og pauseskærm",
  "debugging is off on the TV (port 5555 closed)": "fejlfinding er slået fra på tv'et (port 5555 lukket)",
  "debugging permission wasn't accepted on the TV": "tilladelsen til fejlfinding blev ikke accepteret på tv'et",
@@ -143,6 +145,7 @@
  "prices from {ago}": "kurser {ago}",
  "quotes|{ago}": "{ago}",
  "shelf|Off": "Nej",
+ "talkback|Sunrise {time}": "Solopgang {time}",
  "the TV asked for TLS (wireless debugging); use USB debugging": "tv'et bad om TLS (trådløs fejlfinding); brug USB-fejlfinding",
  "the TV rejected the app's key": "tv'et afviste appens nøgle",
  "the TV's ADB didn't respond": "tv'ets ADB svarede ikke",
@@ -161,5 +164,6 @@
  "{n} MB": "{n} MB",
  "{n} h ago": "for {n} t siden",
  "{n} min ago": "for {n} min siden",
- "{n} ms": "{n} ms"
+ "{n} ms": "{n} ms",
+ "← → to move · OK to drop · Back to cancel": "← → flyt · OK slip · Tilbage annuller"
 }

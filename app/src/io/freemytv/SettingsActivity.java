@@ -130,7 +130,7 @@ public class SettingsActivity extends Activity {
         private final List<String[]> shelfRows = new ArrayList<>();
         private final List<String> shelfOrder = new ArrayList<>();
         private int pickFor, pickCurrent, pickScroll;   // pickFor: the remote button (index + 1)
-        private static final int PICK_CITY = 0;
+        private static final int PICK_CITY = 0, PICK_LANGUAGE = -1;
         private final List<String[]> cities = new ArrayList<>();
         private String cityStatus = "";
         private final RectF tmp = new RectF(), rowRect = new RectF(), focusBox = new RectF();
@@ -598,8 +598,8 @@ public class SettingsActivity extends Activity {
                         if (e.getRepeatCount() == 0) backDown = true;
                     } else {
                         if (backDown && !e.isCanceled()) {
-                            if (screen == PICKER && pickFor == PICK_CITY) {
-                                focus = CITY_ROW;
+                            if (screen == PICKER && (pickFor == PICK_CITY || pickFor == PICK_LANGUAGE)) {
+                                focus = pickFor == PICK_CITY ? CITY_ROW : 0;
                                 screen = HOME_SETTINGS;
                             } else if (screen == PICKER) {
                                 focus = pickFor - 1;
@@ -721,12 +721,7 @@ public class SettingsActivity extends Activity {
                 return;
             }
             switch (focus) {
-                case 0: {
-                    String[] languages = languageChoices();
-                    int at = java.util.Arrays.asList(languages).indexOf(Prefs.language());
-                    Prefs.setLanguage(languages[(at + dir + languages.length) % languages.length]);
-                    break;
-                }
+                case 0: break;   // OK opens the language picker.
                 case 1: {
                     int at = java.util.Arrays.asList(UNITS).indexOf(Prefs.temperature());
                     Prefs.setTemperature(UNITS[(at + dir + UNITS.length) % UNITS.length]);
@@ -888,6 +883,12 @@ public class SettingsActivity extends Activity {
             if (which == PICK_CITY) {
                 for (String[] city : cities) pickLabels.add(city[0]);
                 pickCurrent = -1;
+            } else if (which == PICK_LANGUAGE) {
+                String[] choices = languageChoices();
+                for (String code : choices) {
+                    pickLabels.add(code.equals("auto") ? Ui.tr("Automatic") : Ui.languageName(code));
+                }
+                pickCurrent = java.util.Arrays.asList(choices).indexOf(Prefs.language());
             } else {
                 pickLabels.addAll(appLabels);
                 pickCurrent = appPkgs.indexOf(Prefs.keyApp(Prefs.KEYS[which - 1]));
@@ -902,7 +903,8 @@ public class SettingsActivity extends Activity {
         /** A long list (the apps): nine rows at a time, the one in use checked. */
         private void drawPicker(Canvas c) {
             Paint heading = Ui.text(Ui.displaySemibold, 34 * k, 0xFFFFFFFF);
-            String title = pickFor == PICK_CITY ? Ui.tr("City") : keyLabels()[pickFor - 1];
+            String title = pickFor == PICK_CITY ? Ui.tr("City")
+                    : pickFor == PICK_LANGUAGE ? Ui.tr("Language") : keyLabels()[pickFor - 1];
             c.drawText(title, LIST_X * k + 30 * k, (LIST_TOP - 24) * k, heading);
             int rows = rowCount();
             for (int i = 0; i < rows; i++) {
@@ -969,6 +971,10 @@ public class SettingsActivity extends Activity {
                 HomeData.get(c).settingsChanged();
                 focus = CITY_ROW;
                 screen = HOME_SETTINGS;
+            } else if (screen == PICKER && pickFor == PICK_LANGUAGE) {
+                Prefs.setLanguage(languageChoices()[pickScroll + focus]);
+                focus = 0;
+                screen = HOME_SETTINGS;
             } else if (screen == PICKER) {
                 int at = pickScroll + focus;
                 Prefs.setKeyApp(Prefs.KEYS[pickFor - 1], appPkgs.get(at));
@@ -980,6 +986,8 @@ public class SettingsActivity extends Activity {
                 return;
             } else if (screen == REMOTE_KEYS) {
                 openPicker(focus + 1);
+            } else if (screen == HOME_SETTINGS && focus == 0) {
+                openPicker(PICK_LANGUAGE);
             } else if (screen == HOME_SETTINGS && focus == CITY_ROW) {
                 askCity();
                 return;

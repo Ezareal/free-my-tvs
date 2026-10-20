@@ -52,6 +52,7 @@
  "Mostly Clear": "Переважно ясно",
  "Mostly Sunny": "Переважно сонячно",
  "Movies": "Фільми",
+ "Moving {app}, position {n} of {total}": "Переміщення: {app}, місце {n} із {total}",
  "NOTICES": "СПОВІЩЕННЯ",
  "Netflix button": "Кнопка Netflix",
  "Next hours: {list}.": "Найближчі години: {list}.",
@@ -116,6 +117,7 @@
  "Weather": "Погода",
  "Weather widget": "Віджет погоди",
  "YouTube button": "Кнопка YouTube",
+ "YouTube, Prime Video and Google Play: the TV itself controls those buttons.": "Кнопками YouTube, Prime Video та Google Play керує сам телевізор.",
  "Your TV's home screen and screensaver": "Головний екран і заставка вашого телевізора",
  "debugging is off on the TV (port 5555 closed)": "налагодження на телевізорі вимкнено (порт 5555 закрито)",
  "debugging permission wasn't accepted on the TV": "на телевізорі не дозволено налагодження",
@@ -143,6 +145,7 @@
  "prices from {ago}": "курси: {ago}",
  "quotes|{ago}": "{ago}",
  "shelf|Off": "Ні",
+ "talkback|Sunrise {time}": "Схід {time}",
  "the TV asked for TLS (wireless debugging); use USB debugging": "телевізор запросив TLS (бездротове налагодження); використовуйте налагодження через USB",
  "the TV rejected the app's key": "телевізор відхилив ключ застосунку",
  "the TV's ADB didn't respond": "ADB телевізора не відповів",
@@ -161,5 +164,6 @@
  "{n} MB": "{n} МБ",
  "{n} h ago": "{n} год тому",
  "{n} min ago": "{n} хв тому",
- "{n} ms": "{n} мс"
+ "{n} ms": "{n} мс",
+ "← → to move · OK to drop · Back to cancel": "← → перемістити · OK розмістити · Назад скасувати"
 }

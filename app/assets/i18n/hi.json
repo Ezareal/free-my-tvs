@@ -52,6 +52,7 @@
  "Mostly Clear": "ज़्यादातर साफ़",
  "Mostly Sunny": "ज़्यादातर धूप",
  "Movies": "फ़िल्में",
+ "Moving {app}, position {n} of {total}": "{app} को खिसका रहे हैं, {total} में से स्थान {n}",
  "NOTICES": "सूचनाएँ",
  "Netflix button": "Netflix बटन",
  "Next hours: {list}.": "अगले घंटे: {list}।",
@@ -116,6 +117,7 @@
  "Weather": "मौसम",
  "Weather widget": "मौसम विजेट",
  "YouTube button": "YouTube बटन",
+ "YouTube, Prime Video and Google Play: the TV itself controls those buttons.": "YouTube, Prime Video और Google Play: ये बटन टीवी खुद नियंत्रित करता है।",
  "Your TV's home screen and screensaver": "आपके TV की होम स्क्रीन और स्क्रीनसेवर",
  "debugging is off on the TV (port 5555 closed)": "टीवी पर डीबगिंग बंद है (पोर्ट 5555 बंद)",
  "debugging permission wasn't accepted on the TV": "टीवी पर डीबगिंग की अनुमति स्वीकार नहीं हुई",
@@ -143,6 +145,7 @@
  "prices from {ago}": "{ago} के भाव",
  "quotes|{ago}": "{ago}",
  "shelf|Off": "नहीं",
+ "talkback|Sunrise {time}": "सूर्योदय {time}",
  "the TV asked for TLS (wireless debugging); use USB debugging": "टीवी ने TLS (वायरलेस डीबगिंग) माँगा; USB डीबगिंग इस्तेमाल करें",
  "the TV rejected the app's key": "टीवी ने ऐप की कुंजी अस्वीकार कर दी",
  "the TV's ADB didn't respond": "टीवी के ADB ने जवाब नहीं दिया",
@@ -161,5 +164,6 @@
  "{n} MB": "{n} MB",
  "{n} h ago": "{n} घं पहले",
  "{n} min ago": "{n} मि पहले",
- "{n} ms": "{n} ms"
+ "{n} ms": "{n} ms",
+ "← → to move · OK to drop · Back to cancel": "← → खिसकाएँ · OK छोड़ें · वापस रद्द करें"
 }

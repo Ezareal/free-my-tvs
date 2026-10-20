@@ -52,6 +52,7 @@
  "Mostly Clear": "Κυρίως αίθριος",
  "Mostly Sunny": "Κυρίως ηλιόλουστος",
  "Movies": "Ταινίες",
+ "Moving {app}, position {n} of {total}": "Μετακίνηση {app}, θέση {n} από {total}",
  "NOTICES": "ΕΙΔΟΠΟΙΗΣΕΙΣ",
  "Netflix button": "Κουμπί Netflix",
  "Next hours: {list}.": "Επόμενες ώρες: {list}.",
@@ -116,6 +117,7 @@
  "Weather": "Καιρός",
  "Weather widget": "Widget καιρού",
  "YouTube button": "Κουμπί YouTube",
+ "YouTube, Prime Video and Google Play: the TV itself controls those buttons.": "YouTube, Prime Video και Google Play: η ίδια η TV ελέγχει αυτά τα κουμπιά.",
  "Your TV's home screen and screensaver": "Αρχική οθόνη και προφύλαξη της τηλεόρασής σας",
  "debugging is off on the TV (port 5555 closed)": "ο εντοπισμός σφαλμάτων είναι απενεργοποιημένος στην τηλεόραση (θύρα 5555 κλειστή)",
  "debugging permission wasn't accepted on the TV": "η άδεια εντοπισμού σφαλμάτων δεν έγινε αποδεκτή στην τηλεόραση",
@@ -143,6 +145,7 @@
  "prices from {ago}": "τιμές: {ago}",
  "quotes|{ago}": "{ago}",
  "shelf|Off": "Όχι",
+ "talkback|Sunrise {time}": "Ανατολή {time}",
  "the TV asked for TLS (wireless debugging); use USB debugging": "η τηλεόραση ζήτησε TLS (ασύρματος εντοπισμός σφαλμάτων)· χρησιμοποίησε εντοπισμό σφαλμάτων USB",
  "the TV rejected the app's key": "η τηλεόραση απέρριψε το κλειδί της εφαρμογής",
  "the TV's ADB didn't respond": "το ADB της τηλεόρασης δεν απάντησε",
@@ -161,5 +164,6 @@
  "{n} MB": "{n} MB",
  "{n} h ago": "πριν από {n} ώ.",
  "{n} min ago": "πριν από {n} λ.",
- "{n} ms": "{n} ms"
+ "{n} ms": "{n} ms",
+ "← → to move · OK to drop · Back to cancel": "← → μετακίνηση · OK τοποθέτηση · Πίσω ακύρωση"
 }

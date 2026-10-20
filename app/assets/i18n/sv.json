@@ -52,6 +52,7 @@
  "Mostly Clear": "Mestadels klart",
  "Mostly Sunny": "Mestadels soligt",
  "Movies": "Filmer",
+ "Moving {app}, position {n} of {total}": "Flyttar {app}, plats {n} av {total}",
  "NOTICES": "MEDDELANDEN",
  "Netflix button": "Netflix-knappen",
  "Next hours: {list}.": "Kommande timmar: {list}.",
@@ -116,6 +117,7 @@
  "Weather": "Väder",
  "Weather widget": "Väderwidget",
  "YouTube button": "YouTube-knappen",
+ "YouTube, Prime Video and Google Play: the TV itself controls those buttons.": "YouTube, Prime Video och Google Play: TV:n styr själv dessa knappar.",
  "Your TV's home screen and screensaver": "Din tv:s hemskärm och skärmsläckare",
  "debugging is off on the TV (port 5555 closed)": "felsökning är av på tv:n (port 5555 stängd)",
  "debugging permission wasn't accepted on the TV": "behörigheten för felsökning godkändes inte på tv:n",
@@ -143,6 +145,7 @@
  "prices from {ago}": "kurser {ago}",
  "quotes|{ago}": "{ago}",
  "shelf|Off": "Nej",
+ "talkback|Sunrise {time}": "Soluppgång {time}",
  "the TV asked for TLS (wireless debugging); use USB debugging": "tv:n bad om TLS (trådlös felsökning); använd USB-felsökning",
  "the TV rejected the app's key": "tv:n avvisade appens nyckel",
  "the TV's ADB didn't respond": "tv:ns ADB svarade inte",
@@ -161,5 +164,6 @@
  "{n} MB": "{n} MB",
  "{n} h ago": "för {n} h sedan",
  "{n} min ago": "för {n} min sedan",
- "{n} ms": "{n} ms"
+ "{n} ms": "{n} ms",
+ "← → to move · OK to drop · Back to cancel": "← → flytta · OK släpp · Tillbaka avbryt"
 }

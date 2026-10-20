@@ -4,11 +4,12 @@
     python3 tools/translate.py                 # extract en.json from the code, report what each language lacks
     python3 tools/translate.py --fill          # also translate the missing strings (needs ANTHROPIC_API_KEY)
     python3 tools/translate.py --fill --lang fr --model claude-haiku-5-5
+    python3 tools/translate.py --check         # validate all catalogues without writing anything
     python3 tools/translate.py --prune         # also remove keys the code no longer uses
     python3 tools/translate.py --new fr        # start a catalogue for a new language (then --fill --lang fr)
 
 The English text in the code is the source: every Ui.tr("...") / Ui.trf("...", ...) / Ui.plural("...", n) call (the
-last string argument before any placeholders; in the older Ui.tr(pt, en[, es]) form, the second). en.json maps each key to its English
+first argument), plus Ui.datePattern("format|..."). en.json maps each key to its English
 text: a key "context|Text" is "Text" in a given context (a word that needs another translation there), and "{name}"
 is a placeholder filled at runtime. A key "plural|one:{n} season|other:{n} seasons" (Ui.plural) is a count: each language
 gives one form per plural category it uses (CLDR: zero, one, two, few, many, other). Each <lang>.json maps the same keys
@@ -33,9 +34,9 @@ SRC = os.path.join(ROOT, "app", "src")
 I18N = os.path.join(ROOT, "app", "assets", "i18n")
 CACHE = os.path.join(ROOT, "tools", ".i18n-cache.json")   # translations made with --fill, by hash (not committed)
 DEFAULT_MODEL = "claude-haiku-5-5"
-CALL = re.compile(r"\bUi\.(trf?|plural)\(")
+CALL = re.compile(r"\bUi\.(trf?|plural|datePattern)\(")
 PLURAL_FORM = re.compile(r"^(zero|one|two|few|many|other):")
-PLACEHOLDER = re.compile(r"\{[a-zA-Z]+\}")
+PLACEHOLDER = re.compile(r"\{[a-zA-Z_][a-zA-Z_0-9]*\}")
 
 
 # MARK: - Extraction
@@ -122,10 +123,7 @@ def extract():
     """{key: English text} from the code; warns about calls whose text isn't a literal."""
     keys = {}
     for path, line, kind, args in calls():
-        if kind in ("trf", "plural") or len(args) == 1:
-            key = args[0]
-        else:
-            key = args[1]   # the older Ui.tr(pt, en[, es])
+        key = args[0]
         if key is None:
             print(f"warning: {path}:{line}: Ui.{kind} with text that isn't a string literal", file=sys.stderr)
             continue
@@ -155,17 +153,40 @@ def digest(text):
 
 
 def placeholders(text):
-    return sorted(PLACEHOLDER.findall(text))
+    return sorted(set(PLACEHOLDER.findall(text)))
+
+
+def valid_format(text):
+    """SimpleDateFormat letters outside quotes; doubled quotes are literal quotes."""
+    quoted, i = False, 0
+    while i < len(text):
+        ch = text[i]
+        if ch == "'":
+            if i + 1 < len(text) and text[i + 1] == "'":
+                i += 2
+                continue
+            quoted = not quoted
+        elif not quoted and ch.isascii() and ch.isalpha():
+            if ch not in "GyYMLwWDdFEuaHkKhmsSzZX":
+                return False
+            if ch == "X" and text[i:i + 4] == "XXXX":
+                return False
+        i += 1
+    return not quoted
 
 
 def fits(key, english, text):
     """The translation keeps the English placeholders; a plural is forms like "one:…|few:…|other:…", each with them."""
+    if not isinstance(text, str):
+        return False
+    if key.startswith("format|") and not valid_format(text):
+        return False
     if not key.startswith("plural|"):
         return placeholders(text) == placeholders(english)
     want = sorted(set(PLACEHOLDER.findall(english)))
     forms = text.split("|")
     return all(PLURAL_FORM.match(f) and sorted(set(PLACEHOLDER.findall(f))) == want for f in forms) \
-        and any(f.startswith("other:") for f in forms)
+        and all("{n}" in f for f in forms) and any(f.startswith("other:") for f in forms)
 
 
 def problems(en, cat):
@@ -173,6 +194,39 @@ def problems(en, cat):
     obsolete = [k for k in cat if k not in en]
     broken = [k for k in en if k in cat and not fits(k, en[k], cat[k])]
     return missing, obsolete, broken
+
+
+def check(en):
+    errors = []
+    for lang in ["en"] + languages():
+        try:
+            cat = load(lang)
+        except (ValueError, OSError) as e:
+            errors.append(f"{lang}: invalid JSON: {e}")
+            continue
+        if not isinstance(cat, dict):
+            errors.append(f"{lang}: catalogue must be a JSON object")
+            continue
+        missing, obsolete, _ = problems(en, cat)
+        for label, keys in (("missing key", missing), ("obsolete key", obsolete)):
+            for key in keys:
+                errors.append(f"{lang}: {label}: {key!r}")
+        for key, value in cat.items():
+            if not isinstance(value, str):
+                errors.append(f"{lang}: non-string value: {key!r}")
+            elif key.startswith("format|") and not valid_format(value):
+                errors.append(f"{lang}: invalid format: {key!r}: {value!r}")
+            elif key.startswith("plural|") and not fits(key, english_of(key), value):
+                errors.append(f"{lang}: invalid plural forms: {key!r}")
+            elif key in en and placeholders(value) != placeholders(en[key]):
+                errors.append(f"{lang}: placeholder mismatch: {key!r}")
+            if lang == "en" and key in en and value != en[key]:
+                errors.append(f"en: out-of-date value: {key!r}")
+    if errors:
+        print("\n".join(errors))
+        return 1
+    print(f"OK: all catalogues match the code ({len(en)} keys).")
+    return 0
 
 
 # MARK: - Translation (Anthropic Messages API, raw HTTP)
@@ -223,6 +277,7 @@ def translate(lang, items, model, key):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--check", action="store_true", help="validate all catalogues without writing anything")
     ap.add_argument("--fill", action="store_true", help="translate the missing strings (needs ANTHROPIC_API_KEY)")
     ap.add_argument("--prune", action="store_true", help="remove keys the code no longer uses")
     ap.add_argument("--lang", action="append", help="only these languages (repeatable)")
@@ -231,6 +286,8 @@ def main():
     a = ap.parse_args()
 
     en = extract()
+    if a.check:
+        return check(en)
     os.makedirs(I18N, exist_ok=True)
     save("en", en)
     if a.new and not os.path.exists(os.path.join(I18N, a.new + ".json")):
@@ -269,7 +326,7 @@ def main():
         incomplete += status != "complete"
         print(f"{lang:6} {len(cat) - len(obsolete):4}/{len(en)}  {status}"
               + (f"  missing {len(missing)}" if missing else "")
-              + (f"  placeholders wrong {len(broken)}" if broken else "")
+              + (f"  broken values {len(broken)}" if broken else "")
               + (f"  obsolete {len(obsolete)} (--prune)" if obsolete else ""))
         for k in (missing + broken)[:8]:
             print(f"         {k!r}")

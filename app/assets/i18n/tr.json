@@ -52,6 +52,7 @@
  "Mostly Clear": "Çoğunlukla Açık",
  "Mostly Sunny": "Çoğunlukla Güneşli",
  "Movies": "Filmler",
+ "Moving {app}, position {n} of {total}": "{app} taşınıyor, konum {n}/{total}",
  "NOTICES": "BİLDİRİMLER",
  "Netflix button": "Netflix tuşu",
  "Next hours: {list}.": "Sonraki saatler: {list}.",
@@ -116,6 +117,7 @@
  "Weather": "Hava Durumu",
  "Weather widget": "Hava durumu widget'ı",
  "YouTube button": "YouTube tuşu",
+ "YouTube, Prime Video and Google Play: the TV itself controls those buttons.": "YouTube, Prime Video ve Google Play: bu düğmeleri TV’nin kendisi yönetir.",
  "Your TV's home screen and screensaver": "TV'nizin ana ekranı ve ekran koruyucusu",
  "debugging is off on the TV (port 5555 closed)": "TV'de hata ayıklama kapalı (5555 bağlantı noktası kapalı)",
  "debugging permission wasn't accepted on the TV": "hata ayıklama izni TV'de kabul edilmedi",
@@ -143,6 +145,7 @@
  "prices from {ago}": "fiyatlar {ago}",
  "quotes|{ago}": "{ago}",
  "shelf|Off": "Yok",
+ "talkback|Sunrise {time}": "Gün doğumu {time}",
  "the TV asked for TLS (wireless debugging); use USB debugging": "TV, TLS (kablosuz hata ayıklama) istedi; USB hata ayıklamayı kullanın",
  "the TV rejected the app's key": "TV, uygulamanın anahtarını reddetti",
  "the TV's ADB didn't respond": "TV'nin ADB'si yanıt vermedi",
@@ -161,5 +164,6 @@
  "{n} MB": "{n} MB",
  "{n} h ago": "{n} sa önce",
  "{n} min ago": "{n} dk önce",
- "{n} ms": "{n} ms"
+ "{n} ms": "{n} ms",
+ "← → to move · OK to drop · Back to cancel": "← → taşı · OK bırak · Geri iptal et"
 }

@@ -52,6 +52,7 @@
  "Mostly Clear": "Überwiegend klar",
  "Mostly Sunny": "Überwiegend sonnig",
  "Movies": "Filme",
+ "Moving {app}, position {n} of {total}": "Verschiebe {app}, Position {n} von {total}",
  "NOTICES": "HINWEISE",
  "Netflix button": "Netflix-Taste",
  "Next hours: {list}.": "Nächste Stunden: {list}.",
@@ -116,6 +117,7 @@
  "Weather": "Wetter",
  "Weather widget": "Wetter-Widget",
  "YouTube button": "YouTube-Taste",
+ "YouTube, Prime Video and Google Play: the TV itself controls those buttons.": "YouTube, Prime Video und Google Play: Diese Tasten steuert der Fernseher selbst.",
  "Your TV's home screen and screensaver": "Startbildschirm und Bildschirmschoner des Fernsehers",
  "debugging is off on the TV (port 5555 closed)": "Debugging ist am Fernseher aus (Port 5555 geschlossen)",
  "debugging permission wasn't accepted on the TV": "die Debugging-Erlaubnis wurde am Fernseher nicht bestätigt",
@@ -143,6 +145,7 @@
  "prices from {ago}": "Kurse von {ago}",
  "quotes|{ago}": "{ago}",
  "shelf|Off": "Aus",
+ "talkback|Sunrise {time}": "Sonnenaufgang {time}",
  "the TV asked for TLS (wireless debugging); use USB debugging": "der Fernseher wollte TLS (kabelloses Debugging); USB-Debugging verwenden",
  "the TV rejected the app's key": "der Fernseher hat den Schlüssel der App abgelehnt",
  "the TV's ADB didn't respond": "das ADB des Fernsehers hat nicht geantwortet",
@@ -161,5 +164,6 @@
  "{n} MB": "{n} MB",
  "{n} h ago": "vor {n} Std.",
  "{n} min ago": "vor {n} Min.",
- "{n} ms": "{n} ms"
+ "{n} ms": "{n} ms",
+ "← → to move · OK to drop · Back to cancel": "← → verschieben · OK ablegen · Zurück abbrechen"
 }

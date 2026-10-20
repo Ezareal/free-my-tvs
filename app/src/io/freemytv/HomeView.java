@@ -2209,8 +2209,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         reorderAt = SystemClock.uptimeMillis();
         moveLift.target = 1;
         click.open();
-        showToast(Ui.tr("← → para mover · OK para soltar · Voltar para cancelar",
-                "← → to move · OK to drop · Back to cancel"));
+        showToast(Ui.tr("← → to move · OK to drop · Back to cancel"));
         retarget(false);    // TalkBack reads "Moving <app>, position i of n"
     }
 
@@ -2400,8 +2399,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             case Z_CARDS: return i < cards.size() ? pickText(cards.get(i)) : "";
             case Z_SHELF:
                 if (reordering && i == shelfIndex) {
-                    return Ui.tr("Movendo ", "Moving ", "Moviendo ") + label(shelf, i)
-                            + Ui.tr(", posição ", ", position ", ", posición ") + (i + 1) + Ui.tr(" de ", " of ") + shelf.size();
+                    return Ui.trf("Moving {app}, position {n} of {total}",
+                            "app", label(shelf, i), "n", i + 1, "total", shelf.size());
                 }
                 return label(shelf, i);
             case Z_DRAWER: return label(drawerItems, i);
@@ -2568,7 +2567,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             }
             s.append(' ').append(Ui.trf("Next hours: {list}.", "list", list));
         }
-        if (wx.sunrise != 0) s.append(' ').append(Ui.trf("Sunrise {time}", "time", Ui.time(wx.sunrise))).append('.');
+        if (wx.sunrise != 0) s.append(' ').append(Ui.trf("talkback|Sunrise {time}", "time", Ui.time(wx.sunrise))).append('.');
         if (wx.sunset != 0) s.append(' ').append(Ui.trf("Sunset {time}", "time", Ui.time(wx.sunset))).append('.');
         return s.toString();
     }

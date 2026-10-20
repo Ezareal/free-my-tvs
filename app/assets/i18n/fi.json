@@ -52,6 +52,7 @@
  "Mostly Clear": "Enimmäkseen selkeää",
  "Mostly Sunny": "Enimmäkseen aurinkoista",
  "Movies": "Elokuvat",
+ "Moving {app}, position {n} of {total}": "Siirretään {app}, paikka {n}/{total}",
  "NOTICES": "ILMOITUKSET",
  "Netflix button": "Netflix-painike",
  "Next hours: {list}.": "Seuraavat tunnit: {list}.",
@@ -116,10 +117,11 @@
  "Weather": "Sää",
  "Weather widget": "Säävidget",
  "YouTube button": "YouTube-painike",
+ "YouTube, Prime Video and Google Play: the TV itself controls those buttons.": "YouTube, Prime Video ja Google Play: TV ohjaa itse näitä painikkeita.",
  "Your TV's home screen and screensaver": "Television aloitusnäyttö ja näytönsäästäjä",
  "debugging is off on the TV (port 5555 closed)": "vianetsintä on pois päältä televisiossa (portti 5555 suljettu)",
  "debugging permission wasn't accepted on the TV": "vianetsintälupaa ei hyväksytty televisiossa",
- "format|EEEE, MMMM d": "cccc d. MMMM",
+ "format|EEEE, MMMM d": "EEEE d. MMMM",
  "format|h a": "H",
  "format|h:mm": "H.mm",
  "format|h:mm a": "H.mm",
@@ -143,6 +145,7 @@
  "prices from {ago}": "kurssit {ago}",
  "quotes|{ago}": "{ago}",
  "shelf|Off": "Ei",
+ "talkback|Sunrise {time}": "Aurinko nousee {time}",
  "the TV asked for TLS (wireless debugging); use USB debugging": "televisio pyysi TLS:ää (langaton vianetsintä); käytä USB-vianetsintää",
  "the TV rejected the app's key": "televisio hylkäsi sovelluksen avaimen",
  "the TV's ADB didn't respond": "television ADB ei vastannut",
@@ -161,5 +164,6 @@
  "{n} MB": "{n} Mt",
  "{n} h ago": "{n} h sitten",
  "{n} min ago": "{n} min sitten",
- "{n} ms": "{n} ms"
+ "{n} ms": "{n} ms",
+ "← → to move · OK to drop · Back to cancel": "← → siirrä · OK pudota · Takaisin peruuta"
 }

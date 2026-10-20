@@ -52,6 +52,7 @@
  "Mostly Clear": "Phần lớn quang đãng",
  "Mostly Sunny": "Phần lớn có nắng",
  "Movies": "Phim",
+ "Moving {app}, position {n} of {total}": "Đang di chuyển {app}, vị trí {n} trên {total}",
  "NOTICES": "THÔNG BÁO",
  "Netflix button": "Nút Netflix",
  "Next hours: {list}.": "Những giờ tới: {list}.",
@@ -116,6 +117,7 @@
  "Weather": "Thời tiết",
  "Weather widget": "Tiện ích thời tiết",
  "YouTube button": "Nút YouTube",
+ "YouTube, Prime Video and Google Play: the TV itself controls those buttons.": "YouTube, Prime Video và Google Play: TV tự điều khiển các nút này.",
  "Your TV's home screen and screensaver": "Màn hình chính và trình bảo vệ màn hình của TV",
  "debugging is off on the TV (port 5555 closed)": "gỡ lỗi đang tắt trên TV (cổng 5555 đóng)",
  "debugging permission wasn't accepted on the TV": "quyền gỡ lỗi chưa được chấp nhận trên TV",
@@ -143,6 +145,7 @@
  "prices from {ago}": "giá từ {ago}",
  "quotes|{ago}": "{ago}",
  "shelf|Off": "Không",
+ "talkback|Sunrise {time}": "Bình minh {time}",
  "the TV asked for TLS (wireless debugging); use USB debugging": "TV yêu cầu TLS (gỡ lỗi không dây); hãy dùng gỡ lỗi USB",
  "the TV rejected the app's key": "TV đã từ chối khóa của ứng dụng",
  "the TV's ADB didn't respond": "ADB của TV không phản hồi",
@@ -161,5 +164,6 @@
  "{n} MB": "{n} MB",
  "{n} h ago": "{n} giờ trước",
  "{n} min ago": "{n} phút trước",
- "{n} ms": "{n} ms"
+ "{n} ms": "{n} ms",
+ "← → to move · OK to drop · Back to cancel": "← → di chuyển · OK đặt · Quay lại hủy"
 }

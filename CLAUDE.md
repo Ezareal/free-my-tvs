@@ -160,7 +160,8 @@ HDMI (Chromecast with Google TV, Google TV Streamer, onn 4K, NVIDIA Shield). Set
   drawn every frame is cached and made again when `Ui.generation` changes. After changing text, run
   `python3 tools/translate.py`: it rebuilds `en.json` from the code and lists what each language lacks; translate those
   in every catalogue (or `--fill` with `ANTHROPIC_API_KEY`, which sends only the strings), and keep placeholders as they
-  are. No right-to-left languages yet (the layout isn't mirrored); CJK and Devanagari use the system font.
+  are. Run `python3 tools/translate.py --check` to validate all catalogues without writing files.
+  No right-to-left languages yet (the layout isn't mirrored); CJK and Devanagari use the system font.
   Comments in English, short, only where the why isn't obvious.
 - Settings come from `config.properties` through the generated `out/gen/io/freemytv/Config.java` (never edit that).
   What the person changes on the TV (`Prefs`: Home Settings, Shelf, Remote Buttons) wins over those first values.

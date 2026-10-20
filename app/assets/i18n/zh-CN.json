@@ -52,6 +52,7 @@
  "Mostly Clear": "大部晴朗",
  "Mostly Sunny": "大部晴朗",
  "Movies": "电影",
+ "Moving {app}, position {n} of {total}": "正在移动{app}，第{n}个，共{total}个",
  "NOTICES": "通知",
  "Netflix button": "Netflix 键",
  "Next hours: {list}.": "未来几小时：{list}。",
@@ -116,6 +117,7 @@
  "Weather": "天气",
  "Weather widget": "天气小组件",
  "YouTube button": "YouTube 键",
+ "YouTube, Prime Video and Google Play: the TV itself controls those buttons.": "YouTube、Prime Video 和 Google Play：这些按钮由电视本身控制。",
  "Your TV's home screen and screensaver": "电视的主屏幕和屏保",
  "debugging is off on the TV (port 5555 closed)": "电视上的调试已关闭（端口 5555 未开放）",
  "debugging permission wasn't accepted on the TV": "电视上未接受调试授权",
@@ -143,6 +145,7 @@
  "prices from {ago}": "{ago}的行情",
  "quotes|{ago}": "{ago}",
  "shelf|Off": "无",
+ "talkback|Sunrise {time}": "日出 {time}",
  "the TV asked for TLS (wireless debugging); use USB debugging": "电视要求 TLS（无线调试）；请使用 USB 调试",
  "the TV rejected the app's key": "电视拒绝了应用的密钥",
  "the TV's ADB didn't respond": "电视的 ADB 没有响应",
@@ -161,5 +164,6 @@
  "{n} MB": "{n} MB",
  "{n} h ago": "{n} 小时前",
  "{n} min ago": "{n} 分钟前",
- "{n} ms": "{n} 毫秒"
+ "{n} ms": "{n} 毫秒",
+ "← → to move · OK to drop · Back to cancel": "← → 移动 · OK 放置 · 返回 取消"
 }

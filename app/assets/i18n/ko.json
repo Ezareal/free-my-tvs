@@ -52,6 +52,7 @@
  "Mostly Clear": "대체로 맑음",
  "Mostly Sunny": "대체로 화창함",
  "Movies": "영화",
+ "Moving {app}, position {n} of {total}": "{app} 이동 중, 전체 {total}개 중 {n}번째",
  "NOTICES": "알림",
  "Netflix button": "Netflix 버튼",
  "Next hours: {list}.": "다음 시간: {list}.",
@@ -116,6 +117,7 @@
  "Weather": "날씨",
  "Weather widget": "날씨 위젯",
  "YouTube button": "YouTube 버튼",
+ "YouTube, Prime Video and Google Play: the TV itself controls those buttons.": "YouTube, Prime Video, Google Play 버튼은 TV에서 직접 제어합니다.",
  "Your TV's home screen and screensaver": "TV의 홈 화면과 화면 보호기",
  "debugging is off on the TV (port 5555 closed)": "TV에서 디버깅이 꺼져 있습니다(포트 5555 닫힘)",
  "debugging permission wasn't accepted on the TV": "TV에서 디버깅 권한이 허용되지 않았습니다",
@@ -143,6 +145,7 @@
  "prices from {ago}": "{ago} 시세",
  "quotes|{ago}": "{ago}",
  "shelf|Off": "없음",
+ "talkback|Sunrise {time}": "일출 {time}",
  "the TV asked for TLS (wireless debugging); use USB debugging": "TV가 TLS(무선 디버깅)를 요청했습니다. USB 디버깅을 사용하세요",
  "the TV rejected the app's key": "TV가 앱의 키를 거부했습니다",
  "the TV's ADB didn't respond": "TV의 ADB가 응답하지 않았습니다",
@@ -161,5 +164,6 @@
  "{n} MB": "{n}MB",
  "{n} h ago": "{n}시간 전",
  "{n} min ago": "{n}분 전",
- "{n} ms": "{n}ms"
+ "{n} ms": "{n}ms",
+ "← → to move · OK to drop · Back to cancel": "← → 이동 · OK 배치 · 뒤로 취소"
 }

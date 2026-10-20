@@ -112,16 +112,6 @@ final class Ui {
         return s != null ? s : plain;
     }
 
-    /** The older form, with the Portuguese first: the Portuguese now comes from the catalogue too. */
-    static String tr(String pt, String english) {
-        return tr(english);
-    }
-
-    /** The older form, with the Portuguese and the Spanish: both now come from the catalogues. */
-    static String tr(String pt, String english, String spanish) {
-        return tr(english);
-    }
-
     /** A pattern with named placeholders, filled from name/value pairs: trf("{n} min ago", "n", 12). */
     static String trf(String english, Object... nameValue) {
         String t = tr(english);
@@ -222,6 +212,7 @@ final class Ui {
         locale = localeOf(lang);
         plurals = PluralRules.forLocale(locale);
         language = lang;
+        DATE_PATTERNS.clear();
         generation++;
     }
 
@@ -343,14 +334,52 @@ final class Ui {
         return Math.max(0, Math.min(1, v));
     }
 
+    private static final Map<String, DatePattern> DATE_PATTERNS = new HashMap<>();
+
+    /**
+     * The catalogue's SimpleDateFormat pattern for a "format|..." key and its locale, checked once per language: a pattern
+     * SimpleDateFormat rejects falls back to the English one, so a bad catalogue can't crash the screens drawing the date.
+     */
+    static synchronized DatePattern datePattern(String key) {
+        DatePattern pattern = DATE_PATTERNS.get(key);
+        if (pattern == null) {
+            String text = tr(key);
+            Locale loc = locale();
+            try {
+                new SimpleDateFormat(text, loc);
+            } catch (IllegalArgumentException e) {
+                AppLog.w("i18n " + language + ": invalid date pattern for " + key);
+                text = key.substring("format|".length());
+                loc = Locale.US;
+            }
+            pattern = new DatePattern(text, loc);
+            DATE_PATTERNS.put(key, pattern);
+        }
+        return pattern;
+    }
+
+    static final class DatePattern {
+        final String text;
+        final Locale locale;
+
+        DatePattern(String text, Locale locale) {
+            this.text = text;
+            this.locale = locale;
+        }
+
+        String format(long at) {
+            return new SimpleDateFormat(text, locale).format(new Date(at));
+        }
+    }
+
     /** "21:47" (in English, "9:47", like the iPhone in the US). */
     static String clock(long now) {
-        return new SimpleDateFormat(Ui.tr("format|h:mm"), locale()).format(new Date(now));
+        return Ui.datePattern("format|h:mm").format(now);
     }
 
     /** "5:21" (sunrise and sunset; in English, "5:21 AM"). */
     static String time(long at) {
-        return once("time", at, () -> new SimpleDateFormat(Ui.tr("format|h:mm a"), locale()).format(new Date(at)));
+        return once("time", at, () -> Ui.datePattern("format|h:mm a").format(at));
     }
 
     private static final HashMap<String, String> FORMATTED = new HashMap<>();
@@ -374,7 +403,7 @@ final class Ui {
 
     /** "domingo, 18 de outubro" (lowercase, like the iPhone in Portuguese); "Sunday, October 18" in English; "Sonntag, 18. Oktober". */
     static String date(long now) {
-        return new SimpleDateFormat(Ui.tr("format|EEEE, MMMM d"), locale()).format(new Date(now));
+        return Ui.datePattern("format|EEEE, MMMM d").format(now);
     }
 
     /** Spinning arc (work in progress). */

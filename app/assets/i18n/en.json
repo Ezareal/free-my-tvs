@@ -52,6 +52,7 @@
  "Mostly Clear": "Mostly Clear",
  "Mostly Sunny": "Mostly Sunny",
  "Movies": "Movies",
+ "Moving {app}, position {n} of {total}": "Moving {app}, position {n} of {total}",
  "NOTICES": "NOTICES",
  "Netflix button": "Netflix button",
  "Next hours: {list}.": "Next hours: {list}.",
@@ -116,6 +117,7 @@
  "Weather": "Weather",
  "Weather widget": "Weather widget",
  "YouTube button": "YouTube button",
+ "YouTube, Prime Video and Google Play: the TV itself controls those buttons.": "YouTube, Prime Video and Google Play: the TV itself controls those buttons.",
  "Your TV's home screen and screensaver": "Your TV's home screen and screensaver",
  "debugging is off on the TV (port 5555 closed)": "debugging is off on the TV (port 5555 closed)",
  "debugging permission wasn't accepted on the TV": "debugging permission wasn't accepted on the TV",
@@ -143,6 +145,7 @@
  "prices from {ago}": "prices from {ago}",
  "quotes|{ago}": "{ago}",
  "shelf|Off": "Off",
+ "talkback|Sunrise {time}": "Sunrise {time}",
  "the TV asked for TLS (wireless debugging); use USB debugging": "the TV asked for TLS (wireless debugging); use USB debugging",
  "the TV rejected the app's key": "the TV rejected the app's key",
  "the TV's ADB didn't respond": "the TV's ADB didn't respond",
@@ -161,5 +164,6 @@
  "{n} MB": "{n} MB",
  "{n} h ago": "{n} h ago",
  "{n} min ago": "{n} min ago",
- "{n} ms": "{n} ms"
+ "{n} ms": "{n} ms",
+ "← → to move · OK to drop · Back to cancel": "← → to move · OK to drop · Back to cancel"
 }

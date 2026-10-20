@@ -52,6 +52,7 @@
  "Mostly Clear": "おおむね晴れ",
  "Mostly Sunny": "おおむね晴れ",
  "Movies": "映画",
+ "Moving {app}, position {n} of {total}": "{app}を移動中、{total}個中{n}番目",
  "NOTICES": "お知らせ",
  "Netflix button": "Netflixボタン",
  "Next hours: {list}.": "この先の時間: {list}。",
@@ -116,6 +117,7 @@
  "Weather": "天気",
  "Weather widget": "天気ウィジェット",
  "YouTube button": "YouTubeボタン",
+ "YouTube, Prime Video and Google Play: the TV itself controls those buttons.": "YouTube、Prime Video、Google Playのボタンはテレビ本体が制御します。",
  "Your TV's home screen and screensaver": "テレビのホーム画面とスクリーンセーバー",
  "debugging is off on the TV (port 5555 closed)": "テレビのデバッグがオフです（ポート 5555 が閉じています）",
  "debugging permission wasn't accepted on the TV": "テレビでデバッグの許可が承認されませんでした",
@@ -143,6 +145,7 @@
  "prices from {ago}": "{ago}の相場",
  "quotes|{ago}": "{ago}",
  "shelf|Off": "なし",
+ "talkback|Sunrise {time}": "日の出 {time}",
  "the TV asked for TLS (wireless debugging); use USB debugging": "テレビが TLS（ワイヤレス デバッグ）を求めました。USB デバッグを使ってください",
  "the TV rejected the app's key": "テレビがアプリの鍵を拒否しました",
  "the TV's ADB didn't respond": "テレビの ADB が応答しませんでした",
@@ -161,5 +164,6 @@
  "{n} MB": "{n} MB",
  "{n} h ago": "{n}時間前",
  "{n} min ago": "{n}分前",
- "{n} ms": "{n} ms"
+ "{n} ms": "{n} ms",
+ "← → to move · OK to drop · Back to cancel": "← → 移動 · OK 配置 · 戻る キャンセル"
 }
