@@ -37,13 +37,14 @@ final class Frost {
     }
 
     private static int color(float u, float v, float tt, float dim, float[] c, float aspect) {
-        float px = u * aspect * 1.7f, py = v * 1.7f;
-        float qx = fbm2(px, py + tt);
-        float qy = fbm2(px + 5.2f - tt, py + 1.3f - tt);
-        float n = low(px + 2 * qx + 1.7f + tt, py + 2 * qy + 9.2f);
+        // The same three drifting lights as `aurora` in Shaders (time scaled as the shader does: t * 0.05, not 0.035).
+        float px = u * aspect, py = v, a = tt * (0.05f / 0.035f);
+        float w1 = glow(px - aspect * (0.26f + 0.12f * (float) Math.sin(a)), py - (0.55f + 0.12f * (float) Math.cos(a * 0.8f)), 2.0f);
+        float w2 = glow(px - aspect * (0.72f + 0.14f * (float) Math.cos(a * 0.7f + 1)), py - (0.45f + 0.14f * (float) Math.sin(a * 0.9f + 2)), 2.4f);
+        float w3 = glow(px - aspect * (0.50f + 0.18f * (float) Math.sin(a * 0.5f + 4)), py - (0.32f + 0.10f * (float) Math.cos(a * 0.6f + 1)), 3.0f);
         float band = smoothstep(0.02f, 0.38f, v) * (1 - smoothstep(0.5f, 0.92f, v));
-        float curtain = smoothstep(0.35f, 0.85f, n) * (0.35f + 0.65f * band);
-        float m = smoothstep(0.15f, 0.85f, n), k = curtain * 0.85f;
+        float m = clamp01(w1 * 0.95f + w3 * 0.6f);
+        float k = clamp01(w2 * 0.9f + w3 * 0.25f) * (0.35f + 0.65f * band) * 0.85f;
         float vig = 1 - 0.38f * smoothstep(0.35f, 1, v) - 0.2f * smoothstep(0.45f, 0.95f, Math.abs(u - 0.5f) * 1.6f);
         float scrim = 1 - 0.22f * (1 - smoothstep(0, 0.42f, v));
         float gain = vig * scrim * (1 - dim);
@@ -57,37 +58,16 @@ final class Frost {
         return out;
     }
 
-    private static float hash(float x, float y) {
-        x = fract(x * 123.34f);
-        y = fract(y * 456.21f);
-        float d = x * (x + 45.32f) + y * (y + 45.32f);
-        return fract((x + d) * (y + d));
+    private static float glow(float dx, float dy, float k) {
+        return (float) Math.exp(-(dx * dx + dy * dy) * k);
     }
 
-    private static float noise(float x, float y) {
-        float ix = (float) Math.floor(x), iy = (float) Math.floor(y);
-        float fx = x - ix, fy = y - iy;
-        float ux = fx * fx * (3 - 2 * fx), uy = fy * fy * (3 - 2 * fy);
-        float a = hash(ix, iy), b = hash(ix + 1, iy), c = hash(ix, iy + 1), d = hash(ix + 1, iy + 1);
-        float top = a + (b - a) * ux, bottom = c + (d - c) * ux;
-        return top + (bottom - top) * uy;
-    }
-
-    private static float fbm2(float x, float y) {
-        return 0.6f * noise(x, y) + 0.3f * noise(x * 2.03f + 17, y * 2.03f + 17);
-    }
-
-    /** The first 2 octaves + the mean of the rest (the shader's fbm without detail). */
-    private static float low(float x, float y) {
-        return 0.5f * noise(x, y) + 0.25f * noise(x * 2.03f + 17, y * 2.03f + 17) + 0.09375f;
+    private static float clamp01(float x) {
+        return Math.max(0, Math.min(1, x));
     }
 
     private static float smoothstep(float e0, float e1, float x) {
         float t = Math.max(0, Math.min(1, (x - e0) / (e1 - e0)));
         return t * t * (3 - 2 * t);
-    }
-
-    private static float fract(float v) {
-        return v - (float) Math.floor(v);
     }
 }

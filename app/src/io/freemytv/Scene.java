@@ -31,6 +31,9 @@ final class Scene {
     private final Paint flatRim = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint fallback = new Paint();
     private final RenderNode auroraNode = new RenderNode("aurora");
+    // The layer is drawn smaller and scaled up: with bilinear filtering the soft shapes stay soft instead of stepping.
+    private final Paint layerPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
+    private int divisor = 4;
     private int w = 1, h = 1, lw = 1, lh = 1;
     private float speed = 1, baseDim, dim, time;
     private boolean auroraDirty = true, imageFrost, imageGlass;
@@ -51,7 +54,7 @@ final class Scene {
             glass = null;
             liquid = null;
         }
-        auroraNode.setUseCompositingLayer(true, null);
+        auroraNode.setUseCompositingLayer(true, layerPaint);
         flatRim.setStyle(Paint.Style.STROKE);
         flatRim.setColor(0x33FFFFFF);
         flatRim.setStrokeWidth(1.5f);
@@ -60,8 +63,8 @@ final class Scene {
     void setSize(int width, int height) {
         w = Math.max(1, width);
         h = Math.max(1, height);
-        lw = Math.max(1, Math.round(w / 4f));
-        lh = Math.max(1, Math.round(h / 4f));
+        lw = Math.max(1, Math.round(w / (float) divisor));
+        lh = Math.max(1, Math.round(h / (float) divisor));
         auroraNode.setPosition(0, 0, lw, lh);
         if (aurora != null) {
             aurora.setFloatUniform("res", w, h);
@@ -70,6 +73,12 @@ final class Scene {
             if (imageGlass) liquid.setFloatUniform("imageScale", (float) Backdrop.GW / w, (float) Backdrop.GH / h);
         }
         push();
+    }
+
+    /** Size of the aurora layer as a fraction of the screen (4 = a quarter; smaller is sharper and costs more GPU). */
+    void setLayerDivisor(int d) {
+        divisor = Math.max(1, d);
+        if (w > 1) setSize(w, h);
     }
 
     /** speed: 1 on the home screen, less on the screensaver; dim: how much to darken (0 to 1). */

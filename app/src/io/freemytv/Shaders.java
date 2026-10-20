@@ -23,42 +23,23 @@ final class Shaders {
         "  p += dot(p, p + 45.32);\n" +
         "  return fract(p.x * p.y);\n" +
         "}\n" +
-        "float noise(float2 p) {\n" +
-        "  float2 i = floor(p);\n" +
-        "  float2 f = fract(p);\n" +
-        "  float2 u = f * f * (3.0 - 2.0 * f);\n" +
-        "  float a = hash(i);\n" +
-        "  float b = hash(i + float2(1.0, 0.0));\n" +
-        "  float c = hash(i + float2(0.0, 1.0));\n" +
-        "  float d = hash(i + float2(1.0, 1.0));\n" +
-        "  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);\n" +
-        "}\n" +
-        "float fbm2(float2 p) {\n" +
-        "  return 0.6 * noise(p) + 0.3 * noise(p * 2.03 + 17.0);\n" +
-        "}\n" +
-        // With detail: 4 octaves. Without detail (frosted glass): only the first 2 + the mean of the rest, the same
-        // image run through a low-pass filter.
-        "float fbm(float2 p, float detail) {\n" +
-        "  float v = 0.5 * noise(p);\n" +
-        "  p = p * 2.03 + 17.0;\n" +
-        "  v += 0.25 * noise(p);\n" +
-        "  if (detail < 0.5) { return v + 0.09375; }\n" +
-        "  p = p * 2.03 + 17.0;\n" +
-        "  v += 0.125 * noise(p);\n" +
-        "  p = p * 2.03 + 17.0;\n" +
-        "  return v + 0.0625 * noise(p);\n" +
-        "}\n" +
-        // Aurora: a slowly flowing domain warp. The light bands sit in the middle of the sky; the top (clock and
-        // prices) and the bottom (dock) are darker so white text stands out.
+        // Aurora: three big soft lights drifting slowly (no noise: value noise showed its grid as straight lines). The
+        // light sits in the middle of the sky; the top (clock and prices) and the bottom (dock) are darker so white
+        // text stands out. Frost.java does the same math on the CPU for the glass.
         "half3 aurora(float2 uv, float detail) {\n" +
-        "  float2 p = float2(uv.x * (res.x / res.y), uv.y) * 1.7;\n" +
-        "  float tt = t * 0.035 * speed;\n" +
-        "  float2 q = float2(fbm2(p + float2(0.0, tt)), fbm2(p + float2(5.2, 1.3) - tt));\n" +
-        "  float n = fbm(p + 2.0 * q + float2(1.7 + tt, 9.2), detail);\n" +
+        "  float asp = res.x / res.y;\n" +
+        "  float2 p = float2(uv.x * asp, uv.y);\n" +
+        "  float tt = t * 0.05 * speed;\n" +
+        "  float2 b1 = float2(asp * (0.26 + 0.12 * sin(tt)), 0.55 + 0.12 * cos(tt * 0.8));\n" +
+        "  float2 b2 = float2(asp * (0.72 + 0.14 * cos(tt * 0.7 + 1.0)), 0.45 + 0.14 * sin(tt * 0.9 + 2.0));\n" +
+        "  float2 b3 = float2(asp * (0.50 + 0.18 * sin(tt * 0.5 + 4.0)), 0.32 + 0.10 * cos(tt * 0.6 + 1.0));\n" +
+        "  float2 d1 = p - b1; float2 d2 = p - b2; float2 d3 = p - b3;\n" +
+        "  float w1 = exp(-dot(d1, d1) * 2.0);\n" +
+        "  float w2 = exp(-dot(d2, d2) * 2.4);\n" +
+        "  float w3 = exp(-dot(d3, d3) * 3.0);\n" +
         "  float band = smoothstep(0.02, 0.38, uv.y) * (1.0 - smoothstep(0.5, 0.92, uv.y));\n" +
-        "  float curtain = smoothstep(0.35, 0.85, n) * (0.35 + 0.65 * band);\n" +
-        "  half3 col = mix(c0, c1, smoothstep(0.15, 0.85, n));\n" +
-        "  col = mix(col, c2, curtain * 0.85);\n" +
+        "  half3 col = mix(c0, c1, clamp(w1 * 0.95 + w3 * 0.6, 0.0, 1.0));\n" +
+        "  col = mix(col, c2, clamp(w2 * 0.9 + w3 * 0.25, 0.0, 1.0) * (0.35 + 0.65 * band) * 0.85);\n" +
         "  float vig = 1.0 - 0.38 * smoothstep(0.35, 1.0, uv.y) - 0.2 * smoothstep(0.45, 0.95, abs(uv.x - 0.5) * 1.6);\n" +
         "  float scrim = 1.0 - 0.22 * (1.0 - smoothstep(0.0, 0.42, uv.y));\n" +
         "  return col * vig * scrim * (1.0 - dim);\n" +

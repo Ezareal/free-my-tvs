@@ -135,6 +135,7 @@ public class SettingsActivity extends Activity {
             for (int i = 0; i < pop.length; i++) pop[i] = new Spring(0.28f, 0.85f, 0);
             HomeData.Weather wx = HomeData.get(a).weather;
             Shaders.sky(scene.palette, System.currentTimeMillis(), wx.sunrise, wx.sunset);
+            scene.setLayerDivisor(2);   // half resolution (the home screen uses a quarter), smoothed: full resolution made frames take 100 ms on the TV
             scene.setMotion(0.5f, 0.2f);
             scene.applyPalette();
             setFocusable(true);
