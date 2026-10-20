@@ -43,6 +43,7 @@ import java.util.Set;
 public class SettingsActivity extends Activity {
     private SettingsView view;
     private DreamView preview;   // "Screensaver": the screensaver right here, without changing the system setting
+    private boolean previewOnly;   // opened straight into the preview (the home screen's button): closing it leaves
 
     @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -58,6 +59,7 @@ public class SettingsActivity extends Activity {
         // From ADB: am start -n io.freemytv/.SettingsActivity --ez screensaver true (straight to the preview).
         if (preview == null && getIntent().getBooleanExtra("screensaver", false)) {
             getIntent().removeExtra("screensaver");
+            previewOnly = true;
             view.pause();
             showPreview();
         }
@@ -107,10 +109,14 @@ public class SettingsActivity extends Activity {
         preview = null;
         setContentView(view);
         view.resume();
+        if (previewOnly) {
+            previewOnly = false;
+            finish();
+        }
     }
 
     static final class SettingsView extends View implements Choreographer.FrameCallback {
-        private static final int MAIN = 0, HOME_CHOICE = 1, HOME_SETTINGS = 2, REMOTE_KEYS = 3, PICKER = 4, SHELF_EDIT = 5, RECS = 7;
+        private static final int MAIN = 0, HOME_CHOICE = 1, HOME_SETTINGS = 2, REMOTE_KEYS = 3, PICKER = 4, SHELF_EDIT = 5, SAVER = 6, RECS = 7;
         private static final float LIST_ROW_H = 68, LIST_ROW_GAP = 6;
         private static final int PICK_VISIBLE = 9;
         private static final float LIST_X = 1000, LIST_R = 1824, LIST_TOP = 186, ROW_H = 74, ROW_GAP = 8, CHOICE_H = 104;
@@ -325,6 +331,7 @@ public class SettingsActivity extends Activity {
                 case HOME_SETTINGS: return settingLabels().length;
                 case PICKER: return Math.min(PICK_VISIBLE, pickLabels.size());
                 case SHELF_EDIT: return Math.min(PICK_VISIBLE, shelfRows.size());
+                case SAVER: return 2;
                 case RECS: return 6;
                 default: return Prefs.KEYS.length;
             }
@@ -354,7 +361,7 @@ public class SettingsActivity extends Activity {
             c.drawText(Ui.tr("Início e tela de descanso da TV", "Your TV's home screen and screensaver"), cx, 660 * k, subtitle);
             c.drawText(versionName(getContext()), cx, 704 * k, version);
 
-            if (screen == MAIN) drawMain(c, seconds); else if (screen == HOME_CHOICE) drawChoice(c); else if (screen == PICKER) drawPicker(c); else if (screen == SHELF_EDIT) drawShelfEditor(c); else drawList(c);
+            if (screen == MAIN) drawMain(c, seconds); else if (screen == HOME_CHOICE) drawChoice(c); else if (screen == PICKER) drawPicker(c); else if (screen == SHELF_EDIT) drawShelfEditor(c); else if (screen == SAVER) drawSaver(c); else drawList(c);
         }
 
         private void drawMain(Canvas c, float seconds) {
@@ -364,7 +371,7 @@ public class SettingsActivity extends Activity {
             String[] labels = {Ui.tr("Início", "Home Screen"), Ui.tr("Tela de Descanso", "Screensaver"),
                     Ui.tr("Ajustes do Início", "Home Settings"), Ui.tr("Recomendações", "Recommendations"), Ui.tr("Prateleira", "Shelf"),
                     Ui.tr("Botões do Controle", "Remote Buttons"), Ui.tr("Ajustes da TV", "TV Settings")};
-            String[] values = {working ? "" : mode, Ui.tr("Ver agora", "Preview"), "", "", "", "", ""};
+            String[] values = {working ? "" : mode, dreamDelayLabel(), "", "", "", "", ""};
             for (int i = 0; i < 7; i++) {
                 float y = (LIST_TOP + i * (ROW_H + ROW_GAP)) * k;
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + ROW_H * k);
@@ -572,6 +579,9 @@ public class SettingsActivity extends Activity {
                     } else if (down && (screen == HOME_SETTINGS || screen == RECS)) {
                         adjust(e.getKeyCode() == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1);
                         invalidate();
+                    } else if (down && screen == SAVER && focus == 1) {
+                        changeDreamDelay(e.getKeyCode() == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1);
+                        invalidate();
                     }
                     return true;
                 case KeyEvent.KEYCODE_DPAD_CENTER:
@@ -594,7 +604,7 @@ public class SettingsActivity extends Activity {
                                 focus = pickFor - 1;
                                 screen = REMOTE_KEYS;
                             } else {
-                                focus = screen == HOME_SETTINGS ? 2 : screen == RECS ? 3 : screen == SHELF_EDIT ? 4 : screen == REMOTE_KEYS ? 5 : 0;
+                                focus = screen == SAVER ? 1 : screen == HOME_SETTINGS ? 2 : screen == RECS ? 3 : screen == SHELF_EDIT ? 4 : screen == REMOTE_KEYS ? 5 : 0;
                                 screen = MAIN;
                             }
                         }
@@ -725,6 +735,62 @@ public class SettingsActivity extends Activity {
                     break;
             }
             HomeData.get(getContext()).settingsChanged();
+        }
+
+        // MARK: - Screensaver delay (the TV's own "screen off" timeout: the screensaver starts when it runs out)
+
+        private static final int[] DREAM_DELAYS = {60_000, 300_000, 600_000, 900_000, 1_800_000, 3_600_000};
+        private int dreamDelay = readDreamDelay();
+
+        private int readDreamDelay() {
+            return Settings.System.getInt(getContext().getContentResolver(), "screen_off_timeout", 600_000);
+        }
+
+        private String dreamDelayLabel() {
+            int minutes = Math.round(dreamDelay / 60_000f);
+            return minutes >= 60 && minutes % 60 == 0 ? (minutes / 60) + " h" : minutes + " min";
+        }
+
+        /** Next or previous delay in the list; the TV's own ADB writes it (the app can't change system settings itself). */
+        private void changeDreamDelay(int dir) {
+            int at = 0;
+            for (int i = 0; i < DREAM_DELAYS.length; i++) if (DREAM_DELAYS[i] <= dreamDelay) at = i;
+            if (DREAM_DELAYS[at] != dreamDelay && dir > 0) at--;   // between two: → goes to the next one up
+            int next = Math.max(0, Math.min(DREAM_DELAYS.length - 1, at + dir));
+            final int ms = DREAM_DELAYS[next];
+            if (ms == dreamDelay) return;
+            dreamDelay = ms;
+            final Context app = getContext().getApplicationContext();
+            new Thread(() -> {
+                try (Adb adb = Adb.connect(app, 10_000, null)) {
+                    adb.shell("settings put system screen_off_timeout " + ms);
+                    AppLog.w("screensaver delay " + ms + " ms");
+                } catch (Exception e) {
+                    AppLog.w("screensaver delay failed: " + e);
+                }
+            }, "free-my-tv-dream-delay").start();
+        }
+
+        private void drawSaver(Canvas c) {
+            String[] labels = {Ui.tr("Ver agora", "Preview"), Ui.tr("Aparecer após", "Start after")};
+            String[] values = {"", dreamDelayLabel()};
+            Paint heading = Ui.text(Ui.displaySemibold, 34 * k, 0xFFFFFFFF);
+            c.drawText(Ui.tr("Tela de Descanso", "Screensaver"), LIST_X * k + 30 * k, (LIST_TOP - 24) * k, heading);
+            for (int i = 0; i < 2; i++) {
+                float y = (LIST_TOP + 20 + i * (ROW_H + ROW_GAP)) * k;
+                rowRect.set(LIST_X * k, y, LIST_R * k, y + ROW_H * k);
+                float f = drawRowBackground(c, i);
+                rowLabel.setColor(blend(0xF2FFFFFF, INK, f));
+                rowValue.setColor(blend(0xB3FFFFFF, 0xB31C1C1E, f));
+                float base = rowRect.centerY() + Ui.halfCap(rowLabel);
+                c.drawText(labels[i], rowRect.left + 30 * k, base, rowLabel);
+                c.drawText(values[i], rowRect.right - 30 * k, base, rowValue);
+            }
+            Paint hint = Ui.text(Ui.regular, 23 * k, 0x8CFFFFFF);
+            float hy = (LIST_TOP + 20 + 2 * (ROW_H + ROW_GAP) + 40) * k;
+            c.drawText(Ui.tr("Com a TV parada, a tela de descanso entra depois desse tempo.", "With the TV idle, the screensaver starts after this time."),
+                    LIST_X * k + 30 * k, hy, hint);
+            c.drawText(Ui.tr("OK ou as setas mudam o tempo.", "OK or the arrows change the time."), LIST_X * k + 30 * k, hy + 38 * k, hint);
         }
 
         private boolean scrolling() {
@@ -944,6 +1010,15 @@ public class SettingsActivity extends Activity {
                 Prefs.setKeyApp(Prefs.KEYS[pickFor - 1], appPkgs.get(at));
                 focus = pickFor - 1;
                 screen = REMOTE_KEYS;
+            } else if (screen == SAVER) {
+                if (focus == 0) {
+                    pause();
+                    activity.showPreview();
+                } else {
+                    changeDreamDelay(1);
+                    invalidate();
+                    return;
+                }
             } else if (screen == SHELF_EDIT) {
                 toggleShelfApp();
                 invalidate();
@@ -959,8 +1034,9 @@ public class SettingsActivity extends Activity {
                 screen = HOME_CHOICE;
                 focus = freeActive() ? 0 : 1;
             } else if (focus == 1) {
-                pause();
-                activity.showPreview();
+                dreamDelay = readDreamDelay();
+                screen = SAVER;
+                focus = 0;
             } else if (focus == 2) {
                 screen = HOME_SETTINGS;
                 focus = 0;
