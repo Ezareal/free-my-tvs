@@ -189,7 +189,10 @@ final class Prefs {
             String line;
             while ((line = r.readLine()) != null) {
                 if (line.startsWith("tv=")) tvApp = line.substring(3);
-                else if (line.startsWith("tvkey=")) tvKey = number(line.substring(6));
+                else if (line.startsWith("tvkey=")) {
+                    int key = number(line.substring(6));
+                    tvKey = RemoteKeys.teachable(key) ? key : 0;   // vendor codes only, whatever the file says
+                }
                 for (int i = 0; i < KEYS.length; i++) {
                     String prefix = KEYS[i] + "=";
                     if (line.startsWith(prefix)) keyApps[i] = line.substring(prefix.length());
@@ -234,7 +237,8 @@ final class Prefs {
 
     /** Other brands' TV button: Android's own key, or the taught one. */
     static boolean isTvKey(int keyCode) {
-        return keyCode == android.view.KeyEvent.KEYCODE_TV || (keyCode != 0 && keyCode == tvKey());
+        // A vendor code is checked before the choice is read: Android's other keys never get that far.
+        return keyCode == KeyEvent.KEYCODE_TV || (RemoteKeys.teachable(keyCode) && keyCode == tvKey());
     }
 
     /** Goes up each time the choices are read again from the file (another process changed them). */
