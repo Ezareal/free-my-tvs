@@ -110,7 +110,7 @@ public class SettingsActivity extends Activity {
     }
 
     static final class SettingsView extends View implements Choreographer.FrameCallback {
-        private static final int MAIN = 0, HOME_CHOICE = 1, HOME_SETTINGS = 2, REMOTE_KEYS = 3, PICKER = 4, SHELF_EDIT = 5;
+        private static final int MAIN = 0, HOME_CHOICE = 1, HOME_SETTINGS = 2, REMOTE_KEYS = 3, PICKER = 4, SHELF_EDIT = 5, RECS = 7;
         private static final float LIST_ROW_H = 68, LIST_ROW_GAP = 6;
         private static final int PICK_VISIBLE = 9;
         private static final float LIST_X = 1000, LIST_R = 1824, LIST_TOP = 186, ROW_H = 74, ROW_GAP = 8, CHOICE_H = 104;
@@ -320,11 +320,12 @@ public class SettingsActivity extends Activity {
 
         private int rowCount() {
             switch (screen) {
-                case MAIN: return 6;
+                case MAIN: return 7;
                 case HOME_CHOICE: return 2;
                 case HOME_SETTINGS: return settingLabels().length;
                 case PICKER: return Math.min(PICK_VISIBLE, pickLabels.size());
                 case SHELF_EDIT: return Math.min(PICK_VISIBLE, shelfRows.size());
+                case RECS: return 6;
                 default: return Prefs.KEYS.length;
             }
         }
@@ -361,10 +362,10 @@ public class SettingsActivity extends Activity {
             String busyText = state.optString("busy");
             String mode = freeActive() ? "Free My TV" : Ui.tr("Original", "Original");
             String[] labels = {Ui.tr("Início", "Home Screen"), Ui.tr("Tela de Descanso", "Screensaver"),
-                    Ui.tr("Ajustes do Início", "Home Settings"), Ui.tr("Prateleira", "Shelf"),
+                    Ui.tr("Ajustes do Início", "Home Settings"), Ui.tr("Recomendações", "Recommendations"), Ui.tr("Prateleira", "Shelf"),
                     Ui.tr("Botões do Controle", "Remote Buttons"), Ui.tr("Ajustes da TV", "TV Settings")};
-            String[] values = {working ? "" : mode, Ui.tr("Ver agora", "Preview"), "", "", "", ""};
-            for (int i = 0; i < 6; i++) {
+            String[] values = {working ? "" : mode, Ui.tr("Ver agora", "Preview"), "", "", "", "", ""};
+            for (int i = 0; i < 7; i++) {
                 float y = (LIST_TOP + i * (ROW_H + ROW_GAP)) * k;
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + ROW_H * k);
                 float f = drawRowBackground(c, i);
@@ -391,7 +392,7 @@ public class SettingsActivity extends Activity {
                 }
             }
 
-            float y = (LIST_TOP + 6 * (ROW_H + ROW_GAP) + 20) * k;
+            float y = (LIST_TOP + 7 * (ROW_H + ROW_GAP) + 10) * k;
             String error = state.optString("error");
             if (working && (busyText.contains("Permitir") || busyText.contains("Allow"))) {
                 c.drawText(Ui.tr("Na TV: marque “Sempre permitir” e aperte OK.", "On the TV: tick “Always allow” and press OK."),
@@ -412,8 +413,7 @@ public class SettingsActivity extends Activity {
                 y += errorLayout.getLineBaseline(errorLayout.getLineCount() - 1) - errorLayout.getLineBaseline(0) + 46 * k;
             }
             y = drawComparison(c, y);
-            y = drawRecs(c, y + 26 * k);
-            drawNotices(c, y + 40 * k);
+            drawNotices(c, y + 30 * k);
         }
 
         /** Home screen picks: status, and the credit TMDB asks for. */
@@ -423,10 +423,11 @@ public class SettingsActivity extends Activity {
             String line;
             String error = recs.optString("error");
             int count = recs.optInt("count");
-            if (!hasKey) line = Ui.tr("Sem chave do TMDB: veja o README (config.properties).", "No TMDB key: see the README (config.properties).");
+            if (!Prefs.recs()) line = Ui.tr("Desligadas.", "Off.");
+            else if (!hasKey) line = Ui.tr("Sem chave do TMDB: veja o README (config.properties).", "No TMDB key: see the README (config.properties).");
             else if (!error.isEmpty()) line = Ui.tr("Erro: ", "Error: ") + error + ".";
-            else if (count > 0) line = Ui.tr("Ligadas · " + count + " títulos nos apps da TV, 3 novos a cada hora.",
-                    "On · " + count + " titles from the TV's apps, 3 new ones every hour.");
+            else if (count > 0) line = Ui.tr("Ligadas · " + count + " títulos nos apps da TV, " + Prefs.recsCount() + " novos a cada " + minutesLabel(Prefs.recsEveryMin()) + ".",
+                    "On · " + count + " titles from the TV's apps, " + Prefs.recsCount() + " new ones every " + minutesLabel(Prefs.recsEveryMin()) + ".");
             else line = Ui.tr("Buscando os títulos…", "Fetching titles…");
             c.drawText(TextUtils.ellipsize(line, notice, 790 * k, TextUtils.TruncateAt.END).toString(), x, y + 42 * k, notice);
             version.setTextAlign(Paint.Align.LEFT);
@@ -481,7 +482,7 @@ public class SettingsActivity extends Activity {
             c.drawText(Ui.tr("AVISOS", "NOTICES"), x, y, header);
             JSONArray notices = state.optJSONArray("notices");
             int shown = 0;
-            for (int i = 0; notices != null && i < notices.length() && shown < 2; i++) {
+            for (int i = 0; notices != null && i < notices.length() && shown < 1; i++) {
                 JSONObject o = notices.optJSONObject(i);
                 if (o == null) continue;
                 String line = ago(o.optLong("at")) + " · " + o.optString("text");
@@ -568,7 +569,7 @@ public class SettingsActivity extends Activity {
                     if (down && screen == SHELF_EDIT) {
                         moveShelfApp(e.getKeyCode() == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1);
                         invalidate();
-                    } else if (down && screen == HOME_SETTINGS) {
+                    } else if (down && (screen == HOME_SETTINGS || screen == RECS)) {
                         adjust(e.getKeyCode() == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1);
                         invalidate();
                     }
@@ -593,7 +594,7 @@ public class SettingsActivity extends Activity {
                                 focus = pickFor - 1;
                                 screen = REMOTE_KEYS;
                             } else {
-                                focus = screen == HOME_SETTINGS ? 2 : screen == SHELF_EDIT ? 3 : screen == REMOTE_KEYS ? 4 : 0;
+                                focus = screen == HOME_SETTINGS ? 2 : screen == RECS ? 3 : screen == SHELF_EDIT ? 4 : screen == REMOTE_KEYS ? 5 : 0;
                                 screen = MAIN;
                             }
                         }
@@ -689,6 +690,10 @@ public class SettingsActivity extends Activity {
 
         /** Changes the focused row's value one step (OK and → go forward, ← goes back). */
         private void adjust(int dir) {
+            if (screen == RECS) {
+                adjustRecs(dir);
+                return;
+            }
             if (screen == REMOTE_KEYS) {
                 int n = appPkgs.size();
                 int at = appPkgs.indexOf(Prefs.keyApp(Prefs.KEYS[focus]));
@@ -728,6 +733,52 @@ public class SettingsActivity extends Activity {
 
         private int listSize() {
             return screen == SHELF_EDIT ? shelfRows.size() : pickLabels.size();
+        }
+
+        // MARK: - Recommendations
+
+        private static final int[] REC_COUNTS = {1, 2, 3}, REC_EVERY = {15, 30, 60, 120, 360}, REC_LIST = {3, 6, 12, 24}, REC_POOL = {12, 24, 36, 48};
+        private static final String[] REC_KINDS = {"all", "movie", "tv"};
+
+        private String[] recsLabels() {
+            return new String[] {Ui.tr("Recomendações", "Recommendations"), Ui.tr("Títulos por vez", "Titles at a time"),
+                    Ui.tr("Trocar a cada", "Change every"), Ui.tr("Tipo de título", "Kind of title"),
+                    Ui.tr("Atualizar a lista a cada", "Refresh the list every"), Ui.tr("Tamanho da lista", "List size")};
+        }
+
+        private String[] recsValues() {
+            String kinds = Prefs.recsKinds();
+            return new String[] {onOff(Prefs.recs()), String.valueOf(Prefs.recsCount()), minutesLabel(Prefs.recsEveryMin()),
+                    kinds.equals("movie") ? Ui.tr("Só filmes", "Movies only") : kinds.equals("tv") ? Ui.tr("Só séries", "Shows only") : Ui.tr("Filmes e séries", "Movies and shows"),
+                    minutesLabel(Prefs.recsListHours() * 60), Prefs.recsPool() + Ui.tr(" títulos", " titles")};
+        }
+
+        private static String minutesLabel(int minutes) {
+            return minutes >= 60 && minutes % 60 == 0 ? (minutes / 60) + " h" : minutes + " min";
+        }
+
+        /** The value after (or before) `current` in `options`; a value between two moves to the nearest in that direction. */
+        private static int step(int[] options, int current, int dir) {
+            int at = 0;
+            for (int i = 0; i < options.length; i++) if (options[i] <= current) at = i;
+            if (options[at] != current && dir > 0) at--;
+            return options[Math.max(0, Math.min(options.length - 1, at + dir))];
+        }
+
+        private void adjustRecs(int dir) {
+            if (focus > 0 && !Prefs.recs()) return;
+            switch (focus) {
+                case 0: Prefs.setRecs(!Prefs.recs()); break;
+                case 1: Prefs.setRecsCount(step(REC_COUNTS, Prefs.recsCount(), dir)); break;
+                case 2: Prefs.setRecsEveryMin(step(REC_EVERY, Prefs.recsEveryMin(), dir)); break;
+                case 3: {
+                    int at = java.util.Arrays.asList(REC_KINDS).indexOf(Prefs.recsKinds());
+                    Prefs.setRecsKinds(REC_KINDS[(at + dir + REC_KINDS.length) % REC_KINDS.length]);
+                    break;
+                }
+                case 4: Prefs.setRecsListHours(step(REC_LIST, Prefs.recsListHours(), dir)); break;
+                default: Prefs.setRecsPool(step(REC_POOL, Prefs.recsPool(), dir)); break;
+            }
         }
 
         // MARK: - Shelf editor
@@ -844,18 +895,18 @@ public class SettingsActivity extends Activity {
         }
 
         private void drawList(Canvas c) {
-            boolean keys = screen == REMOTE_KEYS;
-            String[] labels = keys ? keyLabels() : settingLabels();
-            String[] values = keys ? keyValues() : settingValues();
+            boolean keys = screen == REMOTE_KEYS, recsScreen = screen == RECS;
+            String[] labels = keys ? keyLabels() : recsScreen ? recsLabels() : settingLabels();
+            String[] values = keys ? keyValues() : recsScreen ? recsValues() : settingValues();
             Paint heading = Ui.text(Ui.displaySemibold, 34 * k, 0xFFFFFFFF);
-            c.drawText(keys ? Ui.tr("Botões do Controle", "Remote Buttons") : Ui.tr("Ajustes do Início", "Home Settings"),
+            c.drawText(keys ? Ui.tr("Botões do Controle", "Remote Buttons") : recsScreen ? Ui.tr("Recomendações", "Recommendations") : Ui.tr("Ajustes do Início", "Home Settings"),
                     LIST_X * k + 30 * k, (LIST_TOP - 24) * k, heading);
             for (int i = 0; i < labels.length; i++) {
                 float y = (LIST_TOP + 20 + i * (LIST_ROW_H + LIST_ROW_GAP)) * k;
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + LIST_ROW_H * k);
                 float f = drawRowBackground(c, i);
                 rowLabel.setColor(blend(0xF2FFFFFF, INK, f));
-                boolean locked = !keys && i >= COIN_ROWS && !Prefs.quotes();
+                boolean locked = recsScreen ? i >= 1 && !Prefs.recs() : !keys && i >= COIN_ROWS && !Prefs.quotes();
                 rowValue.setColor(blend(locked ? 0x59FFFFFF : 0xB3FFFFFF, locked ? 0x591C1C1E : 0xB31C1C1E, f));
                 if (locked) rowLabel.setColor(blend(0x73FFFFFF, 0x731C1C1E, f));
                 float base = rowRect.centerY() + Ui.halfCap(rowLabel);
@@ -865,6 +916,11 @@ public class SettingsActivity extends Activity {
             Paint hint = Ui.text(Ui.regular, 23 * k, 0x8CFFFFFF);
             float hy = (LIST_TOP + 20 + labels.length * (LIST_ROW_H + LIST_ROW_GAP) + 36) * k;
             c.drawText(Ui.tr("OK ou as setas mudam o valor.", "OK or the arrows change the value."), LIST_X * k + 30 * k, hy, hint);
+            if (recsScreen) {
+                c.drawText(Ui.tr("Cabem até 3 títulos na tela. A lista nova só chega com a internet.", "Up to 3 titles fit on screen. A new list needs the internet."),
+                        LIST_X * k + 30 * k, hy + 38 * k, hint);
+                drawRecs(c, hy + 100 * k);
+            }
             if (keys) {
                 c.drawText(RemoteKeys.supported() ? Ui.tr("Disney e Globoplay: a própria TV controla esses botões.",
                         "Disney and Globoplay: the TV itself controls those buttons.")
@@ -894,7 +950,7 @@ public class SettingsActivity extends Activity {
                 return;
             } else if (screen == REMOTE_KEYS) {
                 openPicker(focus + 1);
-            } else if (screen == HOME_SETTINGS) {
+            } else if (screen == HOME_SETTINGS || screen == RECS) {
                 adjust(1);
                 invalidate();
                 return;
@@ -909,8 +965,11 @@ public class SettingsActivity extends Activity {
                 screen = HOME_SETTINGS;
                 focus = 0;
             } else if (focus == 3) {
-                openShelfEditor();
+                screen = RECS;
+                focus = 0;
             } else if (focus == 4) {
+                openShelfEditor();
+            } else if (focus == 5) {
                 HomeMode.ensureRemoteService(c, 0);   // the buttons work from inside other apps through this service
                 loadApps();
                 screen = REMOTE_KEYS;

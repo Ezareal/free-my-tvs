@@ -37,6 +37,11 @@ final class Prefs {
         version++;
     }
 
+    private static void putInt(String key, int value) {
+        sp().edit().putInt(key, value).apply();
+        version++;
+    }
+
     private static void put(String key, boolean value) {
         sp().edit().putBoolean(key, value).apply();
         version++;
@@ -85,6 +90,34 @@ final class Prefs {
 
     static boolean coin(int i) { return sp().getBoolean("coin" + i, true); }
     static void setCoin(int i, boolean on) { put("coin" + i, on); }
+
+    // MARK: - Recommendations (Settings > Recommendations)
+
+    static boolean recs() { return sp().getBoolean("recs", true); }
+    static void setRecs(boolean on) { put("recs", on); }
+
+    /** Titles on screen at once (the home screen has room for three cards). */
+    static int recsCount() { return Math.max(1, Math.min(3, sp().getInt("recsCount", 3))); }
+    static void setRecsCount(int n) { putInt("recsCount", n); }
+
+    /** How often the titles on screen change, in minutes. */
+    static int recsEveryMin() { return Math.max(1, sp().getInt("recsEveryMin", 60)); }
+    static void setRecsEveryMin(int minutes) { putInt("recsEveryMin", minutes); }
+
+    /** "all", "movie" or "tv": what the Explore tab and the featured title draw from. */
+    static String recsKinds() {
+        String v = sp().getString("recsKinds", "all");
+        return v.equals("movie") || v.equals("tv") ? v : "all";
+    }
+    static void setRecsKinds(String v) { put("recsKinds", v); }
+
+    /** How often the list of titles is fetched again, in hours. */
+    static int recsListHours() { return Math.max(1, sp().getInt("recsListHours", 6)); }
+    static void setRecsListHours(int hours) { putInt("recsListHours", hours); }
+
+    /** How many titles the list holds. */
+    static int recsPool() { return Math.max(6, sp().getInt("recsPool", 24)); }
+    static void setRecsPool(int n) { putInt("recsPool", n); }
 
     // MARK: - Shelf
 
