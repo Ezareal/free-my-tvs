@@ -72,6 +72,8 @@ final class HomeMode {
         // Xiaomi
         "com.miui.tv.analytics", "com.xiaomi.statistic",                              // telemetry
         "com.mitv.tvhome.mitvplus", "com.xm.webcontent",                              // Mi TV+ promo channels, promo web content
+        "com.mitv.tvhome.atv",                                                        // PatchWall: opens its banners over Home once online
+        "com.mitv.tvhome.michannel", "com.mitv.tvhome.oemtab",                        // PatchWall's rows, its tab in Google's home
     };
 
     /** The voice assistant, only with disable_assistant=true in config.properties (the mic button stops working). */
