@@ -67,7 +67,7 @@ final class Sports {
         context = c;
         cache = c.getSharedPreferences("sports", Context.MODE_PRIVATE);
         try {
-            fetchedAt = cache.getLong("at", 0);
+            fetchedAt = cache.getLong("at2", 0);
             JSONArray a = new JSONArray(cache.getString("events2", "[]"));
             for (int i = 0; i < a.length(); i++) {
                 JSONObject o = a.getJSONObject(i);
@@ -178,10 +178,11 @@ final class Sports {
         long now = System.currentTimeMillis();
         boolean close = false;     // something is about to start or on: look more often (scores, finished matches)
         for (Event e : events) close |= now >= e.start - 15 * 60_000L && now < e.start + e.minutes * 60_000L;
-        long every = close ? FAST : EVERY;
+        long every = events.isEmpty() ? 2 * 60_000L : close ? FAST : EVERY;    // nothing yet: keep trying
         if (now - fetchedAt < every && now >= fetchedAt) return;
         fetching = true;
         io.execute(() -> {
+            try {
             List<Event> found = new ArrayList<>();
             long from = System.currentTimeMillis();
             String key = Config.FOOTBALL_KEY.trim();
@@ -204,11 +205,16 @@ final class Sports {
                     AppLog.w("sports (" + sport + "): " + e.getMessage());
                 }
             }
-            events = found;
+            if (!found.isEmpty()) {     // all sources failing (no internet) keeps what we had
+                events = found;
+                save(found);
+            }
             fetchedAt = System.currentTimeMillis();
-            save(found);
-            fetching = false;
             main.post(() -> Recs.get(context).changed());
+            } finally {
+                fetching = false;
+                fetchedAt = Math.max(fetchedAt, System.currentTimeMillis());
+            }
         });
     }
 
@@ -221,7 +227,7 @@ final class Sports {
                         .put("home", e.home).put("away", e.away).put("logoHome", e.logoHome).put("logoAway", e.logoAway)
                         .put("logoComp", e.logoComp).put("art", e.art));
             }
-            cache.edit().putString("events2", a.toString()).putLong("at", fetchedAt).apply();
+            cache.edit().putString("events2", a.toString()).putLong("at2", System.currentTimeMillis()).apply();
         } catch (Exception ignored) {
         }
     }
