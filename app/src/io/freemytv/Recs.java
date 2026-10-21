@@ -34,7 +34,7 @@ import java.util.concurrent.Executors;
 /**
  * Home screen picks ("This morning / afternoon / tonight"): what's trending this week plus recent releases, only from
  * the streaming apps installed on the TV (Netflix, Prime Video, Disney+, Max, Apple TV, Hulu, Paramount+, Peacock,
- * Globoplay...), via TMDB (an open movie database that knows what streams where in each country). Three per hour.
+ * Globoplay, Crave, CBC Gem...), via TMDB (an open movie database that knows what streams where in each country). Three per hour.
  * "Watch" opens the service's app.
  *
  * Each person uses their own free TMDB key (config.properties "tmdb_key", built into the app). It never goes to the log.
@@ -79,6 +79,9 @@ final class Recs {
         {"disney", "disney", "com.disney.disneyplus"},
         {"hulu", "hulu", "com.hulu.livingroomplus"},
         {"paramount", "paramount", "com.cbs.ott"},
+        {"paramount", "paramount", "com.cbs.ca"},           // Paramount+ in Canada is a separate app
+        {"crave", "crave", "ca.bellmedia.cravetv"},         // Canada (HBO's shows are on Crave there)
+        {"cbc gem", "cbcgem", "ca.cbc.android.cbctv"},      // Canada, free
         {"peacock", "peacock", "com.peacocktv.peacockandroid"},
         {"globoplay", "globoplay", "com.globo.globotv"},
         {"max", "max", "com.wbd.stream"},
@@ -95,6 +98,8 @@ final class Recs {
         SERVICE_NAME.put("globoplay", "Globoplay");
         SERVICE_NAME.put("max", "Max");
         SERVICE_NAME.put("appletv", "Apple TV");
+        SERVICE_NAME.put("crave", "Crave");
+        SERVICE_NAME.put("cbcgem", "CBC Gem");
         SERVICE_NAME.put("youtube", "YouTube");
         SERVICE_NAME.put("stremio", "Stremio");
     }
@@ -694,12 +699,16 @@ final class Recs {
         return best;
     }
 
-    private static String[] service(String name) {
+    /** The service by its TMDB name; with two apps for one service (Paramount+), the one the TV has. */
+    private String[] service(String name) {
         String n = name.toLowerCase(Locale.ROOT);
+        String[] first = null;
         for (String[] s : SERVICES) {
-            if (s[0].equals("max") ? n.matches(".*\\bmax\\b.*") : n.contains(s[0])) return s;
+            if (!(s[0].equals("max") ? n.matches(".*\\bmax\\b.*") : n.contains(s[0]))) continue;
+            if (installed(s[2])) return s;
+            if (first == null) first = s;
         }
-        return null;
+        return first;
     }
 
     private boolean installed(String pkg) {
