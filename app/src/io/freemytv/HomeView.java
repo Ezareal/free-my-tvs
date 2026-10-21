@@ -259,7 +259,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private boolean okDown, backDown;
 
     private Paint labelPaint, metaPaint, clockPaint, buttonPaint, capsuleText, tipPaint, quotePaint, staleQuote;
-    private Paint rowTitle, drawerLabel, cardTitle, cardText, cardDim, cardDimRight, bigTemp, hourPaint, hourTemp;
+    private Paint rowTitle, drawerLabel, cardTitle, cardText, cardDim, cardDimRight, rainPaint, bigTemp, hourPaint, hourTemp;
     private Paint pricePaint, changePaint, sheetTitle;
     private TextPaint titlePaint, gridLabel, toastPaint;
     private final Paint bitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
@@ -294,7 +294,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private long textPricesAt = -1, textMinute = -1;
     private int textPrefs = -1;
     private String textLanguage;
-    private String weatherTitle, nowTemp, highLow, sunriseText, sunsetText, staleText;
+    private String weatherTitle, nowTemp, highLow, rainText, sunriseText, sunsetText, staleText;
     private final String[] hourText = new String[6], hourTempText = new String[6];
     private final String[] priceText = new String[HomeData.COINS.length], changeText = new String[HomeData.COINS.length];
 
@@ -639,6 +639,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         cardTitle = Ui.text(Ui.semibold, 25 * k, 0xB3FFFFFF);
         cardText = Ui.text(Ui.medium, 29 * k, 0xF2FFFFFF);
         cardDim = Ui.numbers(Ui.medium, 23 * k, 0xADFFFFFF);
+        rainPaint = Ui.numbers(Ui.medium, 23 * k, 0xFFFFFFFF);
+        rainPaint.setTextAlign(Paint.Align.RIGHT);
         cardDimRight = Ui.text(Ui.medium, 21 * k, 0x99FFFFFF);
         cardDimRight.setTextAlign(Paint.Align.RIGHT);
         bigTemp = Ui.numbers(Ui.light, 100 * k, 0xFFFFFFFF);
@@ -1597,6 +1599,10 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             c.drawText(Ui.tr("Sem dados do clima agora.", "No weather data right now."), x, r.top + 120 * k, cardDim);
             return;
         }
+        if (!rainText.isEmpty()) {
+            rainPaint.setColor(tone(0xFF1E88E5, 0xFF64B5F6));
+            c.drawText(rainText, r.right - 34 * k, r.top + 54 * k, rainPaint);
+        }
         String symbol = Symbols.weather(wx.code, wx.isDay);
         float sw = Symbols.width(getContext(), symbol, 52 * k);
         Symbols.draw(getContext(), c, symbol, x + sw / 2, r.top + 132 * k, 52 * k, drawerInk(0.95f));
@@ -1632,6 +1638,9 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
                     : Ui.en ? "H:" + HomeData.degrees(wx.max) + "   L:" + HomeData.degrees(wx.min)
                     : Ui.de ? "H:" + HomeData.degrees(wx.max) + "   T:" + HomeData.degrees(wx.min)
                     : "Máx. " + HomeData.degrees(wx.max) + "   Mín. " + HomeData.degrees(wx.min);
+            int rain = HomeData.rainInHours(wx, System.currentTimeMillis());
+            rainText = rain < 0 ? "" : rain == 0 ? Ui.tr("Chuva agora", "Rain now", "Lluvia ahora")
+                    : Ui.tr("Chuva em ", "Rain in ", "Lluvia en ") + rain + " h";
             for (int i = 0; i < wx.hours.size() && i < 6; i++) {
                 hourText[i] = HomeData.hour(wx.hours.get(i));
                 hourTempText[i] = HomeData.degrees(wx.hourTemp.get(i));
