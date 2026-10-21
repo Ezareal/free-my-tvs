@@ -209,6 +209,8 @@ HDMI (Chromecast with Google TV, Google TV Streamer, onn 4K, NVIDIA Shield). Set
   Netflix (`RemoteKeys.STEM_NETFLIX`); their YouTube button goes to MediaTek's `GlobalKeyReceiver` and stays with the system.
 - Their own photos: `tools/photos.py` pushes them to the app's external files folder on the TV (`photos/` for the
   screensaver, `background/` for the home screen); `DreamView.ownPhotos` and `HomeView.loadOwnBackground` read them.
+  The *Photo of the day* theme (`Wallpaper`, Bing, no key) fills the same background when there's no photo of theirs:
+  both go through `HomeView.photoBg`, dimmed at night by `Backdrop.NIGHT_DIM`.
 - After any change, `./build.sh` must end with `Built FreeMyTV.apk`.
 - LG and Samsung (`web/`): plain ES5 JavaScript and CSS without variables, grid or backdrop-filter, since older TVs
   (webOS 3 and 4, Tizen 3) run a Chromium from 2015 to 2017; only transform and opacity animate. `web/tv.js` is the

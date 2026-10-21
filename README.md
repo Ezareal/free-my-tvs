@@ -192,6 +192,13 @@ python3 tools/photos.py <TV IP> --clear          # back to the picks' images
 - They live in the app's folder on the TV: uninstalling Free My TV removes them. No need to rebuild to change them.
 - Or just ask Claude Code: *"Put these photos on my TV's screensaver."*
 
+### Photo of the day
+
+Without a TMDB key, *Home Settings* → *Theme* → *Photo of the day* puts Bing's photo of the day behind the clock: sharp,
+dimmed at night, with a small caption saying what's in it and whose it is. Checked every few hours, kept on the TV for
+when it's offline. Off by default; your own background photo, if you set one, comes first. Google TV, Android TV, LG
+and Samsung.
+
 ## How it works
 
 - **A plain Android app, no Gradle, no libraries.** [`build.sh`](build.sh) runs aapt2 → javac → d8 → zipalign → apksigner and makes a 2 MB APK.
@@ -246,7 +253,7 @@ reference (fix them by hand); the others were machine-made, and corrections from
 
 ## Privacy
 
-No accounts, no analytics, no tracking. The app talks to TMDB, Open-Meteo (with the coordinates you set, or your time zone's main city), and Binance only when `show_crypto=true`, and Watchmode only when you set a `watchmode_key`. Your settings stay on your computer and your TV.
+No accounts, no analytics, no tracking. The app talks to TMDB, Open-Meteo (with the coordinates you set, or your time zone's main city), and Binance only when `show_crypto=true`, Watchmode only when you set a `watchmode_key`, and Bing only when you pick the *Photo of the day* theme (for that photo). Your settings stay on your computer and your TV.
 
 ## Credits
 
