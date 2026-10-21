@@ -63,6 +63,7 @@ final class HomeApps {
     static final class Item {
         int kind;
         String key, label, pkg, inputId, number;
+        String uri;         // an app's page for one title (Nuvio, Stremio); null = the app's start
         String symbol;      // icon for the shortcuts and special cards
         Bitmap tile;        // 16:9 card (apps and specials)
         Bitmap logo;        // colored logo with no background (shelf); null = use the card
@@ -363,8 +364,12 @@ final class HomeApps {
         Intent intent;
         switch (it.kind) {
             case APP:
-                intent = launchIntent(a.getPackageManager(), it.pkg);
-                if (intent != null) intent.addFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                intent = it.uri == null ? null : linkIntent(it.uri, it.pkg);
+                if (intent != null && intent.resolveActivity(a.getPackageManager()) == null) intent = null;   // the app's start instead
+                if (intent == null) {
+                    intent = launchIntent(a.getPackageManager(), it.pkg);
+                    if (intent != null) intent.addFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                }
                 break;
             case LIVE_TV:
                 intent = liveTv(a);
@@ -390,6 +395,26 @@ final class HomeApps {
             AppLog.w("couldn't open " + it.label + ": " + e.getMessage());
             return false;
         }
+    }
+
+    /**
+     * A link into one app: "intent:…" (what apps give for their "continue watching" entries) or a plain address
+     * (nuvio://…). It only ever opens that app, with no permissions handed along.
+     */
+    private static Intent linkIntent(String uri, String pkg) {
+        Intent intent;
+        try {
+            intent = uri.startsWith("intent:") ? Intent.parseUri(uri, Intent.URI_INTENT_SCHEME)
+                    : new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(uri));
+        } catch (java.net.URISyntaxException e) {
+            return null;
+        }
+        if (intent.getComponent() != null && !intent.getComponent().getPackageName().equals(pkg)) return null;
+        intent.setSelector(null);
+        intent.setPackage(pkg);
+        intent.setFlags(intent.getFlags() & ~(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION | Intent.FLAG_GRANT_PREFIX_URI_PERMISSION));
+        return intent;
     }
 
     /**

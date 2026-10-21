@@ -120,6 +120,26 @@ final class Prefs {
         put("shelf", sb.toString());
     }
 
+    // MARK: - Picks
+
+    /** What opens the picks: "nuvio", "stremio" or "service" (the streaming app it's on); "" = not chosen (Recs.player). */
+    static String player() { return sp().getString("player", ""); }
+    static void setPlayer(String v) { put("player", v); }
+
+    // MARK: - Continue Watching
+
+    /** Apps whose "continue watching" entries the Continue tab shows: all, except the ones turned off. */
+    static boolean continueFrom(String pkg) {
+        return !("," + sp().getString("continueOff", "") + ",").contains("," + pkg + ",");
+    }
+
+    static void setContinueFrom(String pkg, boolean on) {
+        List<String> off = new ArrayList<>();
+        for (String p : sp().getString("continueOff", "").split(",")) if (!p.isEmpty() && !p.equals(pkg)) off.add(p);
+        if (!on) off.add(pkg);
+        put("continueOff", android.text.TextUtils.join(",", off));
+    }
+
     // MARK: - Remote buttons
 
     private static String defaultApp(int keyCode) {

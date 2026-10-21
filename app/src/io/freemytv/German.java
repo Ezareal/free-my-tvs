@@ -103,6 +103,15 @@ final class German {
             case " Sunrise ": return " Sonnenaufgang ";
             case " Sunset ": return " Sonnenuntergang ";
             case "City": return "Stadt";
+            case "Continue": return "Weiterschauen";
+            case "Streaming app": return "Streaming-App";
+            case "Open picks in": return "Empfehlungen öffnen in";
+            case "The screensaver didn't open on this TV; it now runs the way this TV needs.": return "Der Bildschirmschoner öffnete sich auf diesem Fernseher nicht; jetzt läuft er so, wie dieser Fernseher es braucht.";
+            case "Continue watching": return "Weiterschauen";
+            case "Choose apps": return "Apps wählen";
+            case "Allow": return "Erlauben";
+            case "OK turns an app on or off. The number: how many titles it shares now.": return "OK schaltet eine App an oder aus. Die Zahl: wie viele Titel sie gerade teilt.";
+            case "Not allowed yet: TV Settings > Apps > Free My TV > Permissions.": return "Noch nicht erlaubt: TV-Einstellungen > Apps > Free My TV > Berechtigungen.";
             case "Searching…": return "Suche…";
             case "Type the city's name": return "Namen der Stadt eingeben";
             case "Search": return "Suchen";
