@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="remote_key_service">Permet aux boutons d\'applis de la télécommande (Netflix, YouTube, Prime Video, TCL Channel) d\'ouvrir les applis choisies dans Free My TV, depuis n\'importe quelle appli. Le service ne lit que ces boutons.</string>
+</resources>
