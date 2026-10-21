@@ -12,6 +12,8 @@
   @font-face { font-family: MGP; font-display: swap;
     src: url('fonts/MGPDisplay-Bold.woff2') format('woff2'), url('https://www.motogp.com/resources/v8.28.8/fonts/MGPDisplay-Bold.woff2') format('woff2'); }
   .flag { position: absolute; bottom: 44px; width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2.5px solid rgba(255,255,255,.7); box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+  .sport .flag.motogp { top: 44px; bottom: auto; border: 1px solid #fff; }
+  .sport .place.motogp { top: 44px; bottom: auto; }
   .place { position: absolute; bottom: 44px; font-size: 36px; font-weight: 500; line-height: 56px; }
   #agenda { position: absolute; inset: 0; background: linear-gradient(#16161C, #07070A); display: none; z-index: 30; color: #fff; overflow: hidden; }
   #agenda h2 { position: absolute; left: 80px; top: 62px; font-size: 70px; font-weight: 600; line-height: 90px; }
@@ -73,7 +75,7 @@
   .sport .tint { position: absolute; inset: 0; }
   .sport .comp { position: absolute; left: 0; right: 0; top: 28px; height: 80px; display: flex; justify-content: center; align-items: center;
                  font-size: 34px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
-  .sport .comp img { max-width: 300px; max-height: 80px; filter: brightness(0) invert(1); }
+  .sport .comp img { max-width: 300px; max-height: 80px; object-fit: contain; filter: drop-shadow(0 0 5px rgba(255,255,255,.35)); }
   .sport .crest { position: absolute; top: 124px; width: 190px; height: 190px; display: grid; place-items: center; font-size: 84px; font-weight: 600; border-radius: 50%; background: rgba(255,255,255,.2); }
   .sport .crest img { width: 100%; height: 100%; object-fit: contain; }
   .sport .nm { position: absolute; top: 346px; width: 440px; font-size: 27px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -169,8 +171,8 @@
       { sport: 1, comp: 'UEFA Champions League', start: Date.now() + 3600e3, minutes: 115, home: 'Inter', away: 'Barcellona', logoComp: '', logoHome: '', logoAway: '', art: '../app/assets/sports/champions.webp', c1: '#1b2a8a', c2: '#0b1250', italian: 3 },
       { sport: 2, comp: 'UEFA Europa League', start: Date.now() - 600e3, minutes: 115, home: 'Roma', away: 'Ajax', logoComp: '', logoHome: '', logoAway: '', art: '../app/assets/sports/europa.jpg', c1: '#e8650a', c2: '#2a0f02', italian: 3 },
       { sport: 0, comp: 'Serie A', start: Date.now() + 20 * 3600e3, minutes: 115, home: 'Milan', away: 'Napoli', logoComp: '', logoHome: '', logoAway: '', art: '../app/assets/sports/seriea.webp', c1: '#0b5fa5', c2: '#052a4a', italian: 3 },
-      { sport: 3, comp: 'Formula 1', start: Date.now() + 26 * 3600e3, minutes: 120, title: "Gran Premio d'Italia · Gara", logoComp: '', art: '../app/assets/sports/f1.png', country: 'it', place: 'Monza', c1: '#14141C', c2: '#14141C', italian: 3 },
-      { sport: 4, comp: 'MotoGP', start: Date.now() + 27 * 3600e3, minutes: 75, title: "Gran Premio d'Italia · Gara", logoComp: '', art: '', country: 'it', place: 'Mugello', c1: '#0E0E12', c2: '#0E0E12', italian: 3 }
+      { sport: 3, comp: 'Formula 1', start: Date.now() + 26 * 3600e3, minutes: 120, title: "Gran Premio d'Italia · Gara", logoComp: '', art: '../app/assets/sports/f1.webp', country: 'it', place: 'Monza', c1: '#14141C', c2: '#14141C', italian: 3 },
+      { sport: 4, comp: 'MotoGP', start: Date.now() + 27 * 3600e3, minutes: 75, title: "Gran Premio d'Italia · Gara", logoComp: '', art: '../app/assets/sports/motogp.webp', country: 'it', place: 'Mugello', c1: '#0E0E12', c2: '#0E0E12', italian: 3 }
     ]
   };
   data.sports.forEach(function (e) { e.sample = true; });
@@ -347,7 +349,10 @@
       })));
     });
     // Serie A / Champions through TheSportsDB when football-data isn't available
-    if (!cfg.football) jobs.push(src('TheSportsDB calcio (Serie A, Champions)', Promise.all([league(4332, 'serie a'), league(4480, 'champions')]).then(function (L) {
+    jobs.push(src('TheSportsDB calcio (Serie A, Champions)', Promise.resolve(fb).then(function () {
+      // Anche con chiave configurata: se football-data non ha restituito partite, usa TheSportsDB.
+      if (out.some(function (e) { return e.sport === 0 || e.sport === 1; })) return;
+      return Promise.all([league(4332, 'serie a'), league(4480, 'champions')]).then(function (L) {
       return Promise.all([0, 1, 2].map(function (d) {
         return jget('https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=' + day(Date.now() + d * 864e5) + '&s=Soccer').then(function (r) {
           (r.events || []).forEach(function (j) {
@@ -359,9 +364,10 @@
           });
         });
       }));
+    });
     })));
     return Promise.all(jobs).then(function () {
-      out.forEach(function (e) { if (e.sport === 0) e.art = SERIEA; if (e.sport === 1) e.art = '../app/assets/sports/champions.webp'; if (e.sport === 2) e.art = '../app/assets/sports/europa.jpg'; if (e.sport === 3) e.art = '../app/assets/sports/f1.png'; if (e.sport === 4) e.art = 'MOTOGP'; });
+      out.forEach(function (e) { if (e.sport === 0) e.art = SERIEA; if (e.sport === 1) e.art = '../app/assets/sports/champions.webp'; if (e.sport === 2) e.art = '../app/assets/sports/europa.jpg'; if (e.sport === 3) e.art = '../app/assets/sports/f1.webp'; if (e.sport === 4) e.art = '../app/assets/sports/motogp.webp'; });
       return { events: out, notes: notes };
     });
   }
@@ -407,9 +413,22 @@
   function sportCard(e) {
     var c = el('div', 'card sport');
     c.style.background = e.sport === 3 ? '#14141C' : e.sport === 4 ? '#0E0E12' : e.sport === 0 ? 'linear-gradient(180deg,#28519F,#38A8BC)' : 'linear-gradient(135deg,' + e.c2 + ',' + e.c1 + ')';
-    if (e.art) { var a = el('div', 'art', c); a.style.backgroundImage = e.art === 'MOTOGP' ? "url('fonts/motogp-bar.svg'), url('https://www.motogp.com/resources/v8.28.8/i/svg-files/elements/slim-bar-background.svg')" : 'url(' + e.art + ')'; if (e.sport > 4 || e.sport === 1 || e.sport === 2) { var t = el('div', 'tint', c); t.style.background = e.c2; t.style.opacity = .5; } }
+    if (e.art) { var a = el('div', 'art', c); a.style.backgroundImage = 'url(' + e.art + ')'; if (e.sport > 4 || e.sport === 1 || e.sport === 2) { var t = el('div', 'tint', c); t.style.background = e.c2; t.style.opacity = .5; } }
     var comp = el('div', 'comp', c);
-    if (e.logoComp) { var im = el('img', '', comp); im.src = e.logoComp; im.onerror = function () { im.remove(); comp.textContent = e.comp; }; } else comp.textContent = e.comp;
+    // File locali opzionali: se presenti mostrano il logo ufficiale anche senza API.
+    var logoFiles = {0: 'seriea.png', 1: 'champions.png', 2: 'europa.png', 3: 'formula1.png', 4: 'motogp.png'};
+    var logoUrls = [];
+    if (logoFiles[e.sport]) logoUrls.push('../app/assets/sports/logos/' + logoFiles[e.sport]);
+    if (e.logoComp) logoUrls.push(e.logoComp);
+    if (logoUrls.length) {
+      var im = el('img', '', comp), logoIndex = 0;
+      im.onerror = function () {
+        logoIndex++;
+        if (logoIndex < logoUrls.length) im.src = logoUrls[logoIndex];
+        else { im.remove(); comp.textContent = e.comp; }
+      };
+      im.src = logoUrls[0];
+    } else comp.textContent = e.comp;
     if (e.home && e.away) { crest(c, e.logoHome, e.home, 165); crest(c, e.logoAway, e.away, 685); el('div', 'when', c).textContent = when(e); }
     else {
       var s = el('div', '', c); s.style.cssText = 'position:absolute;left:44px;right:44px;top:170px;font-size:60px;font-weight:600;text-align:left'; s.textContent = e.title;
@@ -417,7 +436,7 @@
       if (e.sport === 3) { s.style.cssText = "position:absolute;left:44px;right:44px;top:176px;font:400 50px/1.15 F1, 'Inter', sans-serif;text-align:left;text-transform:uppercase"; }
       var w = el('div', '', c); w.style.cssText = 'position:absolute;left:44px;bottom:44px;font-size:36px;font-weight:500'; w.textContent = when(e);
       var rt = 44;
-      if (e.country) { var fl = el('img', 'flag', c); fl.src = 'https://flagcdn.com/w160/' + e.country + '.png'; fl.style.right = rt + 'px'; fl.onerror = function () { var em = el('div', 'place', c); em.textContent = e.country.toUpperCase().replace(/./g, function (ch) { return String.fromCodePoint(127397 + ch.charCodeAt(0)); }); em.style.right = '44px'; em.style.fontSize = '48px'; fl.remove(); }; }
+      if (e.country) { var fl = el('img', 'flag', c); fl.src = 'https://flagcdn.com/w160/' + e.country + '.png'; fl.style.right = rt + 'px'; if (e.sport === 4) fl.classList.add('motogp'); fl.onerror = function () { var em = el('div', 'place', c); if (e.sport === 4) em.classList.add('motogp'); em.textContent = e.country.toUpperCase().replace(/./g, function (ch) { return String.fromCodePoint(127397 + ch.charCodeAt(0)); }); em.style.right = '44px'; em.style.fontSize = '48px'; fl.remove(); }; }
     }
     return c;
   }
@@ -619,7 +638,7 @@
     if (real) return { e: real, real: !real.sample };
     var s = SAMPLE[sp], e = mk(sp, Date.now() + (3 + sp) * 36e5, s.comp, s.title || '');
     if (s.home) { e.home = s.home; e.away = s.away; }
-    e.art = sp === 1 ? '../app/assets/sports/champions.webp' : sp === 2 ? '../app/assets/sports/europa.jpg' : sp === 3 ? '../app/assets/sports/f1.png' : '';
+    e.art = sp === 1 ? '../app/assets/sports/champions.webp' : sp === 2 ? '../app/assets/sports/europa.jpg' : sp === 3 ? '../app/assets/sports/f1.webp' : '';
     return { e: e, real: false };
   }
   function openGallery() {

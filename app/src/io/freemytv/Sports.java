@@ -122,11 +122,11 @@ final class Sports {
         p.away = best.away;
         p.logoHome = best.logoHome;
         p.logoAway = best.logoAway;
-        p.logoComp = best.logoComp;
+        p.logoComp = localCompetitionLogo(best.sport, best.logoComp);
         // The competition's own picture is chosen here, not saved with the event, so a new picture applies at once.
         p.art = best.sport == CHAMPIONS ? art(Config.CHAMPIONS_ART, "asset:sports/champions.webp")
                 : best.sport == EUROPA ? art(Config.EUROPA_ART, "asset:sports/europa.jpg")
-                : best.sport == F1 ? "asset:sports/f1.png" : best.sport == MOTO ? motoArt() : best.sport == SERIE_A ? art(Config.SERIEA_ART, "asset:sports/seriea.webp") : best.art;
+                : best.sport == F1 ? "asset:sports/f1.webp" : best.sport == MOTO ? motoArt() : best.sport == SERIE_A ? art(Config.SERIEA_ART, "asset:sports/seriea.webp") : best.art;
         p.title = best.title;
         p.accent = ACCENT[best.sport];
         p.flat = best.sport == F1 || best.sport == MOTO;     // Formula 1 and MotoGP: a flat color with their artwork over it
@@ -395,12 +395,30 @@ final class Sports {
         return false;
     }
 
+    // Loghi ufficiali facoltativi in app/assets/sports/logos/*.png; niente download a runtime.
+    private String localCompetitionLogo(int sport, String fallback) {
+        String[] names = {"seriea.png", "champions.png", "europa.png", "formula1.png", "motogp.png"};
+        if (sport < 0 || sport >= names.length) return fallback;
+        try {
+            String[] assets = context.getAssets().list("sports/logos");
+            if (assets != null) for (String name : assets) {
+                if (name.equals(names[sport])) return "asset:sports/logos/" + name;
+            }
+        } catch (IOException ignored) {
+        }
+        return fallback;
+    }
     private static final String MOTOGP_BAR = "https://www.motogp.com/resources/v8.28.8/i/svg-files/elements/slim-bar-background.svg";
 
     /** MotoGP's background: the converted picture in the app if tools/sport_assets.py made it, else the SVG online. */
     private String motoArt() {
         try {
-            for (String name : context.getAssets().list("sports")) if (name.equals("motogp.png")) return "asset:sports/motogp.png";
+            for (String name : context.getAssets().list("sports")) {
+                if (name.equals("motogp.webp")) return "asset:sports/motogp.webp";
+            }
+            for (String name : context.getAssets().list("sports")) {
+                if (name.equals("motogp.png")) return "asset:sports/motogp.png";
+            }
         } catch (IOException ignored) {
         }
         return MOTOGP_BAR;

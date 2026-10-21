@@ -2477,9 +2477,13 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             String title = TextUtils.ellipsize(p.face != 0 ? p.title.toUpperCase(Ui.locale()) : p.title, tp, width, TextUtils.TruncateAt.END).toString();
             c.drawText(title, area.left + pad, area.centerY() + Ui.halfCap(face) + 20 * k, face);
             c.drawText(when, area.left + pad, area.bottom - pad, lSportWhen);
-            // Bottom right: the flag of the country where they race, in a circle.
+            // MotoGP in alto a destra; Formula 1 mantiene la posizione originale.
             Bitmap flag = sports.bitmap(p.flag, null);
-            if (flag != null) drawFlagCircle(c, flag, area.right - pad - 32 * k, area.bottom - pad - 14 * k, 64 * k);
+            if (flag != null) {
+                boolean motogp = p.face == 2;
+                float flagY = motogp ? area.top + pad + 32 * k : area.bottom - pad - 14 * k;
+                drawFlagCircle(c, flag, area.right - pad - 32 * k, flagY, 64 * k, motogp);
+            }
             return;
         }
         float size = 190 * k;
@@ -2495,7 +2499,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     }
 
     /** A flag in a circle (its middle, as a square), with a thin light ring. */
-    private void drawFlagCircle(Canvas c, Bitmap flag, float cx, float cy, float d) {
+    private void drawFlagCircle(Canvas c, Bitmap flag, float cx, float cy, float d, boolean motogp) {
         float r = d / 2;
         int side = Math.min(flag.getWidth(), flag.getHeight());
         fitSrc.set((flag.getWidth() - side) / 2, (flag.getHeight() - side) / 2, (flag.getWidth() + side) / 2, (flag.getHeight() + side) / 2);
@@ -2507,8 +2511,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         c.drawBitmap(flag, fitSrc, tmp, bitmapPaint);
         c.restore();
         ballStroke.setStyle(Paint.Style.STROKE);
-        ballStroke.setStrokeWidth(2.5f * k);
-        ballStroke.setColor(0xB3FFFFFF);
+        ballStroke.setStrokeWidth((motogp ? 1f : 2.5f) * k);
+        ballStroke.setColor(motogp ? 0xFFFFFFFF : 0xB3FFFFFF);
         c.drawCircle(cx, cy, r, ballStroke);
     }
 

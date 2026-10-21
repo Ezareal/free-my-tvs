@@ -51,7 +51,10 @@ final class Ui {
         semibold = font(a, 14, 600);
         try {
             f1 = has(a, "fonts/Formula1-Black.ttf") ? Typeface.createFromAsset(a, "fonts/Formula1-Black.ttf") : null;
-            mgp = has(a, "fonts/MGPDisplay-Bold.ttf") ? Typeface.createFromAsset(a, "fonts/MGPDisplay-Bold.ttf") : null;
+            mgp = has(a, "fonts/MGPDisplay-Bold.otf")
+                    ? Typeface.createFromAsset(a, "fonts/MGPDisplay-Bold.otf")
+                    : has(a, "fonts/MGPDisplay-Bold.ttf")
+                        ? Typeface.createFromAsset(a, "fonts/MGPDisplay-Bold.ttf") : null;
         } catch (RuntimeException e) {
             f1 = null;
             mgp = null;
