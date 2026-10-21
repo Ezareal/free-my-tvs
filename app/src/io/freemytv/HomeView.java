@@ -545,7 +545,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         lCaption = Ui.text(Ui.medium, 30 * k, L_DIM);
         lCaption.setTextAlign(Paint.Align.RIGHT);
         lRank = Ui.text(Ui.displaySemibold, 84 * k, 0xFFFFFFFF);
-        lRank.setShadowLayer(14 * k, 0, 2 * k, 0xB3000000);
+        lRank.setShadowLayer(9 * k, 0, 3 * k, 0xCC000000);   // a light outer shadow: readable on white too
         lAvatar = Ui.text(Ui.displaySemibold, 34 * k, 0xFFFFFFFF);
         lAvatar.setTextAlign(Paint.Align.CENTER);
         lClock = Ui.text(Ui.displaySemibold, 64 * k, L_INK);
@@ -2451,7 +2451,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
                     Ui.alpha(0xFFFFFFFF, 0.9f * f), Ui.alpha(0xFFFFFFFF, 0.35f * f), Shader.TileMode.CLAMP));
             c.drawRoundRect(cell, r, r, rim);
         }
-        c.drawText(RANKS[i], cell.left + 18 * k * s, cell.bottom - 20 * k * s, lRank);
+        c.drawText(RANKS[i], cell.left + 20 * k * s, cell.top + 20 * k * s + Ui.cap(lRank), lRank);
         if (e > 0.05f) {
             int a = Math.round(255 * e);
             lCardTitle.setAlpha(a);
