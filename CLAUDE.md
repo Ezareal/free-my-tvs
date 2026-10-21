@@ -164,7 +164,8 @@ HDMI (Chromecast with Google TV, Google TV Streamer, onn 4K, NVIDIA Shield). Set
   Stremio tab shows only with Stremio installed and opens titles by IMDb id. Soccer and News (`Feeds`) are the newest
   videos of a few YouTube channels, fetched on the TV every 20 minutes; YouTube's public feed answers 404 or 500 to
   most requests some hours, so each channel retries and keeps its last list. `soccer_team` and
-  `soccer_team_channel` put a club first. The
+  `soccer_team_channel` put a club first. `title=verse` puts the date and a KJV verse of the day (`Verses`,
+  `app/assets/verses.json` from `python3 tools/make_verses.py`, two lines at most) in place of "For You". The
   Kids tab's first card, "Learn today", is a YouTube video a day from `app/assets/learn.json`: run
   `python3 tools/make_learn.py` now and then for new videos (the YouTube Kids TV app is gone: kids' profiles are in
   YouTube). Prices come from CoinGecko on Android (Binance blocks some countries and has no CAD); the web app still

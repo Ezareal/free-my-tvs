@@ -147,6 +147,10 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private final RectF[] cardRects = new RectF[3];
     private final List<HomeApps.Item> lightButtons = new ArrayList<>();
     private Paint lTitle, lTab, lTabOn, lCardTitle, lCardMeta, lQuote, lTip, lDate, lClock, lWeather, lClockQuote;
+    private Paint lVerse, lVerseRef, lVerseDate;
+    // title=verse: the date and today's verse instead of "For You", laid out once a minute (never in onDraw).
+    private String verseDate = "", verseLine1 = "", verseLine2 = "", verseRef = "";
+    private float verseRefX, verseRefBase;      // where the reference goes (after the verse's last words)
     private Shader lightGradient;
 
     // Shelf
@@ -581,6 +585,10 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         for (Paint p : new Paint[] {labelPaint, titlePaint, metaPaint, clockPaint}) p.setShadowLayer(22 * k, 0, 2 * k, 0x59000000);
         lTitle = Ui.text(Ui.displaySemibold, 76 * k, L_INK);
         lTitle.setLetterSpacing(0.004f);
+        lVerse = Ui.text(Ui.medium, 33 * k, L_INK);
+        lVerseRef = Ui.text(Ui.medium, 33 * k, L_DIM);
+        lVerseDate = Ui.text(Ui.semibold, 23 * k, L_DIM);
+        lVerseDate.setLetterSpacing(0.06f);
         lTab = Ui.text(Ui.medium, 30 * k, L_DIM);
         lTabOn = Ui.text(Ui.semibold, 30 * k, L_INK);
         lCardTitle = Ui.text(Ui.semibold, 31 * k, L_INK);
@@ -742,7 +750,50 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         clockMinute = minute;
         clockText = Ui.clock(now);
         dateText = Ui.date(now);
+        layoutVerse();
         return true;
+    }
+
+    /**
+     * The date above, and the verse with its reference after it, on up to two lines that end before the corner
+     * buttons (tools/make_verses.py keeps only verses that fit).
+     */
+    private void layoutVerse() {
+        String[] v = Verses.on() && lVerse != null ? Verses.today(getContext()) : null;
+        if (v == null) {
+            verseLine1 = "";
+            return;
+        }
+        verseDate = dateText.toUpperCase(Ui.locale());
+        verseRef = "  " + v[1];
+        float room = (CONTENT_R - 3 * L_BUTTON - 2 * L_BUTTON_GAP - 48 - MARGIN) * k;
+        String text = v[0];
+        int n = lVerse.breakText(text, true, room, null);
+        if (n < text.length()) {
+            int space = text.lastIndexOf(' ', n);
+            if (space > 0) n = space;
+        }
+        verseLine1 = text.substring(0, n).trim();
+        String rest = text.substring(n).trim();
+        float x = MARGIN * k, refWidth = lVerseRef.measureText(verseRef);
+        if (rest.isEmpty() && lVerse.measureText(verseLine1) + refWidth <= room) {
+            // A short verse: the reference right after it, on the first line.
+            verseLine2 = "";
+            verseRefX = x + lVerse.measureText(verseLine1);
+            verseRefBase = 100 * k;
+        } else if (rest.isEmpty()) {
+            // The verse fills the first line: the reference alone on the second.
+            verseLine2 = "";
+            verseRef = v[1];
+            verseRefX = x;
+            verseRefBase = 140 * k;
+        } else {
+            // There's no third line: if the rest and the reference don't fit, the verse ends in "…".
+            fitPaint.set(lVerse);
+            verseLine2 = TextUtils.ellipsize(rest, fitPaint, Math.max(0, room - refWidth), TextUtils.TruncateAt.END).toString();
+            verseRefX = x + lVerse.measureText(verseLine2);
+            verseRefBase = 140 * k;
+        }
     }
 
     private void updatePalette() {
@@ -944,6 +995,9 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     /** Text colors for the current night value (dark by day, white at night). */
     private void applyTone() {
         lTitle.setColor(tone(L_INK, WHITE));
+        lVerse.setColor(tone(L_INK, WHITE));
+        lVerseRef.setColor(tone(L_DIM, 0xFF98989D));
+        lVerseDate.setColor(tone(L_DIM, 0xFF98989D));
         lTab.setColor(tone(L_DIM, 0xFF8E8E93));
         lTabOn.setColor(tone(L_INK, WHITE));
         lCardTitle.setColor(tone(L_INK, WHITE));
@@ -2715,8 +2769,16 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             if (HomeData.coinCount() > 0) drawQuotes(c);
             return;
         }
-        String hello = Ui.tr("Para você", "For You");
-        c.drawText(hello, MARGIN * k - Ui.leftBearing(lTitle, hello), L_TITLE_BASE * k, lTitle);
+        if (!verseLine1.isEmpty()) {
+            float x = MARGIN * k;
+            c.drawText(verseDate, x - Ui.leftBearing(lVerseDate, verseDate), 58 * k, lVerseDate);
+            c.drawText(verseLine1, x - Ui.leftBearing(lVerse, verseLine1), 100 * k, lVerse);
+            if (!verseLine2.isEmpty()) c.drawText(verseLine2, x - Ui.leftBearing(lVerse, verseLine2), 140 * k, lVerse);
+            c.drawText(verseRef, verseRefX, verseRefBase, lVerseRef);
+        } else {
+            String hello = Ui.tr("Para você", "For You");
+            c.drawText(hello, MARGIN * k - Ui.leftBearing(lTitle, hello), L_TITLE_BASE * k, lTitle);
+        }
         // Text tabs (the selected one in bold, in the main text color); with focus on the tabs, the selected one gets
         // the white pill with a shadow and grows a little (the tvOS focus).
         float focus = Ui.clamp(topFocus[tab].value);
