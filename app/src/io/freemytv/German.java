@@ -22,6 +22,7 @@ final class German {
             case "24h change": return "Änderung in 24 h";
             case "For You": return "Für dich";
             case "Learn today": return "Heute lernen";
+            case "Highlights": return "Highlights";
             case "Couldn't open ": return "Konnte nicht öffnen: ";
             case " of ": return " von ";
             case "← → to move · OK to drop · Back to cancel": return "← → verschieben · OK ablegen · Zurück abbrechen";

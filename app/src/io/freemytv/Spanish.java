@@ -22,6 +22,7 @@ final class Spanish {
             case "24h change": return "variación en 24 h";
             case "For You": return "Para ti";
             case "Learn today": return "Aprender hoy";
+            case "Highlights": return "Resumen";
             case "Couldn't open ": return "No se pudo abrir ";
             case " of ": return " de ";
             case "← → to move · OK to drop · Back to cancel": return "← → para mover · OK para soltar · Atrás para cancelar";

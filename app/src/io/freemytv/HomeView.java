@@ -95,11 +95,11 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private static final float L_PLATTER_TOP = 814, L_TILE_H = 126;
     private static final float L_DATE_BASE = 330, L_CLOCK_BASE = 540, L_WEATHER_BASE = 626, L_QUOTES_BASE = 694;
     private static final int L_INK = 0xFF1D1D1F, L_DIM = 0xFF6E6E73, L_FAINT = 0xFF8E8E93;
-    private static final String[] TABS = {"Explorar", "Filmes", "Séries", "Infantil", "Stremio"};
-    private static final String[] TABS_RU = {"Обзор", "Фильмы", "Сериалы", "Детям", "Stremio"};
-    private static final String[] TABS_EN = {"Explore", "Movies", "Shows", "Kids", "Stremio"};
-    private static final String[] TABS_ES = {"Explorar", "Películas", "Series", "Infantil", "Stremio"};
-    private static final String[] TABS_DE = {"Entdecken", "Filme", "Serien", "Kinder", "Stremio"};
+    private static final String[] TABS = {"Explorar", "Filmes", "Séries", "Infantil", "Stremio", "Futebol", "Notícias"};
+    private static final String[] TABS_RU = {"Обзор", "Фильмы", "Сериалы", "Детям", "Stremio", "Футбол", "Новости"};
+    private static final String[] TABS_EN = {"Explore", "Movies", "Shows", "Kids", "Stremio", "Soccer", "News"};
+    private static final String[] TABS_ES = {"Explorar", "Películas", "Series", "Infantil", "Stremio", "Fútbol", "Noticias"};
+    private static final String[] TABS_DE = {"Entdecken", "Filme", "Serien", "Kinder", "Stremio", "Fußball", "Nachrichten"};
     private static final String[] TAB_KIND = Recs.TAB_KINDS;
     /** In topRects and topFocus: the tabs first, then the three icon-only buttons. */
     private static final int TAB_COUNT = TAB_KIND.length;
@@ -2647,7 +2647,15 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
                 retarget(false);
             }
         }
-        for (Recs.Pick p : recs.wanted()) recs.backdrop(p);   // all the tabs preloaded: switching tabs is instant
+        // This tab and the next one on each side preloaded: moving to a tab is instant. Not all of them: seven tabs'
+        // cards are too much memory for a 2 GB TV.
+        List<Recs.Pick> preload = new ArrayList<>(cards);
+        for (int d = -1; d <= 1; d += 2) {
+            int t = tab + d;
+            while (t >= 0 && t < TAB_COUNT && !tabShown(t)) t += d;
+            if (t >= 0 && t < TAB_COUNT) preload.addAll(recs.now(TAB_KIND[t]));
+        }
+        recs.preload(preload);
         Backdrop b = cards.isEmpty() ? null : recs.backdrop(cards.get(0));
         if (cards.isEmpty() || b != null) showBackdrop(b);
         heroDirty = true;

@@ -62,8 +62,10 @@ final class Recs {
     /** The Stremio tab: trending titles that aren't on the TV's apps, and new releases; they open in Stremio. */
     static final String STREMIO = "stremio";
     static final String STREMIO_APP = "com.stremio.one";
-    /** The home screen tabs' kinds, in order (Explore, Movies, Shows, Kids, Stremio). */
-    static final String[] TAB_KINDS = {null, "movie", "tv", KIDS, STREMIO};
+    /** The Soccer and News tabs: the newest videos of a few YouTube channels (Feeds). */
+    static final String SOCCER = "soccer", NEWS = "news";
+    /** The home screen tabs' kinds, in order (Explore, Movies, Shows, Kids, Stremio, Soccer, News). */
+    static final String[] TAB_KINDS = {null, "movie", "tv", KIDS, STREMIO, SOCCER, NEWS};
     /** "Learn today" plays in the YouTube app (YouTube Kids for TV closed: kids' profiles are in YouTube now). */
     private static final String YOUTUBE = "com.google.android.youtube.tv";
     private static final int MANHA = 0, TARDE = 1, NOITE = 2;
@@ -196,6 +198,7 @@ final class Recs {
     List<Pick> now(String kind) {
         List<Pick> list = new ArrayList<>();
         if (!hasKey(context)) return list;    // no TMDB key: no recommendations
+        if (SOCCER.equals(kind) || NEWS.equals(kind)) return installed(YOUTUBE) ? Feeds.get(context).now(kind) : list;
         boolean kids = KIDS.equals(kind);
         String tab = kids || STREMIO.equals(kind) ? kind : null;
         Map<String, Boolean> have = new HashMap<>();   // one look per app, not per title (this runs every 15 s)
@@ -284,6 +287,19 @@ final class Recs {
         return p == null || p.app == null ? "" : SERVICE_NAME.get(p.app);
     }
 
+    private volatile java.util.Set<String> keep = new java.util.HashSet<>();
+
+    /**
+     * Light design: builds these picks' backdrops (the tab on screen and its neighbors, so the next tab is instant), and
+     * keeps them over the others when memory is full.
+     */
+    void preload(List<Pick> list) {
+        java.util.Set<String> k = new java.util.HashSet<>();
+        for (Pick p : list) if (p.backdrop != null) k.add(p.backdrop);
+        keep = k;
+        for (Pick p : list) backdrop(p);
+    }
+
     /** The pick's ready backdrop (or null: builds it in the background and notifies when it's ready). */
     Backdrop backdrop(Pick p) {
         if (p == null || p.backdrop == null) return null;
@@ -313,7 +329,9 @@ final class Recs {
 
     /** With a key: fetches the list if stale or the time of day (morning/afternoon/night) changed; then the details. */
     void refreshIfStale() {
-        if (!hasKey(context) || fetching) return;
+        if (!hasKey(context)) return;
+        Feeds.get(context).refreshIfStale(this::notifyListeners);
+        if (fetching) return;
         long now = System.currentTimeMillis();
         long stamp = sourceStamp();   // a new key, country or installed streaming-app set refetches
         boolean newKey = stamp != keyStamp;
@@ -756,6 +774,12 @@ final class Recs {
         File part = new File(f.getPath() + ".part");
         String url = p.video != null ? "https://i.ytimg.com/vi/" + p.video + "/maxresdefault.jpg" : IMAGES + p.backdrop;
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
+        if (p.video != null && c.getResponseCode() == 404) {
+            // A video from the past hour often has no full-size picture yet; the 480×360 one has the 16:9 frame
+            // between bars, and Backdrop's crop takes just that.
+            c.disconnect();
+            c = (HttpURLConnection) new URL("https://i.ytimg.com/vi/" + p.video + "/hqdefault.jpg").openConnection();
+        }
         c.setConnectTimeout(8000);
         c.setReadTimeout(20000);
         try (InputStream in = c.getInputStream(); FileOutputStream out = new FileOutputStream(part)) {
@@ -795,8 +819,12 @@ final class Recs {
             if (forLight != light) return;   // the design changed midway: this one is stale
             synchronized (images) {
                 images.put(p.backdrop, backdrop);
-                // Light design: every tab's 3 cards (wanted()) plus one, or they push each other out and reload forever.
-                while (images.size() > (forLight ? TAB_KINDS.length * 3 + 1 : 4)) images.remove(images.keySet().iterator().next());
+                // Light design: the cards of the tab on screen and its two neighbors (preload), plus one. The ones in
+                // use go last, or they would push each other out and reload forever.
+                int max = forLight ? 3 * 3 + 1 : 4;
+                java.util.Iterator<String> old = images.keySet().iterator();
+                while (images.size() > max && old.hasNext()) if (!keep.contains(old.next())) old.remove();
+                while (images.size() > max) images.remove(images.keySet().iterator().next());
             }
             notifyListeners();
         } catch (IOException | RuntimeException | OutOfMemoryError e) {

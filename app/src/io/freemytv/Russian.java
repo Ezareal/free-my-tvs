@@ -29,6 +29,7 @@ final class Russian {
             case "24h change": return "изменение за 24 ч";
             case "For You": return "Для вас";
             case "Learn today": return "Учимся сегодня";
+            case "Highlights": return "Лучшие моменты";
             case "← → to move · OK to drop · Back to cancel": return "← → — переместить · OK — оставить · Назад — отмена";
             case "Moving ": return "Перемещение: ";
             case ", position ": return ", место ";

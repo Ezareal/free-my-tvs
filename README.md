@@ -119,6 +119,8 @@ The first values come from `config.properties`, created by the first build (Goog
 | `currency` | Crypto prices in `USD`, `EUR`, `BRL`… | `USD` |
 | `temperature` | `C`, `F` or `auto` | `auto` |
 | `live_tv_app` | The app the Live TV button opens instead of the antenna, by package name (`ar.tvplayer.tv` = TiviMate) | empty |
+| `soccer_team` | Your football club, first on the Soccer tab (as in video titles: `Arsenal`) | empty |
+| `soccer_team_channel` | Your club's YouTube channel id, added to the Soccer tab's channels | empty |
 | `disable_assistant` | Also turn off Google Assistant | `false` |
 
 Changed something? Run `./build.sh` and install again. Keep `freemytv.keystore`: updates are signed with it.
@@ -202,7 +204,7 @@ The website ([freemytv.io](https://freemytv.io)) is in [`docs/`](docs): plain HT
 
 ## Privacy
 
-No accounts, no analytics, no tracking. The app talks to TMDB, Open-Meteo (with the coordinates you set, or your time zone's main city), and CoinGecko (Binance on LG and Samsung) only when `show_crypto=true`. Your settings stay on your computer and your TV.
+No accounts, no analytics, no tracking. The app talks to TMDB, Open-Meteo (with the coordinates you set, or your time zone's main city), CoinGecko (Binance on LG and Samsung) only when `show_crypto=true`, and on Android YouTube: the public feeds of the Soccer and News tabs' channels and the pictures of their videos and of Learn today. Your settings stay on your computer and your TV.
 
 ## Credits
 
