@@ -20,20 +20,21 @@ JAVAC="${JAVA_HOME:+$JAVA_HOME/bin/}javac"
 KEYTOOL="${JAVA_HOME:+$JAVA_HOME/bin/}keytool"
 command -v "$JAVAC" >/dev/null 2>&1 || { echo "JDK not found. Install JDK 17 and set JAVA_HOME."; exit 1; }
 
-# --- Settings: config.properties -> Config.java
-if [ ! -f config.properties ]; then
-  cp config.example.properties config.properties
-  echo "Created config.properties: add your TMDB key and your city there (optional), then build again."
+# --- Settings: config.properties -> Config.java (CONFIG=config-shop.properties ./build.sh builds from another one)
+CONFIG="${CONFIG:-config.properties}"
+if [ ! -f "$CONFIG" ]; then
+  cp config.example.properties "$CONFIG"
+  echo "Created $CONFIG: add your TMDB key and your city there (optional), then build again."
 fi
 prop() {
   local v
-  v="$(grep -E "^[[:space:]]*$1[[:space:]]*=" config.properties | tail -1 | cut -d= -f2- || true)"
+  v="$(grep -E "^[[:space:]]*$1[[:space:]]*=" "$CONFIG" | tail -1 | cut -d= -f2- || true)"
   v="$(printf '%s' "$v" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | tr -d '"\\')"
   printf '%s' "${v:-$2}"
 }
 number() {
   local v; v="$(prop "$1" "$2")"
-  [[ "$v" =~ ^-?[0-9]+(\.[0-9]+)?$ ]] || { echo "config.properties: $1 must be a number (got \"$v\")" >&2; exit 1; }
+  [[ "$v" =~ ^-?[0-9]+(\.[0-9]+)?$ ]] || { echo "$CONFIG: $1 must be a number (got \"$v\")" >&2; exit 1; }
   printf '%s' "$v"
 }
 LAT="$(number latitude 40.7128)"
@@ -59,6 +60,7 @@ final class Config {
     static final String TEMPERATURE = "$(prop temperature auto)";
     static final String LIVE_TV_APP = "$(prop live_tv_app '')";
     static final String TITLE = "$(prop title for_you)";
+    static final String TABS = "$(prop tabs '')";
     static final String SOCCER_TEAM = "$(prop soccer_team '')";
     static final String SOCCER_TEAM_CHANNEL = "$(prop soccer_team_channel '')";
     static final boolean DISABLE_ASSISTANT = $ASSIST;

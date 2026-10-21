@@ -92,9 +92,12 @@ final class Feeds {
 
     private static List<String[]> channels() {
         List<String[]> out = new ArrayList<>();
-        if (!TEAM_CHANNEL.isEmpty()) out.add(new String[] {TEAM.isEmpty() ? "YouTube" : TEAM, TEAM_CHANNEL, "soccer"});
-        for (String[] ch : SOCCER) out.add(new String[] {ch[0], ch[1], "soccer"});
-        for (String[] ch : NEWS) out.add(new String[] {ch[0], ch[1], "news"});
+        // A tab hidden in config.properties "tabs" doesn't check its channels.
+        if (Recs.tabOn(Recs.SOCCER)) {
+            if (!TEAM_CHANNEL.isEmpty()) out.add(new String[] {TEAM.isEmpty() ? "YouTube" : TEAM, TEAM_CHANNEL, "soccer"});
+            for (String[] ch : SOCCER) out.add(new String[] {ch[0], ch[1], "soccer"});
+        }
+        if (Recs.tabOn(Recs.NEWS)) for (String[] ch : NEWS) out.add(new String[] {ch[0], ch[1], "news"});
         return out;
     }
 

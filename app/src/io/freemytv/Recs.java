@@ -66,6 +66,23 @@ final class Recs {
     static final String SOCCER = "soccer", NEWS = "news";
     /** The home screen tabs' kinds, in order (Explore, Movies, Shows, Kids, Stremio, Soccer, News). */
     static final String[] TAB_KINDS = {null, "movie", "tv", KIDS, STREMIO, SOCCER, NEWS};
+    /** The tabs' names for config.properties "tabs" (which to show; empty: all). Explore always shows. */
+    private static final String[] TAB_NAMES = {"explore", "movies", "shows", "kids", "stremio", "soccer", "news"};
+    private static final boolean[] TAB_ON = tabsOn(Config.TABS);
+
+    private static boolean[] tabsOn(String setting) {
+        String list = "," + setting.toLowerCase(Locale.ROOT).replace(" ", "") + ",";
+        boolean[] on = new boolean[TAB_KINDS.length];
+        for (int i = 0; i < on.length; i++) on[i] = i == 0 || list.equals(",,") || list.contains("," + TAB_NAMES[i] + ",");
+        return on;
+    }
+
+    /** Whether the tab with this kind (TAB_KINDS) is on in config.properties "tabs". */
+    static boolean tabOn(String kind) {
+        for (int i = 0; i < TAB_KINDS.length; i++) if (java.util.Objects.equals(TAB_KINDS[i], kind)) return TAB_ON[i];
+        return true;
+    }
+
     /** Cards per tab: a row that scrolls (5 on screen at once). */
     static final int CARDS = 8;
     /** Card images kept ready: the tab on screen (all of its cards) and the first 3 of each neighbor, plus one. */
@@ -348,7 +365,8 @@ final class Recs {
         boolean stale = newKey || p != period || now - listAt > LIST_EVERY || now < listAt || picks.isEmpty()
                 || !listLanguage.equals(Ui.language);
         boolean missing = false;
-        for (Pick pick : wanted()) missing |= !pick.detailed || !hasImage(pick);
+        boolean low = lowStorage(context.getCacheDir());     // then images download only for the tabs on screen
+        for (Pick pick : wanted()) missing |= !pick.detailed || (!low && !hasImage(pick));
         if (!stale && !missing) return;
         keyStamp = stamp;
         fetching = true;
@@ -362,7 +380,7 @@ final class Recs {
                     tried++;
                     try {
                         if (!pick.detailed) fetchDetails(pick);
-                        if (pick.pkg != null) download(pick);
+                        if (pick.pkg != null && !low) download(pick);
                     } catch (Exception e) {
                         failures++;
                         last = e.getMessage() == null ? e.toString() : e.getMessage();
@@ -421,7 +439,7 @@ final class Recs {
      * time in the background, so it has more photos. Not used otherwise.
      */
     void prefetchAll() {
-        if (!hasKey(context) || fetching) return;
+        if (!hasKey(context) || fetching || lowStorage(context.getCacheDir())) return;
         long sinceFail = System.currentTimeMillis() - failedAt;
         if (failedAt != 0 && sinceFail >= 0 && sinceFail < 10 * 60_000L) return;
         List<Pick> todo = new ArrayList<>();
@@ -460,6 +478,7 @@ final class Recs {
         List<Pick> out = new ArrayList<>();
         java.util.Set<String> seen = new java.util.HashSet<>();
         for (String kind : TAB_KINDS) {
+            if (!tabOn(kind)) continue;     // a hidden tab: nothing to fetch or download
             for (Pick p : now(kind)) if (seen.add(key(p))) out.add(p);
         }
         return out;
@@ -524,18 +543,20 @@ final class Recs {
         alternate(list, seen, hotMovies, hotShows, 24);
         alternate(list, seen, newMovies, newShows, 24);
         // 3. The Kids tab: popular family movies rated G or PG and kids' shows on the TV's services, up to 12 more.
-        JSONArray kidsMovies = get("/discover/movie?vote_count.gte=100&with_genres=10751&certification_country=US"
-                + "&certification.lte=PG" + common).getJSONArray("results");
-        JSONArray kidsShows = get("/discover/tv?vote_count.gte=20&with_genres=10762" + common).getJSONArray("results");
-        List<Pick> familyMovies = new ArrayList<>(), childShows = new ArrayList<>();
-        for (int i = 0; i < kidsMovies.length(); i++) add(familyMovies, kidsMovies.getJSONObject(i), "movie");
-        for (int i = 0; i < kidsShows.length(); i++) add(childShows, kidsShows.getJSONObject(i), "tv");
-        for (Pick k : familyMovies) k.tab = KIDS;
-        for (Pick k : childShows) k.tab = KIDS;
-        alternate(list, seen, familyMovies, childShows, list.size() + 12);
+        if (tabOn(KIDS)) {
+            JSONArray kidsMovies = get("/discover/movie?vote_count.gte=100&with_genres=10751&certification_country=US"
+                    + "&certification.lte=PG" + common).getJSONArray("results");
+            JSONArray kidsShows = get("/discover/tv?vote_count.gte=20&with_genres=10762" + common).getJSONArray("results");
+            List<Pick> familyMovies = new ArrayList<>(), childShows = new ArrayList<>();
+            for (int i = 0; i < kidsMovies.length(); i++) add(familyMovies, kidsMovies.getJSONObject(i), "movie");
+            for (int i = 0; i < kidsShows.length(); i++) add(childShows, kidsShows.getJSONObject(i), "tv");
+            for (Pick k : familyMovies) k.tab = KIDS;
+            for (Pick k : childShows) k.tab = KIDS;
+            alternate(list, seen, familyMovies, childShows, list.size() + 12);
+        }
         // 4. The Stremio tab (only with Stremio on the TV): this week's trending titles that none of the TV's apps
         //    stream (the other tabs have those), then the past 4 months' most popular releases; up to 18 more.
-        if (installed(STREMIO_APP)) {
+        if (tabOn(STREMIO) && installed(STREMIO_APP)) {
             List<Pick> elsewhereMovies = new ArrayList<>(), elsewhereShows = new ArrayList<>();
             for (Pick t : elsewhere) (t.kind.equals("movie") ? elsewhereMovies : elsewhereShows).add(forStremio(t));
             String recent = "&include_adult=false&sort_by=popularity.desc&language=" + lang();
@@ -850,6 +871,14 @@ final class Recs {
         }
     }
 
+    /**
+     * Less than 600 MB free (a Chromecast HD can have 150): images only download for the tabs you open (preload), the
+     * screensaver doesn't fetch more, and at most 24 stay on disk.
+     */
+    private static boolean lowStorage(File dir) {
+        return dir.getUsableSpace() < 600L * 1024 * 1024;
+    }
+
     private static void prune(File dir) {
         // A download cut off when the system stopped the app leaves its .part behind.
         long stale = System.currentTimeMillis() - 10 * 60_000L;
@@ -859,9 +888,10 @@ final class Recs {
             if (parts[i].lastModified() < stale) parts[i].delete();
         }
         File[] files = dir.listFiles((d, name) -> !name.endsWith(".part"));
-        if (files == null || files.length <= ON_DISK) return;
+        int keep = lowStorage(dir) ? 24 : ON_DISK;
+        if (files == null || files.length <= keep) return;
         Arrays.sort(files, (a, b) -> Long.compare(a.lastModified(), b.lastModified()));
-        for (int i = 0; i < files.length - ON_DISK; i++) {
+        for (int i = 0; i < files.length - keep; i++) {
             //noinspection ResultOfMethodCallIgnored
             files[i].delete();
         }

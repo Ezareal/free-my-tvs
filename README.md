@@ -119,6 +119,7 @@ The first values come from `config.properties`, created by the first build (Goog
 | `currency` | Crypto prices in `USD`, `EUR`, `BRL`… | `USD` |
 | `temperature` | `C`, `F` or `auto` | `auto` |
 | `live_tv_app` | The app the Live TV button opens instead of the antenna, by package name (`ar.tvplayer.tv` = TiviMate) | empty |
+| `tabs` | Which tabs to show: `explore`, `movies`, `shows`, `kids`, `stremio`, `soccer`, `news` (Explore always shows). `CONFIG=config-shop.properties ./build.sh` builds from another settings file, for a second setup | all |
 | `title` | The top of the home screen: `for_you` or `verse` (the date and a KJV verse of the day) | `for_you` |
 | `soccer_team` | Your football club, first on the Soccer tab (as in video titles: `Arsenal`) | empty |
 | `soccer_team_channel` | Your club's YouTube channel id, added to the Soccer tab's channels | empty |

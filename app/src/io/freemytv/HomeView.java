@@ -489,8 +489,9 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         return Ui.ru ? TABS_RU : Ui.es ? TABS_ES : Ui.de ? TABS_DE : Ui.en ? TABS_EN : TABS;
     }
 
+    /** The tabs on in config.properties "tabs"; Stremio's only with Stremio on the TV. */
     private boolean tabShown(int i) {
-        return !Recs.STREMIO.equals(TAB_KIND[i]) || stremioOn;
+        return Recs.tabOn(TAB_KIND[i]) && (!Recs.STREMIO.equals(TAB_KIND[i]) || stremioOn);
     }
 
     private int tabsShown() {
