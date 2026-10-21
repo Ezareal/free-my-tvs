@@ -405,7 +405,7 @@ public class SettingsActivity extends Activity {
 
             float y = (LIST_TOP + 6 * (ROW_H + ROW_GAP) + 20) * k;
             String error = state.optString("error");
-            if (working && (busyText.contains("Permitir") || busyText.contains("Allow") || busyText.contains("разрешите"))) {
+            if (working && (busyText.contains("Permitir") || busyText.contains("Allow") || busyText.contains("отладку по USB"))) {
                 c.drawText(Ui.tr("Na TV: marque “Sempre permitir” e aperte OK.", "On the TV: tick “Always allow” and press OK."),
                         LIST_X * k + 30 * k, y, warn);
                 y += 46 * k;
@@ -436,7 +436,7 @@ public class SettingsActivity extends Activity {
             String error = recs.optString("error");
             int count = recs.optInt("count");
             if (!hasKey) line = Ui.tr("Sem chave do TMDB: veja o README (config.properties).", "No TMDB key: see the README (config.properties).");
-            else if (!error.isEmpty()) line = Ui.tr("Erro: ", "Error: ") + error + ".";
+            else if (!error.isEmpty()) line = Ui.tr("Erro: ", "Error: ") + (Ui.ru ? Russian.text(error) : error) + ".";
             else if (count > 0) line = Ui.tr("Ligadas · " + count + " títulos nos apps da TV, 3 novos a cada hora.",
                     "On · " + count + " titles from the TV's apps, 3 new ones every hour.");
             else line = Ui.tr("Buscando os títulos…", "Fetching titles…");
@@ -628,10 +628,6 @@ public class SettingsActivity extends Activity {
         /** Home Settings: language, temperature, theme, weather, quotes, then one row per coin. */
         private static final int CITY_ROW = 4, COIN_ROWS = 6;
 
-        private boolean dollar() {
-            return "BRL".equalsIgnoreCase(Config.CURRENCY.trim());
-        }
-
         private String[] settingLabels() {
             List<String> l = new ArrayList<>();
             l.add(Ui.tr("Idioma", "Language"));
@@ -643,7 +639,7 @@ public class SettingsActivity extends Activity {
             l.add("Bitcoin");
             l.add("Ethereum");
             l.add("Solana");
-            if (dollar()) l.add(Ui.tr("Dólar", "Dollar"));
+            if (HomeData.dollar()) l.add(Ui.tr("Dólar", "Dollar"));
             return l.toArray(new String[0]);
         }
 

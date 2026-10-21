@@ -11,6 +11,8 @@ Open source. Built with Claude Code. One button to undo.
 
 [**freemytv.io**](https://freemytv.io) · [Install](#install) · [LG TVs](#lg-tvs-webos) · [Samsung TVs](#samsung-tvs-tizen) · [Any TV](#any-tv) · [Make it yours](#make-it-yours)
 
+English · [Русский](README.ru.md)
+
 <img src=".github/preview.webp" width="880" alt="The Free My TV home screen: a glass shelf of apps, trending picks, and a drawer with the weather and crypto prices">
 
 </div>
@@ -116,7 +118,7 @@ The first values come from `config.properties`, created by the first build (Goog
 | `city` | The name on the weather card | `Weather` |
 | `language` | `auto` (follows the TV), `en`, `es`, `pt`, `ru` or `de` | `auto` |
 | `show_crypto` | Show Binance crypto prices on home and screensaver | `true` |
-| `currency` | Crypto prices in `USD`, `EUR`, `BRL`… | `USD` |
+| `currency` | Crypto prices in `USD`, `EUR`, `BRL`, `RUB`… | `USD` |
 | `temperature` | `C`, `F` or `auto` | `auto` |
 | `disable_assistant` | Also turn off Google Assistant | `false` |
 

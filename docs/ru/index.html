@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <script>
+    // Russian page: a remembered pick from the language switch sends the visitor to English or Portuguese.
+    (function () {
+      var lang;
+      try { lang = localStorage.getItem("lang"); } catch (e) {}
+      if (lang === "en") location.replace("../" + location.search + location.hash);
+      else if (lang === "pt") location.replace("../pt/" + location.search + location.hash);
+    })();
+  </script>
+  <title>Free My TV: быстрый главный экран без рекламы для Google TV, LG и Samsung</title>
+  <meta name="description" content="Главный экран с открытым кодом для Google TV, Android TV, LG и Samsung. Без рекламы, 60 fps, рекомендации из ваших приложений и вид, который меняется вместе с закатом. Одна кнопка, и всё как было.">
+  <link rel="canonical" href="https://freemytv.io/ru/">
+  <link rel="alternate" hreflang="en" href="https://freemytv.io/">
+  <link rel="alternate" hreflang="pt-BR" href="https://freemytv.io/pt/">
+  <link rel="alternate" hreflang="ru" href="https://freemytv.io/ru/">
+  <link rel="alternate" hreflang="x-default" href="https://freemytv.io/">
+  <meta name="theme-color" content="#F5F5F7">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ru_RU">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta property="og:locale:alternate" content="pt_BR">
+  <meta property="og:url" content="https://freemytv.io/ru/">
+  <meta property="og:title" content="Free My TV">
+  <meta property="og:description" content="Быстрый главный экран без рекламы для Google TV, LG и Samsung. С открытым кодом. Одна кнопка, и всё как было.">
+  <meta property="og:image" content="https://freemytv.io/assets/og.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Free My TV">
+  <meta name="twitter:description" content="Быстрый главный экран без рекламы для Google TV, LG и Samsung. С открытым кодом. Одна кнопка, и всё как было.">
+  <meta name="twitter:image" content="https://freemytv.io/assets/og.jpg">
+  <link rel="icon" type="image/png" href="../assets/favicon-64.png">
+  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+  <link rel="preload" href="../assets/fonts/InterVariable.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+  <div class="sky" aria-hidden="true"><span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span></div>
+
+  <header class="nav" id="nav">
+    <a class="brand" href="#top" aria-label="Free My TV, наверх">
+      <img src="../assets/icon-512.png" alt="" width="30" height="30">
+      <span>Free My TV</span>
+    </a>
+    <nav class="links" aria-label="Разделы">
+      <a href="#features">Возможности</a>
+      <a href="#how">Как это работает</a>
+      <a href="#install">Установка</a>
+      <a href="#faq">Вопросы</a>
+    </nav>
+    <div class="nav-end">
+      <a class="lang" href="../" hreflang="en" lang="en" data-lang="en" aria-label="Read in English">EN</a>
+      <a class="lang" href="../pt/" hreflang="pt-BR" lang="pt-BR" data-lang="pt" aria-label="Ler em português">PT</a>
+      <a class="btn btn-dark btn-sm" href="https://github.com/simbasjungles/free-my-tv" rel="noopener">
+      <svg class="gh" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      <span>GitHub</span>
+      </a>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="kicker" data-reveal>Открытый код · Google TV, Android TV, LG и Samsung</p>
+        <h1 data-reveal>Экран снова <span class="grad">ваш.</span></h1>
+        <p class="lede" data-reveal>Замените главный экран, набитый рекламой, на быстрый и чистый. Популярное из ваших же приложений, погода перед глазами и вид, который меняется вместе с закатом. Одна кнопка, и всё как было.</p>
+        <div class="cta" data-reveal>
+          <a class="btn btn-dark" href="https://github.com/simbasjungles/free-my-tv" rel="noopener">Скачать на GitHub <span aria-hidden="true">→</span></a>
+          <button class="btn btn-glass" type="button" data-film><span class="play" aria-hidden="true"></span>Смотреть ролик, 45 секунд</button>
+        </div>
+        <p class="built" data-reveal>Сделано в <b>Claude Code</b> · лицензия MIT</p>
+      </div>
+      <div class="hero-stage" data-reveal>
+        <div class="tv tilt" id="heroTv">
+          <div class="screen">
+            <video data-src="../assets/nav.mp4" poster="../assets/nav-poster.webp" muted loop playsinline preload="none" aria-label="Главный экран Free My TV: переход между приложениями"></video>
+          </div>
+        </div>
+        <div class="floor" aria-hidden="true"></div>
+      </div>
+      <ul class="stats" data-reveal>
+        <li><b>60 fps</b><span>плавно на GPU самого телевизора</span></li>
+        <li><b>−60%</b><span>памяти главного экрана</span></li>
+        <li><b>0</b><span>рекламы, баннеров и промо</span></li>
+        <li><b>1 кнопка</b><span>чтобы вернуть заводской в любой момент</span></li>
+      </ul>
+    </section>
+
+    <!-- Before / after -->
+    <section class="section compare" id="compare">
+      <div class="head" data-reveal>
+        <p class="kicker">До → после</p>
+        <h2>Главный экран не должен быть рекламным щитом.</h2>
+        <p class="sub">Перетащите, чтобы сравнить. Тот же телевизор, те же приложения, без рекламных рядов.</p>
+      </div>
+      <div class="tv ba" id="ba" data-reveal tabindex="0" role="slider" aria-label="Сравнить заводской главный экран и Free My TV" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
+        <div class="screen">
+          <img class="after" src="../assets/home-day.webp" alt="Главный экран Free My TV: три рекомендации и стеклянный ряд избранных приложений" loading="lazy">
+          <div class="before-wrap"><img class="before" src="../assets/before.webp" alt="Типичный заводской главный экран, полный рекламных рядов (иллюстрация)" loading="lazy"></div>
+          <span class="tag tag-l">Заводской главный экран <em>(иллюстрация)</em></span>
+          <span class="tag tag-r">Free My TV</span>
+          <div class="handle" aria-hidden="true"><span></span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="section features" id="features">
+      <article class="feature" data-reveal>
+        <div class="copy">
+          <p class="kicker">Главный экран</p>
+          <h3>Ваши приложения в центре внимания.</h3>
+          <p>Стриминговые приложения, которыми вы правда пользуетесь, в стеклянном ряду, который оживает от нажатий пульта. Ни промо-рядов, ни рекламы, которая включается сама, ничего, о чём вы не просили.</p>
+        </div>
+        <div class="tv"><div class="screen"><video data-src="../assets/nav.mp4" poster="../assets/nav-poster.webp" muted loop playsinline preload="none" aria-label="Переход по ряду избранных приложений"></video></div></div>
+      </article>
+
+      <article class="feature flip" data-reveal>
+        <div class="copy">
+          <p class="kicker">Рекомендации</p>
+          <h3>Популярное, а не оплаченное.</h3>
+          <p>Три новые рекомендации каждый час: из того, что популярно на этой неделе, и из новинок, только из приложений, которые у вас уже есть. У фильмов и сериалов свои вкладки. Данные берутся из TMDB.</p>
+        </div>
+        <div class="tv"><div class="screen"><video data-src="../assets/tabs.mp4" poster="../assets/tabs-poster.webp" muted loop playsinline preload="none" aria-label="Переключение между вкладками «Обзор», «Фильмы» и «Сериалы»"></video></div></div>
+      </article>
+
+      <article class="feature" data-reveal>
+        <div class="copy">
+          <p class="kicker">Скорость</p>
+          <h3>Погода и курсы в одно нажатие.</h3>
+          <p>Нажмите на пульте вниз: прогноз по часам, время восхода и заката, курсы криптовалют. Нижняя панель выезжает с частотой 60 кадров в секунду, без единого опоздавшего кадра, на скромном процессоре самого телевизора.</p>
+          <div class="hud" aria-hidden="true"><i></i><b>60 FPS</b><svg viewBox="0 0 120 24" preserveAspectRatio="none"><polyline id="spark" fill="none" points=""/></svg><span>16,6 мс</span></div>
+        </div>
+        <div class="tv"><div class="screen"><video data-src="../assets/drawer.mp4" poster="../assets/drawer-poster.webp" muted loop playsinline preload="none" aria-label="Открывается нижняя панель с погодой и курсами криптовалют"></video></div></div>
+      </article>
+    </section>
+
+    <!-- Sunset: scroll to go from day to night -->
+    <section class="sunset" id="sunset" aria-label="Днём светло, ночью темно.">
+      <div class="sticky">
+        <div class="stars" aria-hidden="true"></div>
+        <div class="sun" aria-hidden="true"></div>
+        <div class="moon" aria-hidden="true"></div>
+        <div class="head">
+          <p class="kicker"><span class="clock" id="sunClock">17:20</span> · настоящий закат вашего города</p>
+          <h2><span class="w-day">Днём светло.</span> <span class="w-night">Ночью темно.</span></h2>
+          <p class="sub">Free My TV знает, когда в вашем городе на самом деле садится солнце, и плавно переходит к тёмному оформлению, как телефон. Настраивать ничего не нужно.</p>
+        </div>
+        <div class="tv"><div class="screen">
+          <img src="../assets/day.webp" alt="Главный экран днём" loading="lazy">
+          <img class="night" src="../assets/night.webp" alt="Тот же главный экран ночью" loading="lazy">
+        </div></div>
+      </div>
+    </section>
+
+    <!-- Numbers -->
+    <section class="section numbers" id="numbers">
+      <div class="head" data-reveal>
+        <p class="kicker">Измерено на настоящем телевизоре</p>
+        <h2>Легче, быстрее, спокойнее.</h2>
+        <p class="sub">98″ TCL Google TV на Android 14: заводской главный экран против Free My TV.</p>
+      </div>
+      <div class="cards">
+        <div class="card" data-reveal><b class="big grad-mint"><span data-count="60">0</span><small>fps</small></b><h4>Плавно</h4><p>Каждый кадр за 16,6 мс, на GPU самого телевизора.</p></div>
+        <div class="card" data-reveal><b class="big grad-sky">−<span data-count="60">0</span>%</b><h4>Память</h4>
+          <div class="bars"><div><span>Заводской</span><i style="--w:100%"></i><em>242 МБ</em></div><div><span>Free My TV</span><i style="--w:40%"></i><em>96 МБ</em></div></div>
+        </div>
+        <div class="card" data-reveal><b class="big grad-sun">0</b><h4>Реклама</h4><p>Никаких рекламных баннеров, рядов и промо. Ни одного.</p></div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="section how" id="how">
+      <div class="head" data-reveal>
+        <p class="kicker">Как это работает</p>
+        <h2>Без root-прав и облака. Только ваш телевизор.</h2>
+      </div>
+      <ol class="steps">
+        <li class="step" data-reveal>
+          <span class="num">1</span>
+          <h4>Разрешите один раз</h4>
+          <p>Включите меню «Для разработчиков» и подтвердите запрос «Разрешить отладку по USB?» на телевизоре. Это единственное разрешение, которое ему нужно.</p>
+        </li>
+        <li class="step" data-reveal>
+          <span class="num">2</span>
+          <h4>Он заменяет главный экран</h4>
+          <p>Через собственный ADB телевизора (localhost: ничего не уходит за пределы телевизора) он становится главным экраном и заставкой, отключает заводской лаунчер и короткий список рекламных приложений. Ничего не удаляется.</p>
+        </li>
+        <li class="step" data-reveal>
+          <span class="num">3</span>
+          <h4>Откатить можно в любой момент</h4>
+          <p>Одна кнопка возвращает заводской главный экран, заставку и все приложения. Если что-то пойдёт не так, Free My TV сам вернёт заводской.</p>
+        </li>
+      </ol>
+    </section>
+
+    <!-- Install -->
+    <section class="section install" id="install">
+      <div class="head" data-reveal>
+        <p class="kicker">Установка</p>
+        <h2>Около десяти минут, от начала до конца.</h2>
+        <p class="sub">Бесплатно, с открытым кодом и легко откатить.</p>
+      </div>
+      <div class="panel" data-reveal>
+        <div class="tabs" role="tablist" aria-label="Способ установки">
+          <button role="tab" aria-selected="true" aria-controls="tab-claude" id="t-claude">С Claude Code</button>
+          <button role="tab" aria-selected="false" aria-controls="tab-manual" id="t-manual">Вручную</button>
+          <button role="tab" aria-selected="false" aria-controls="tab-lg" id="t-lg">Для LG</button>
+          <button role="tab" aria-selected="false" aria-controls="tab-samsung" id="t-samsung">Для Samsung</button>
+        </div>
+
+        <div class="tabpanel" id="tab-claude" role="tabpanel" aria-labelledby="t-claude">
+          <ol class="howto">
+            <li><b>На телевизоре:</b> Настройки → Система → Об устройстве, 7 раз нажмите <em>Сборка ОС Android TV</em>. Вернитесь назад, откройте <em>Для разработчиков</em> и включите <em>Отладку по USB</em>. Запишите IP-адрес телевизора (Настройки → Сеть и Интернет).</li>
+            <li><b>На компьютере:</b> скачайте код.
+              <div class="code"><code>git clone https://github.com/simbasjungles/free-my-tv &amp;&amp; cd free-my-tv</code><button class="copy-btn" type="button" aria-label="Копировать команду">Копировать</button></div>
+            </li>
+            <li><b>Откройте Claude Code в этой папке и скажите:</b>
+              <div class="code prompt"><code>Установи Free My TV на телевизор 192.168.1.50. Я живу в Москве.</code><button class="copy-btn" type="button" aria-label="Копировать запрос">Копировать</button></div>
+              Он установит нужные инструменты, соберёт приложение и поставит его на ваш телевизор. Замените IP-адрес и город на свои.
+            </li>
+            <li><b>Теперь на телевизоре:</b> откройте <em>Free My TV</em> → <em>Главный экран</em> → <em>Free My TV</em> и подтвердите запрос на отладку, отметив <em>Всегда разрешать с этого компьютера</em>.</li>
+          </ol>
+        </div>
+
+        <div class="tabpanel" id="tab-manual" role="tabpanel" aria-labelledby="t-manual" hidden>
+          <ol class="howto">
+            <li><b>На телевизоре:</b> включите <em>Для разработчиков</em> и <em>Отладку по USB</em> (как на другой вкладке) и запишите его IP-адрес.</li>
+            <li><b>Инструменты:</b> JDK (17+), инструменты командной строки Android SDK и adb. На Mac:
+              <div class="code"><code>brew install --cask temurin android-commandlinetools android-platform-tools &amp;&amp; sdkmanager "build-tools;34.0.0" "platforms;android-34"</code><button class="copy-btn" type="button" aria-label="Копировать команду">Копировать</button></div>
+            </li>
+            <li><b>Сборка:</b> при первом запуске создаётся <em>config.properties</em>. Впишите туда свой город, а для рекомендаций возьмите <a href="https://www.themoviedb.org/settings/api" rel="noopener">бесплатный ключ TMDB</a>. Затем соберите снова.
+              <div class="code"><code>git clone https://github.com/simbasjungles/free-my-tv &amp;&amp; cd free-my-tv &amp;&amp; ./build.sh</code><button class="copy-btn" type="button" aria-label="Копировать команду">Копировать</button></div>
+            </li>
+            <li><b>Установка:</b>
+              <div class="code"><code>adb connect 192.168.1.50:5555 &amp;&amp; adb install -r FreeMyTV.apk</code><button class="copy-btn" type="button" aria-label="Копировать команду">Копировать</button></div>
+              На телевизорах TCL также разрешите ему работать в фоне (TCL блокирует это по умолчанию):
+              <div class="code"><code>adb shell &quot;appops set io.freemytv AUTO_START allow || appops set io.freemytv APP_AUTO_START allow&quot;</code><button class="copy-btn" type="button" aria-label="Копировать команду">Копировать</button></div>
+            </li>
+            <li><b>На телевизоре:</b> откройте <em>Free My TV</em> → <em>Главный экран</em> → <em>Free My TV</em>.</li>
+          </ol>
+        </div>
+
+        <div class="tabpanel" id="tab-lg" role="tabpanel" aria-labelledby="t-lg" hidden>
+          <ol class="howto">
+            <li><b>На телевизоре:</b> в LG Content Store установите <em>Developer Mode</em>. Войдите в <a href="https://webostv.developer.lge.com" rel="noopener">бесплатный аккаунт разработчика LG</a>, включите <em>Dev Mode Status</em> (телевизор перезагрузится), затем включите <em>Key Server</em> (сервер ключей). Запишите IP-адрес и кодовую фразу, которые покажет приложение.</li>
+            <li><b>На компьютере:</b> скачайте код и соберите приложение для LG. Добавьте город в <em>config.properties</em>, как для Google TV.
+              <div class="code"><code>git clone https://github.com/simbasjungles/free-my-tv &amp;&amp; cd free-my-tv &amp;&amp; python3 webos/build.py</code><button class="copy-btn" type="button" aria-label="Копировать команду">Копировать</button></div>
+            </li>
+            <li><b>Установка:</b> введите кодовую фразу телевизора, когда скрипт попросит. Free My TV откроется на экране телевизора.
+              <div class="code"><code>python3 webos/install.py 192.168.1.50</code><button class="copy-btn" type="button" aria-label="Копировать команду">Копировать</button></div>
+            </li>
+            <li><b>Быстрый доступ:</b> пока приложение открыто, удерживайте цифровую кнопку на пульте. С этого момента она открывает Free My TV откуда угодно. Раз в месяц нажимайте <em>EXTEND</em> в Developer Mode, чтобы сохранить доступ.</li>
+          </ol>
+        </div>
+
+        <div class="tabpanel" id="tab-samsung" role="tabpanel" aria-labelledby="t-samsung" hidden>
+          <ol class="howto">
+            <li><b>На телевизоре:</b> откройте <em>Приложения</em> и наберите на пульте <em>1&nbsp;2&nbsp;3&nbsp;4&nbsp;5</em>. Включите <em>Режим разработчика</em>, введите IP-адрес компьютера в поле <em>Host PC IP</em> и перезагрузите телевизор.</li>
+            <li><b>На компьютере:</b> скачайте <a href="https://github.com/reisxd/TizenBrewInstaller/releases/latest" rel="noopener">TizenBrew Installer</a>, установщик от сообщества для телевизоров Samsung. Откройте его и подключитесь к телевизору.</li>
+            <li><b>Установка с GitHub:</b> введите строку ниже. На телевизорах 2023 года и новее установщик один раз попросит войти в аккаунт Samsung, чтобы подписать приложение для вашего телевизора.
+              <div class="code"><code>simbasjungles/free-my-tv</code><button class="copy-btn" type="button" aria-label="Копировать">Копировать</button></div>
+            </li>
+            <li><b>Сразу в приложение:</b> в настройках телевизора, в параметрах начального экрана (<em>Start Screen Options</em>) включите <em>Автозапуск последнего приложения</em>: телевизор будет включаться сразу в Free My TV. Город эта сборка берёт из часового пояса телевизора. Чтобы указать точный город и получать рекомендации, Claude Code соберёт приложение с вашими настройками.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- Compatibility -->
+    <section class="section compat" id="compat">
+      <div class="head" data-reveal>
+        <p class="kicker">Совместимость</p>
+        <h2>Работает с любым телевизором.</h2>
+        <p class="sub">Запускается прямо на телевизорах с Google TV и Android TV, а также на LG и Samsung. Любой другой телевизор получает Free My TV через приставку Google TV, подключённую к HDMI.</p>
+      </div>
+      <div class="chips" data-reveal>
+        <span class="chip ok">Google TV</span><span class="chip ok">Android TV</span><span class="chip ok">LG webOS</span><span class="chip ok">Samsung Tizen</span><span class="chip ok">TCL</span><span class="chip ok">Sony</span>
+        <span class="chip ok">Hisense</span><span class="chip ok">Philips</span><span class="chip ok">Xiaomi</span><span class="chip ok">Chromecast with Google TV</span>
+        <span class="chip ok">Google TV Streamer</span><span class="chip ok">NVIDIA Shield</span><span class="chip ok">onn 4K</span>
+      </div>
+      <p class="note" data-reveal>Другая марка или модель? Спросите Claude: он изучит ваш телевизор и подстроит под него Free My TV, то есть найдёт, какой главный экран заменить и какие приложения убрать.</p>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section faq" id="faq">
+      <div class="head" data-reveal>
+        <p class="kicker">Частые вопросы</p>
+        <h2>Хорошие вопросы.</h2>
+      </div>
+      <div class="qs" data-reveal>
+        <details><summary>Это безопасно?</summary><p>Он использует те же команды, что и встроенные инструменты разработчика Android, и работает прямо внутри телевизора. Никаких root-прав, ничего не удаляется: приложения только отключаются и возвращаются одной кнопкой. Изображение, звук, входы, пульт, сервисы Google и Play Store он не трогает никогда.</p></details>
+        <details><summary>Как вернуться к заводскому?</summary><p>Откройте Free My TV → Главный экран → Заводской. Заводской главный экран, заставка и все приложения вернутся ровно такими, какими были. Если новый главный экран упадёт три раза за пять минут, Free My TV сам вернёт заводской.</p></details>
+        <details><summary>Меняется ли качество картинки?</summary><p>Нет. Настройки изображения не меняются, а видео идёт тем же аппаратным путём. Замеры показали одинаковое разрешение и тот же источник видео в обоих режимах.</p></details>
+        <details><summary>Что отключается?</summary><p>Заводские главный экран и заставка (их заменяют), запасной главный экран Google TV, Play Games и YouTube Music, а на телевизорах TCL: TCL Channel, сообщения, демонстрация для магазинов, меню для отелей, руководства, приложения для зеркалирования экрана и сбора логов. Google Assistant отключается, только если вы попросите об этом в config.properties.</p></details>
+        <details><summary>Работает на телевизорах LG?</summary><p>Да. На LG он устанавливается через собственный Developer Mode от LG, без root-прав и без изменений в телевизоре, и открывается одним нажатием цифровой кнопки. Тот же главный экран, те же рекомендации, погода и курсы. Раз в месяц нажимайте EXTEND в приложении Developer Mode, чтобы сохранить доступ.</p></details>
+        <details><summary>Работает на телевизорах Samsung?</summary><p>Да, на телевизорах Samsung с 2017 года и новее. Установка идёт через собственный режим разработчика Samsung с помощью TizenBrew Installer, установщика от сообщества, без root-прав и без изменений в телевизоре. Тот же главный экран, погода и курсы, а город берётся из часового пояса телевизора. Для рекомендаций Claude Code соберёт приложение с вашим бесплатным ключом TMDB.</p></details>
+        <details><summary>Можно переделать под себя?</summary><p>В этом и смысл. Откройте папку в Claude Code и просто попросите: «добавь Crunchyroll в избранное», «покажи цены в рублях», «настрой для моего Sony». Он поменяет код, пересоберёт приложение и поставит его на ваш телевизор.</p></details>
+        <details><summary>Поддерживается ли мой язык?</summary><p>Английский, испанский, португальский, русский и немецкий. Язык берётся из настроек телевизора, или выберите его в настройках Free My TV. Нужен другой? Попросите Claude добавить его.</p></details>
+        <details><summary>Собирает ли Free My TV какие-то данные?</summary><p>Никаких аккаунтов, аналитики и отслеживания. Он обращается только к TMDB (рекомендации), Open-Meteo (погода для вашего города) и Binance (курсы).</p></details>
+        <details><summary>Это бесплатно?</summary><p>Да. Лицензия MIT, и ключ TMDB тоже бесплатный.</p></details>
+      </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="final" data-reveal>
+      <h2>Верните себе телевизор сегодня вечером.</h2>
+      <p class="sub">Открытый код, десять минут и одна кнопка, чтобы всё откатить.</p>
+      <div class="cta">
+        <a class="btn btn-dark" href="https://github.com/simbasjungles/free-my-tv" rel="noopener">Скачать на GitHub <span aria-hidden="true">→</span></a>
+        <button class="btn btn-glass" type="button" data-film><span class="play" aria-hidden="true"></span>Смотреть ролик</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="brand"><img src="../assets/icon-512.png" alt="" width="24" height="24"><span>Free My TV</span></div>
+    <p>Сделано в Claude Code. Лицензия MIT. Проект не связан с Google, TCL, LG, Samsung и стриминговыми сервисами. Названия приложений и логотипы принадлежат их владельцам.</p>
+    <p>Проект использует API TMDB, но TMDB его не одобряет и не сертифицирует. Данные о погоде: <a href="https://open-meteo.com/" rel="noopener">Open-Meteo.com</a> (CC BY 4.0). Курсы: Binance. Иконки Material Symbols, шрифт Inter.</p>
+  </footer>
+
+  <dialog class="film" id="film" aria-label="Ролик Free My TV">
+    <button class="close" type="button" aria-label="Закрыть">×</button>
+    <video controls playsinline preload="none" poster="../assets/film-poster.webp"><source src="../assets/film.mp4" type="video/mp4"></video>
+  </dialog>
+
+  <script src="../app.js" defer></script>
+</body>
+</html>

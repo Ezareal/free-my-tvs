@@ -90,10 +90,13 @@ def build(preview, config):
 
     if preview:
         webapp.preview(app, OUT)
-        print('Preview: open out/webos/index.html (or serve out/webos) in a browser.')
-    print('Built %s (%s %s, %d KB)' % (os.path.basename(IPK), app_id, version, len(data) // 1024))
+        print(webapp.say('Preview: open out/webos/index.html (or serve out/webos) in a browser.',
+                         'Предпросмотр: откройте в браузере out/webos/index.html (или раздайте папку out/webos).'))
+    print(webapp.say('Built %s (%s %s, %d KB)', 'Готово: %s (%s %s, %d КБ)')
+          % (os.path.basename(IPK), app_id, version, len(data) // 1024))
     if not config['tmdbKey']:
-        print('No TMDB key: the picks stay off (everything else works).')
+        print(webapp.say('No TMDB key: the picks stay off (everything else works).',
+                         'Нет ключа TMDB: рекомендаций не будет (всё остальное работает).'))
 
 
 if __name__ == '__main__':

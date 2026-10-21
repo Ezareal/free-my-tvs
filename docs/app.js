@@ -1,8 +1,10 @@
 (() => {
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const pt = document.documentElement.lang.startsWith("pt");
+  const lang = document.documentElement.lang.slice(0, 2);
+  const h24 = lang === "pt" || lang === "ru"; // 24-hour clock
+  const [copy, copied] = { pt: ["Copiar", "Copiado"], ru: ["Копировать", "Скопировано"] }[lang] || ["Copy", "Copied"];
 
-  // The PT/EN switch is remembered, so the automatic choice in <head> doesn't undo it.
+  // The language switch is remembered, so the automatic choice in <head> doesn't undo it.
   document.querySelectorAll("[data-lang]").forEach((a) =>
     a.addEventListener("click", () => {
       try {
@@ -162,7 +164,7 @@
       sticky.style.setProperty("--sunset-faint", rgb(mix([142, 142, 147], [130, 132, 160], e)));
       const minutes = 17 * 60 + 20 + Math.round(e * 50); // 5:20 PM -> 6:10 PM
       const mm = String(minutes % 60).padStart(2, "0");
-      clock.textContent = pt ? `${Math.floor(minutes / 60)}:${mm}` : `${Math.floor(minutes / 60) - 12}:${mm} PM`;
+      clock.textContent = h24 ? `${Math.floor(minutes / 60)}:${mm}` : `${Math.floor(minutes / 60) - 12}:${mm} PM`;
     };
     const queue = () => {
       if (queued) return;
@@ -247,10 +249,10 @@
         sel.removeAllRanges();
         sel.addRange(range);
       }
-      b.textContent = pt ? "Copiado" : "Copied";
+      b.textContent = copied;
       b.classList.add("done");
       setTimeout(() => {
-        b.textContent = pt ? "Copiar" : "Copy";
+        b.textContent = copy;
         b.classList.remove("done");
       }, 1600);
     })
