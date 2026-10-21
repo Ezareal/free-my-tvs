@@ -141,6 +141,7 @@ final class French {
                 }
                 if (english.endsWith(" min ago")) return "il y a " + english.substring(0, english.length() - 4);
                 if (english.endsWith(" h ago")) return "il y a " + english.substring(0, english.length() - 4);
+                if (english.equals("1 days ago")) return "il y a 1 jour";
                 if (english.endsWith(" days ago")) return "il y a " + english.substring(0, english.length() - 9) + " jours";
                 return english;
         }
