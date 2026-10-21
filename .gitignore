@@ -10,8 +10,10 @@ out/
 *.wgt
 __pycache__/
 
-# Formula 1's font is theirs: tools/f1_font.py puts it here on your machine only
+# Formula 1 and MotoGP fonts and artwork are theirs: tools/sport_assets.py puts them here on your machine only
 app/assets/fonts/Formula1-Black.ttf
+app/assets/fonts/MGPDisplay-Bold.ttf
+app/assets/sports/motogp.png
 preview/fonts/
 
 # macOS

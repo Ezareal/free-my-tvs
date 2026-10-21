@@ -35,7 +35,7 @@ import java.util.concurrent.Executors;
 final class Sports {
     private static final long EVERY = 30 * 60_000L, FAST = 5 * 60_000L, AHEAD = 30 * 3600_000L, WEEK = 7 * 86_400_000L;
     private static final int SERIE_A = 0, CHAMPIONS = 1, EUROPA = 2, F1 = 3, MOTO = 4, TENNIS = 5;   // also the priority order
-    private static final int[] ACCENT = {0xFF0B5FA5, 0xFF1B2A8A, 0xFFE8650A, 0xFF14141C, 0xFFB5470B, 0xFF2E8B57};
+    private static final int[] ACCENT = {0xFF0B5FA5, 0xFF1B2A8A, 0xFFE8650A, 0xFF14141C, 0xFF0E0E12, 0xFF2E8B57};
 
     private static Sports instance;
 
@@ -47,7 +47,7 @@ final class Sports {
     private static final class Event {
         int sport, italian;      // italian: 3 for an Italian club, rider, driver or player (the screen is in Italian)
         long start, minutes;     // minutes: how long it lasts, to move on to the next one when it is over
-        String competition, title, home = "", away = "", logoHome = "", logoAway = "", logoComp = "", art = "";
+        String competition, title, home = "", away = "", logoHome = "", logoAway = "", logoComp = "", art = "", country = "", place = "";
         boolean live, done;
     }
 
@@ -81,6 +81,8 @@ final class Sports {
                 e.logoAway = o.optString("logoAway");
                 e.logoComp = o.optString("logoComp");
                 e.art = o.optString("art");
+                e.country = o.optString("country");
+                e.place = o.optString("place");
                 events.add(e);
             }
         } catch (Exception ignored) {
@@ -134,10 +136,13 @@ final class Sports {
         // The competition's own picture is chosen here, not saved with the event, so a new picture applies at once.
         p.art = best.sport == CHAMPIONS ? art(Config.CHAMPIONS_ART, "asset:sports/champions.webp")
                 : best.sport == EUROPA ? art(Config.EUROPA_ART, "asset:sports/europa.jpg")
-                : best.sport == F1 ? "asset:sports/f1.png" : best.art;
+                : best.sport == F1 ? "asset:sports/f1.png" : best.sport == MOTO ? motoArt() : best.art;
         p.title = best.title;
         p.accent = ACCENT[best.sport];
-        p.flat = best.sport == F1;        // Formula 1: a flat #14141C rectangle with the stripes over it
+        p.flat = best.sport == F1 || best.sport == MOTO;     // Formula 1 and MotoGP: a flat color with their artwork over it
+        p.face = best.sport == F1 ? 1 : best.sport == MOTO ? 2 : 0;
+        p.place = best.place;
+        p.flag = best.country.isEmpty() ? "" : "https://flagcdn.com/w160/" + best.country + ".png";
         p.label = best.competition;
         p.pkg = pkg;
         p.detailed = true;
@@ -209,6 +214,10 @@ final class Sports {
                     AppLog.w("sports (" + sport + "): " + e.getMessage());
                 }
             }
+            int withLogos = 0;
+            for (Event e : found) if (!e.logoComp.isEmpty()) withLogos++;
+            AppLog.w("sports: " + found.size() + " events, " + withLogos + " with a competition logo, football key "
+                    + (key.isEmpty() ? "missing" : "present"));
             if (!found.isEmpty()) {     // all sources failing (no internet) keeps what we had
                 events = found;
                 save(found);
@@ -229,7 +238,7 @@ final class Sports {
                 a.put(new JSONObject().put("sport", e.sport).put("start", e.start).put("competition", e.competition)
                         .put("title", e.title).put("minutes", e.minutes).put("italian", e.italian).put("live", e.live)
                         .put("home", e.home).put("away", e.away).put("logoHome", e.logoHome).put("logoAway", e.logoAway)
-                        .put("logoComp", e.logoComp).put("art", e.art));
+                        .put("logoComp", e.logoComp).put("art", e.art).put("country", e.country).put("place", e.place));
             }
             cache.edit().putString("events2", a.toString()).putLong("at2", System.currentTimeMillis()).apply();
         } catch (Exception ignored) {
@@ -313,6 +322,11 @@ final class Sports {
             Event e = event(F1, start, "Formula 1", name + " · " + s[1]);
             e.minutes = (Long) s[2];
             e.italian = 3;      // Ferrari (and an Italian driver on the grid)
+            JSONObject where = race.optJSONObject("Circuit") == null ? null : race.getJSONObject("Circuit").optJSONObject("Location");
+            if (where != null) {
+                e.country = iso(where.optString("country"));
+                e.place = where.optString("locality");
+            }
             e.logoComp = info[0];
             e.art = info[1];
             out.add(e);
@@ -357,6 +371,8 @@ final class Sports {
                     e.italian = soccer ? (italianClub(e.home + " " + e.away) ? 3 : 0) : (italianPlayer(e.home + " " + e.away) ? 3 : 0);
                 } else {
                     e.italian = 3;     // Ducati and the Italian riders
+                    e.country = iso(j.optString("strCountry"));
+                    e.place = !clean(j.optString("strCity")).isEmpty() ? j.optString("strCity") : clean(j.optString("strVenue"));
                 }
                 out.add(e);
             }
@@ -367,6 +383,33 @@ final class Sports {
         String n = names.toLowerCase(Locale.ROOT);
         for (String p : ITALIAN_CLUBS) if (n.contains(p)) return true;
         return false;
+    }
+
+    private static final String MOTOGP_BAR = "https://www.motogp.com/resources/v8.28.8/i/svg-files/elements/slim-bar-background.svg";
+
+    /** MotoGP's background: the converted picture in the app if tools/sport_assets.py made it, else the SVG online. */
+    private String motoArt() {
+        try {
+            for (String name : context.getAssets().list("sports")) if (name.equals("motogp.png")) return "asset:sports/motogp.png";
+        } catch (IOException ignored) {
+        }
+        return MOTOGP_BAR;
+    }
+
+    private static final String[][] COUNTRIES = {{"italy", "it"}, {"spain", "es"}, {"france", "fr"}, {"germany", "de"},
+            {"great britain", "gb"}, {"united kingdom", "gb"}, {"uk", "gb"}, {"netherlands", "nl"}, {"belgium", "be"}, {"austria", "at"},
+            {"hungary", "hu"}, {"czech", "cz"}, {"portugal", "pt"}, {"qatar", "qa"}, {"thailand", "th"}, {"malaysia", "my"},
+            {"japan", "jp"}, {"australia", "au"}, {"indonesia", "id"}, {"india", "in"}, {"argentina", "ar"},
+            {"united states", "us"}, {"usa", "us"}, {"america", "us"}, {"brazil", "br"}, {"mexico", "mx"}, {"canada", "ca"},
+            {"monaco", "mc"}, {"azerbaijan", "az"}, {"singapore", "sg"}, {"saudi", "sa"}, {"bahrain", "bh"},
+            {"emirates", "ae"}, {"uae", "ae"}, {"abu dhabi", "ae"}, {"china", "cn"}, {"korea", "kr"}, {"turk", "tr"},
+            {"kazakhstan", "kz"}, {"finland", "fi"}, {"sweden", "se"}, {"switzerland", "ch"}, {"vietnam", "vn"}, {"russia", "ru"}};
+
+    /** ISO code (lowercase, for the flag) of a country named in English, or "". */
+    private static String iso(String country) {
+        String c = country == null ? "" : country.toLowerCase(Locale.ROOT);
+        for (String[] k : COUNTRIES) if (c.contains(k[0])) return k[1];
+        return "";
     }
 
     /** The artwork from config.properties if given, else the picture that comes with the app. */
@@ -391,7 +434,7 @@ final class Sports {
     private String[] leagueInfo(int id, String must) {
         String key = "league" + id;
         String saved = cache.getString(key, null);
-        if (saved != null && System.currentTimeMillis() - cache.getLong(key + "At", 0) < WEEK) return split(saved);
+        if (saved != null && !saved.equals("|") && System.currentTimeMillis() - cache.getLong(key + "At", 0) < WEEK) return split(saved);
         String logo = "", art = "";
         try {
             JSONArray leagues = new JSONObject(get("https://www.thesportsdb.com/api/v1/json/3/lookupleague.php?id=" + id, null))
@@ -407,7 +450,11 @@ final class Sports {
             AppLog.w("league " + id + ": " + e.getMessage());
             return saved == null ? new String[] {"", ""} : split(saved);
         }
-        cache.edit().putString(key, logo + "|" + art).putLong(key + "At", System.currentTimeMillis()).apply();
+        if (!logo.isEmpty() || !art.isEmpty()) {      // an empty answer is not worth keeping: ask again next time
+            cache.edit().putString(key, logo + "|" + art).putLong(key + "At", System.currentTimeMillis()).apply();
+        } else {
+            AppLog.w("league " + id + ": no logo in the answer");
+        }
         return new String[] {logo, art};
     }
 
@@ -420,7 +467,7 @@ final class Sports {
     private String badgeFor(String name) {
         String key = "badge:" + name.toLowerCase(Locale.ROOT);
         String saved = cache.getString(key, null);
-        if (saved != null) return saved;
+        if (saved != null && !saved.isEmpty()) return saved;
         String badge = "";
         try {
             JSONArray teams = new JSONObject(get("https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t="
@@ -433,7 +480,7 @@ final class Sports {
             AppLog.w("badge " + name + ": " + e.getMessage());
             return "";
         }
-        cache.edit().putString(key, badge).apply();
+        if (!badge.isEmpty()) cache.edit().putString(key, badge).apply();
         return badge;
     }
 
@@ -441,6 +488,11 @@ final class Sports {
 
     /** The logo at `url` if it is ready (otherwise starts loading it and the home screen redraws when it arrives). */
     android.graphics.Bitmap bitmap(String url, String club) {
+        return bitmap(url, club, 256);
+    }
+
+    /** Same, with the size SVGs are drawn at (256 for logos and flags, 1280 for a background). */
+    android.graphics.Bitmap bitmap(String url, String club, int box) {
         if (url == null || url.isEmpty()) return null;
         synchronized (bitmaps) {
             android.graphics.Bitmap b = bitmaps.get(url);
@@ -451,13 +503,13 @@ final class Sports {
         art.execute(() -> {
             android.graphics.Bitmap b = null;
             try {
-                b = loadLogo(url);
+                b = loadLogo(url, box);
             } catch (IOException | RuntimeException e) {
                 AppLog.w("logo " + url + ": " + e.getMessage());
                 String other = club == null || club.isEmpty() ? "" : badgeFor(club);
                 if (!other.isEmpty()) {
                     try {
-                        b = loadLogo(other);
+                        b = loadLogo(other, box);
                     } catch (IOException | RuntimeException again) {
                         AppLog.w("badge " + other + ": " + again.getMessage());
                     }
@@ -495,31 +547,30 @@ final class Sports {
     }
 
     /** Downloads (SVG crests go through an image proxy that returns a PNG) and decodes, keeping the file for later. */
-    private android.graphics.Bitmap loadLogo(String url) throws IOException {
+    private android.graphics.Bitmap loadLogo(String url, int box) throws IOException {
         if (url.startsWith("asset:")) return decodeAsset(url.substring(6));
         java.io.File dir = new java.io.File(context.getCacheDir(), "sports");
         //noinspection ResultOfMethodCallIgnored
         dir.mkdirs();
-        java.io.File f = new java.io.File(dir, Integer.toHexString(url.hashCode()) + ".png");
+        java.io.File f = new java.io.File(dir, Integer.toHexString(url.hashCode()) + "-" + box + ".png");
         if (!f.exists()) {
-            String from = url.toLowerCase(Locale.ROOT).endsWith(".svg")
-                    ? "https://wsrv.nl/?w=256&h=256&fit=inside&output=png&url=" + java.net.URLEncoder.encode(url, "UTF-8") : url;
-            HttpURLConnection c = (HttpURLConnection) new URL(from).openConnection();
-            c.setConnectTimeout(8000);
-            c.setReadTimeout(15000);
-            // Some sites (UEFA, news sites) refuse downloads that don't look like a browser asking for a picture.
-            c.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 12; TV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36");
-            c.setRequestProperty("Accept", "image/avif,image/webp,image/apng,image/*,*/*;q=0.8");
-            c.setRequestProperty("Referer", new URL(from).getProtocol() + "://" + new URL(from).getHost() + "/");
-            java.io.File part = new java.io.File(f.getPath() + ".part");
-            try (InputStream in = c.getInputStream(); java.io.FileOutputStream o = new java.io.FileOutputStream(part)) {
-                byte[] buffer = new byte[16384];
-                int n;
-                while ((n = in.read(buffer)) > 0) o.write(buffer, 0, n);
-            } finally {
-                c.disconnect();
+            boolean svg = url.toLowerCase(Locale.ROOT).endsWith(".svg");
+            // SVGs can't be drawn by Android: an image service turns them into PNGs (two addresses of the same one).
+            String[] tries = svg ? new String[] {"https://wsrv.nl/?w=" + box + "&h=" + box + "&fit=inside&output=png&url=" + java.net.URLEncoder.encode(url, "UTF-8"),
+                    "https://images.weserv.nl/?w=" + box + "&h=" + box + "&fit=inside&output=png&url=" + java.net.URLEncoder.encode(url, "UTF-8")}
+                    : new String[] {url};
+            IOException last = null;
+            for (String from : tries) {
+                try {
+                    download(from, f);
+                    last = null;
+                    break;
+                } catch (IOException e) {
+                    last = e;
+                    AppLog.w("download " + from + ": " + e.getMessage());
+                }
             }
-            if (!part.renameTo(f)) throw new IOException("couldn't save the logo");
+            if (last != null) throw last;
         }
         android.graphics.BitmapFactory.Options bounds = new android.graphics.BitmapFactory.Options();
         bounds.inJustDecodeBounds = true;
@@ -534,6 +585,26 @@ final class Sports {
             throw new IOException("unreadable logo");
         }
         return b;
+    }
+
+    /** One download, like a browser asking for a picture; the file appears only when it is complete. */
+    private static void download(String from, java.io.File f) throws IOException {
+        HttpURLConnection c = (HttpURLConnection) new URL(from).openConnection();
+        c.setConnectTimeout(8000);
+        c.setReadTimeout(15000);
+        // Some sites (UEFA, news sites) refuse downloads that don't look like a browser asking for a picture.
+        c.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 12; TV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36");
+        c.setRequestProperty("Accept", "image/avif,image/webp,image/apng,image/*,*/*;q=0.8");
+        c.setRequestProperty("Referer", new URL(from).getProtocol() + "://" + new URL(from).getHost() + "/");
+        java.io.File part = new java.io.File(f.getPath() + ".part");
+        try (InputStream in = c.getInputStream(); java.io.FileOutputStream o = new java.io.FileOutputStream(part)) {
+            byte[] buffer = new byte[16384];
+            int n;
+            while ((n = in.read(buffer)) > 0) o.write(buffer, 0, n);
+        } finally {
+            c.disconnect();
+        }
+        if (!part.renameTo(f)) throw new IOException("couldn't save the logo");
     }
 
     // MARK: - Helpers

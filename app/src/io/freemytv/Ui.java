@@ -33,7 +33,7 @@ final class Ui {
     static volatile boolean en = "en".equals(language), es = "es".equals(language), it = "it".equals(language);
     static Typeface thin, light, displayMedium, displaySemibold, regular, medium, semibold;
     /** Formula 1 titles: Formula1-Black from tools/f1_font.py (assets/fonts), or null without it. */
-    static Typeface f1;
+    static Typeface f1, mgp;
     private static boolean loaded;
     private static final Rect BOUNDS = new Rect();
     private static final RectF OVAL = new RectF();
@@ -51,8 +51,10 @@ final class Ui {
         semibold = font(a, 14, 600);
         try {
             f1 = has(a, "fonts/Formula1-Black.ttf") ? Typeface.createFromAsset(a, "fonts/Formula1-Black.ttf") : null;
+            mgp = has(a, "fonts/MGPDisplay-Bold.ttf") ? Typeface.createFromAsset(a, "fonts/MGPDisplay-Bold.ttf") : null;
         } catch (RuntimeException e) {
             f1 = null;
+            mgp = null;
         }
     }
 

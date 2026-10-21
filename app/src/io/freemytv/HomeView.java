@@ -147,7 +147,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private final Rect fitSrc = new Rect();
     private static final String[] RANKS = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"};
     private final List<HomeApps.Item> lightButtons = new ArrayList<>();
-    private Paint lSportF1, lSportName, lSportMono, lSportLabel, lSportTitle, lSportWhen, lRank, lCaption, lAvatar, lClock, lTitle, lTab, lTabOn, lCardTitle, lCardMeta, lQuote, lTip;
+    private Paint lSportMgp, lSportF1, lSportName, lSportMono, lSportLabel, lSportTitle, lSportWhen, lRank, lCaption, lAvatar, lClock, lTitle, lTab, lTabOn, lCardTitle, lCardMeta, lQuote, lTip;
     private Shader lightGradient;
 
     // Shelf
@@ -549,6 +549,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         lSportTitle = Ui.text(Ui.displaySemibold, 60 * k, 0xFFFFFFFF);
         lSportWhen = Ui.text(Ui.displayMedium, 36 * k, 0xE6FFFFFF);
         lSportF1 = Ui.text(Ui.f1 != null ? Ui.f1 : Ui.displaySemibold, 50 * k, 0xFFFFFFFF);
+        lSportMgp = Ui.text(Ui.mgp != null ? Ui.mgp : Ui.displaySemibold, 54 * k, 0xFFFFFFFF);
         lSportName = Ui.text(Ui.semibold, 27 * k, 0xFFFFFFFF);
         lSportName.setTextAlign(Paint.Align.CENTER);
         lSportMono = Ui.text(Ui.displaySemibold, 84 * k, 0xFFFFFFFF);
@@ -2446,7 +2447,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         }
         c.drawRoundRect(area, r, r, fill);
         fill.setShader(null);
-        Bitmap art = sports.bitmap(p.art, null);
+        Bitmap art = sports.bitmap(p.art, null, 1280);
         if (art != null) {       // artwork behind everything, dimmed so the text reads (not on the flat card)
             roundImageFit(c, art, area, r, 1);
             if (!p.flat) {
@@ -2468,11 +2469,21 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         int slash = p.meta.indexOf(" · ");
         String when = slash < 0 ? p.meta : p.meta.substring(0, slash);
         if (p.home.isEmpty() || p.away.isEmpty()) {
-            Paint face = p.flat ? lSportF1 : lSportTitle;       // Formula 1: its own font, in capitals
+            Paint face = p.face == 1 ? lSportF1 : p.face == 2 ? lSportMgp : lSportTitle;   // Formula 1 and MotoGP: their own fonts
             TextPaint tp = new TextPaint(face);
-            String title = TextUtils.ellipsize(p.flat ? p.title.toUpperCase(Ui.locale()) : p.title, tp, width, TextUtils.TruncateAt.END).toString();
+            String title = TextUtils.ellipsize(p.face != 0 ? p.title.toUpperCase(Ui.locale()) : p.title, tp, width, TextUtils.TruncateAt.END).toString();
             c.drawText(title, area.left + pad, area.centerY() + Ui.halfCap(face) + 20 * k, face);
             c.drawText(when, area.left + pad, area.bottom - pad, lSportWhen);
+            // Bottom right: where they race, the circuit's place and its country's flag.
+            Bitmap flag = sports.bitmap(p.flag, null);
+            float right = area.right - pad;
+            if (flag != null) {
+                drawLogo(c, flag, right - 42 * k, area.bottom - pad - 18 * k, 84 * k, 56 * k, false);
+                right -= 84 * k + 20 * k;
+            }
+            if (!p.place.isEmpty()) {
+                c.drawText(p.place, right - lSportWhen.measureText(p.place), area.bottom - pad, lSportWhen);
+            }
             return;
         }
         float size = 190 * k;
