@@ -480,6 +480,10 @@ final class Sports {
             HttpURLConnection c = (HttpURLConnection) new URL(from).openConnection();
             c.setConnectTimeout(8000);
             c.setReadTimeout(15000);
+            // Some sites (UEFA, news sites) refuse downloads that don't look like a browser asking for a picture.
+            c.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 12; TV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36");
+            c.setRequestProperty("Accept", "image/avif,image/webp,image/apng,image/*,*/*;q=0.8");
+            c.setRequestProperty("Referer", new URL(from).getProtocol() + "://" + new URL(from).getHost() + "/");
             java.io.File part = new java.io.File(f.getPath() + ".part");
             try (InputStream in = c.getInputStream(); java.io.FileOutputStream o = new java.io.FileOutputStream(part)) {
                 byte[] buffer = new byte[16384];
