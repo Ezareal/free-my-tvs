@@ -155,6 +155,15 @@ HDMI (Chromecast with Google TV, Google TV Streamer, onn 4K, NVIDIA Shield). Set
   isn't obvious.
 - Settings come from `config.properties` through the generated `out/gen/io/freemytv/Config.java` (never edit that).
   What the person changes on the TV (`Prefs`: Home Settings, Shelf, Remote Buttons) wins over those first values.
+  `live_tv_app` (a package, such as TiviMate's `ar.tvplayer.tv`) makes the Live TV button open that app instead of the
+  antenna.
+- The home screen tabs are `Recs.TAB_KINDS` (Explore, Movies, Shows, Kids, Stremio); `HomeView` sizes everything from
+  it (the image cache too: every tab's 3 cards must fit, or they push each other out and reload forever). Kids and
+  Stremio picks carry `Pick.tab`; the Stremio tab shows only with Stremio installed and opens titles by IMDb id. The
+  Kids tab's first card, "Learn today", is a YouTube video a day from `app/assets/learn.json`: run
+  `python3 tools/make_learn.py` now and then for new videos (the YouTube Kids TV app is gone: kids' profiles are in
+  YouTube). Prices come from CoinGecko on Android (Binance blocks some countries and has no CAD); the web app still
+  uses Binance.
 - The remote's app buttons (`RemoteKeys`, `RemoteKeyService`) use each brand's key codes: they run only on TCL and
   Vestel TVs, the service is on only in Free My TV mode, and *Original* takes it out of the enabled accessibility
   services. The system waits for the service on every key, so it lives alone in the `:keys` process: what it reads is
