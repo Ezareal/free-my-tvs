@@ -49,6 +49,7 @@ public class SettingsActivity extends Activity {
 
     @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (openHomeInstead(getIntent())) return;
         Watchdog.install(this);
         Ui.init(this);
         view = new SettingsView(this);
@@ -68,7 +69,20 @@ public class SettingsActivity extends Activity {
 
     @Override protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        if (openHomeInstead(intent)) return;
         setIntent(intent);
+    }
+
+    /**
+     * Fire TV: the Home button stays with Amazon, so the app's icon (and a Home button remapper, which opens the app)
+     * opens the home screen instead. The gear there opens these settings (no launcher category).
+     */
+    private boolean openHomeInstead(Intent intent) {
+        if (!HomeMode.AMAZON || intent == null || !(intent.hasCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
+                || intent.hasCategory(Intent.CATEGORY_LAUNCHER))) return false;
+        startActivity(new Intent(this, HomeActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        finish();
+        return true;
     }
 
     @Override protected void onPause() {
@@ -958,7 +972,7 @@ public class SettingsActivity extends Activity {
                 boolean already = wantFree ? freeActive() : HomeMode.ORIGINAL.equals(state.optString("mode", HomeMode.ORIGINAL));
                 if (!already && !busy()) {
                     HomeMode.request(c, wantFree ? HomeMode.FREE : HomeMode.ORIGINAL);
-                    pendingAt = SystemClock.uptimeMillis();
+                    if (!HomeMode.AMAZON) pendingAt = SystemClock.uptimeMillis();
                 }
                 screen = MAIN;
                 focus = 0;

@@ -64,6 +64,7 @@ final class Recs {
     private static final String[][] SERVICES = {
         {"netflix", "netflix", "com.netflix.ninja"},
         {"prime video", "prime", "com.amazon.amazonvideo.livingroom"},
+        {"prime video", "prime", "com.amazon.avod"},                      // Fire TV
         {"disney", "disney", "com.disney.disneyplus"},
         {"hulu", "hulu", "com.hulu.livingroomplus"},
         {"paramount", "paramount", "com.cbs.ott"},
@@ -71,6 +72,10 @@ final class Recs {
         {"globoplay", "globoplay", "com.globo.globotv"},
         {"max", "max", "com.wbd.stream"},
         {"apple tv", "appletv", "com.apple.atve.androidtv.appletv"},
+        {"apple tv", "appletv", "com.apple.atve.amazon.appletv"},         // Fire TV
+        {"bbc iplayer", "iplayer", "uk.co.bbc.iplayer"},
+        {"itvx", "itvx", "air.ITVMobilePlayer"},
+        {"channel 4", "channel4", "com.channel4.ondemand"},
     };
     private static final Map<String, String> SERVICE_NAME = new HashMap<>();
     static {
@@ -83,6 +88,9 @@ final class Recs {
         SERVICE_NAME.put("globoplay", "Globoplay");
         SERVICE_NAME.put("max", "Max");
         SERVICE_NAME.put("appletv", "Apple TV");
+        SERVICE_NAME.put("iplayer", "BBC iPlayer");
+        SERVICE_NAME.put("itvx", "ITVX");
+        SERVICE_NAME.put("channel4", "Channel 4");
     }
     /** Country for "what streams where" (config.properties "tmdb_region", e.g. US, GB, BR). */
     private static final String REGION = Config.TMDB_REGION.trim().toUpperCase(Locale.ROOT);
@@ -557,10 +565,11 @@ final class Recs {
         return best;
     }
 
-    private static String[] service(String name) {
+    /** The service's app as this TV has it (Fire TV's builds have their own packages), or null. */
+    private String[] service(String name) {
         String n = name.toLowerCase(Locale.ROOT);
         for (String[] s : SERVICES) {
-            if (s[0].equals("max") ? n.matches(".*\\bmax\\b.*") : n.contains(s[0])) return s;
+            if ((s[0].equals("max") ? n.matches(".*\\bmax\\b.*") : n.contains(s[0])) && installed(s[2])) return s;
         }
         return null;
     }

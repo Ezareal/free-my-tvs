@@ -82,12 +82,17 @@ final class German {
             case "Connecting…": return "Verbindung wird hergestellt…";
             case "Accept “Allow USB debugging?” on the TV (tick “Always allow”).": return "Am Fernseher „USB-Debugging zulassen?“ bestätigen („Immer zulassen“ ankreuzen).";
             case "Free My TV's home screen ran into a problem.\nGoing back to the TV's original home screen…": return "Der Startbildschirm von Free My TV hatte ein Problem.\nZurück zum ursprünglichen Startbildschirm…";
+            case "Free My TV's home screen ran into a problem.\nPress Home for Amazon's home screen.": return "Der Startbildschirm von Free My TV hatte ein Problem.\nDie Home-Taste führt zum Startbildschirm von Amazon.";
             case "the TV's first setup saved the Wi-Fi, and turning it off would erase those networks. "
                     + "In Settings → Network & Internet, forget the network and connect again (networks out of range don't "
                     + "show there: Claude Code can remove them from your computer), then try once more.":
                 return "die Ersteinrichtung des Fernsehers hat das WLAN gespeichert, und sie auszuschalten würde diese Netzwerke löschen. "
                         + "Unter Einstellungen → Netzwerk und Internet das Netzwerk entfernen und neu verbinden (Netzwerke außer Reichweite "
                         + "erscheinen dort nicht: Claude Code entfernt sie vom Computer aus), dann noch einmal versuchen.";
+            case "On Fire TV the Home button belongs to Amazon's home screen, so this switch changes nothing here. "
+                    + "Open Free My TV from Your Apps, or point the Home button at it with a button remapper app.":
+                return "Auf Fire TV gehört die Home-Taste zum Startbildschirm von Amazon, deshalb ändert dieser Schalter hier nichts. "
+                        + "Free My TV über „Deine Apps“ öffnen oder die Home-Taste mit einer App zum Umbelegen von Tasten darauf legen.";
             // Home Settings, Shelf and Remote Buttons
             case "Language": return "Sprache";
             case "Temperature": return "Temperatur";
