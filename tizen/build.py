@@ -42,22 +42,25 @@ def tizen_cli():
 def sign(profile):
     cli = tizen_cli()
     if not cli:
-        sys.exit('Signing needs Samsung\'s Tizen tools (Tizen Studio, or Samsung\'s tizen-sdk-skills). Not found: set '
-                 'TIZEN_STUDIO to where they are installed.')
+        sys.exit(webapp.say('Signing needs Samsung\'s Tizen tools (Tizen Studio, or Samsung\'s tizen-sdk-skills). Not found: '
+                            'set TIZEN_STUDIO to where they are installed.',
+                            'Для подписи нужны инструменты Tizen от Samsung (Tizen Studio или tizen-sdk-skills). Они не '
+                            'найдены: укажите в TIZEN_STUDIO, куда они установлены.'))
     out = tempfile.mkdtemp()
     try:
         run = subprocess.run([cli, 'package', '-t', 'wgt', '-s', profile, '-o', out, '--', WGT],
                              capture_output=True, text=True)
         made = [n for n in os.listdir(out) if n.endswith('.wgt')]
         if run.returncode != 0 or not made:
-            sys.exit('`tizen package` didn\'t sign it:\n' + (run.stdout + run.stderr).strip())
+            sys.exit(webapp.say('`tizen package` didn\'t sign it:\n', '`tizen package` не подписал пакет:\n')
+                     + (run.stdout + run.stderr).strip())
         shutil.move(os.path.join(out, made[0]), WGT)
     finally:
         shutil.rmtree(out, ignore_errors=True)
     with zipfile.ZipFile(WGT) as z:
         names = z.namelist()
     if 'author-signature.xml' not in names or 'signature1.xml' not in names:
-        sys.exit('The package came back without its signatures.')
+        sys.exit(webapp.say('The package came back without its signatures.', 'Пакет вернулся без подписей.'))
 
 
 def build(preview, config, profile):
@@ -78,11 +81,15 @@ def build(preview, config, profile):
 
     if preview:
         webapp.preview(app, OUT)
-        print('Preview: open out/tizen/index.html (or serve out/tizen) in a browser.')
-    print('Built %s (%s %s, %d KB, %s)' % (os.path.basename(WGT), app_id, version, os.path.getsize(WGT) // 1024,
-                                           'signed with "%s"' % profile if profile else 'not signed'))
+        print(webapp.say('Preview: open out/tizen/index.html (or serve out/tizen) in a browser.',
+                         'Предпросмотр: откройте в браузере out/tizen/index.html (или раздайте папку out/tizen).'))
+    signed = (webapp.say('signed with "%s"', 'подписан профилем «%s»') % profile if profile
+              else webapp.say('not signed', 'без подписи'))
+    print(webapp.say('Built %s (%s %s, %d KB, %s)', 'Готово: %s (%s %s, %d КБ, %s)')
+          % (os.path.basename(WGT), app_id, version, os.path.getsize(WGT) // 1024, signed))
     if not config['tmdbKey']:
-        print('No TMDB key: the picks stay off (everything else works).')
+        print(webapp.say('No TMDB key: the picks stay off (everything else works).',
+                         'Нет ключа TMDB: рекомендаций не будет (всё остальное работает).'))
 
 
 if __name__ == '__main__':

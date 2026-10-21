@@ -12,13 +12,13 @@ var Place = (function () {
   'use strict';
   var EURO = /^(AT|BE|CY|DE|EE|ES|FI|FR|GR|HR|IE|IT|LT|LU|LV|MT|NL|PT|SI|SK)$/;
 
-  /** A time zone's main city: {country, lat, lon, name}, or null. */
+  /** A time zone's main city: {zone, country, lat, lon, name}, or null. */
   function zone(name) {
     var all = window.ZONES || {}, v = all[name], hops = 0;
     while (v && v.charAt(0) === '=' && hops++ < 3) { name = v.slice(1); v = all[name]; }
     if (!v) return null;
     var p = v.split(',');
-    return {country: p[0], lat: p[1], lon: p[2], name: p[3] || name.slice(name.lastIndexOf('/') + 1).replace(/_/g, ' ')};
+    return {zone: name, country: p[0], lat: p[1], lon: p[2], name: p[3] || name.slice(name.lastIndexOf('/') + 1).replace(/_/g, ' ')};
   }
 
   var tz = zone(TV.zone()), set = CONFIG.latitude !== '' && CONFIG.latitude !== undefined;
@@ -27,8 +27,10 @@ var Place = (function () {
     lat: set ? CONFIG.latitude : tz ? tz.lat : '40.7128',
     lon: set ? CONFIG.longitude : tz ? tz.lon : '-74.0060',
     city: CONFIG.city || (!set && tz ? tz.name : ''),
+    /** The time zone the city came from (for its name in the TV's language), or ''. */
+    zone: !CONFIG.city && !set && tz ? tz.zone : '',
     country: country,
-    currency: (CONFIG.currency || (country === 'BR' ? 'BRL' : EURO.test(country) ? 'EUR' : 'USD')).toUpperCase(),
+    currency: (CONFIG.currency || (country === 'BR' ? 'BRL' : country === 'RU' ? 'RUB' : EURO.test(country) ? 'EUR' : 'USD')).toUpperCase(),
     /** Fahrenheit for TVs in the US (by their time zone, or their language when it doesn't tell). */
     fahrenheit: tz ? tz.country === 'US' : /-US$/i.test(navigator.language || '')
   };
@@ -142,13 +144,15 @@ var Data = (function () {
   var COINS = ['BTC', 'ETH', 'SOL', 'USDT'];
   var CURRENCY = Place.currency;
   var QUOTE = CURRENCY === 'USD' ? 'USDT' : CURRENCY;
+  /** In reais and rubles the dollar comes too (USDT/BRL, USDT/RUB): Binance doesn't list it for most currencies. */
+  var DOLLAR = CURRENCY === 'BRL' || CURRENCY === 'RUB';
   var prices = [NaN, NaN, NaN, NaN], changes = [NaN, NaN, NaN, NaN], pricesAt = 0, fetchingPrices = false;
 
   /** Indexes in COINS of the coins that are on (the dollar only in Brazilian reais, where Binance lists it). */
   function activeCoins() {
     var out = [];
     if (!Prefs.quotes()) return out;
-    for (var i = 0; i < COINS.length; i++) if (Prefs.coin(i) && (i < 3 || CURRENCY === 'BRL')) out.push(i);
+    for (var i = 0; i < COINS.length; i++) if (Prefs.coin(i) && (i < 3 || DOLLAR)) out.push(i);
     return out;
   }
 
@@ -463,12 +467,14 @@ var Data = (function () {
     try { return v.toLocaleString(I18N.locale(), {minimumFractionDigits: digits, maximumFractionDigits: digits}); } catch (e) { return v.toFixed(digits); }
   }
 
-  var SYMBOLS = {USD: '$', BRL: 'R$ ', EUR: '€', GBP: '£', JPY: '¥'};
+  var SYMBOLS = {USD: '$', BRL: 'R$ ', EUR: '€', GBP: '£', JPY: '¥', RUB: ''}, AFTER = {RUB: ' ₽'};
 
   return {
     COINS: COINS,
-    city: Place.city,
+    /** The weather card's city; from the time zone, in the TV's language when strings.js has it ("Москва"). */
+    get city() { return (Place.zone && I18N.city(Place.zone)) || Place.city; },
     currency: CURRENCY,
+    dollar: DOLLAR,
     onChange: function (fn) { listeners.push(fn); },
     setApps: function (apps) { installed = apps; },
     appFor: appFor,
@@ -499,15 +505,16 @@ var Data = (function () {
 
     compact: function (v) {
       if (isNaN(v)) return '—';
+      if (v >= 1000000) return fmt(v / 1000000, v >= 10000000 ? 1 : 2) + 'M';   // bitcoin in rubles or yen
       if (v >= 10000) return fmt(v / 1000, 1) + 'k';
       if (v >= 1000) return fmt(v / 1000, 2) + 'k';
       if (v >= 100) return fmt(v, 0);
       return fmt(v, 2);
     },
     money: function (v) {
-      var s = SYMBOLS[CURRENCY] || CURRENCY + ' ';
-      if (isNaN(v)) return s + '—';
-      return s + (v >= 1000 ? fmt(v, 0) : fmt(v, 2));
+      var s = SYMBOLS.hasOwnProperty(CURRENCY) ? SYMBOLS[CURRENCY] : CURRENCY + ' ', after = AFTER[CURRENCY] || '';
+      if (isNaN(v)) return s + '—' + after;
+      return s + (v >= 1000 ? fmt(v, 0) : fmt(v, 2)) + after;
     },
     change: function (v) { return isNaN(v) ? '' : (v >= 0 ? '+' : '−') + fmt(Math.abs(v), 1) + '%'; },
     degrees: function (v) {

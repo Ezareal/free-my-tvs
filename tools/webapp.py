@@ -11,7 +11,31 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-GENERIC = {'tmdbKey': '', 'tmdbRegion': '', 'latitude': '', 'longitude': '', 'city': '', 'language': 'auto',
+
+def russian():
+    """True on a computer set to Russian (LANG and the like, as build.sh reads them; FREEMYTV_LANG=en or ru wins)."""
+    for name in ('FREEMYTV_LANG', 'LANGUAGE', 'LC_ALL', 'LC_MESSAGES', 'LANG'):
+        if os.environ.get(name):
+            return os.environ[name].lower().startswith('ru')
+    if os.name == 'nt':   # Windows has no LANG: its display language
+        try:
+            import ctypes
+            import locale
+            return locale.windows_locale.get(ctypes.windll.kernel32.GetUserDefaultUILanguage(), '').startswith('ru')
+        except Exception:
+            return False
+    return False
+
+
+RU = russian()
+
+
+def say(english, russian_text):
+    """The message in the computer's language: Russian or English."""
+    return russian_text if RU else english
+
+
+GENERIC ={'tmdbKey': '', 'tmdbRegion': '', 'latitude': '', 'longitude': '', 'city': '', 'language': 'auto',
            'currency': '', 'temperature': 'auto', 'showCrypto': True}
 
 
@@ -28,7 +52,8 @@ def config_from_args(args):
 def read_config(path):
     if not os.path.exists(path):
         shutil.copy(os.path.join(ROOT, 'config.example.properties'), path)
-        print('Created config.properties: add your TMDB key and your city there (optional), then build again.')
+        print(say('Created config.properties: add your TMDB key and your city there (optional), then build again.',
+                  'Создан config.properties: впишите туда свой ключ TMDB и город (по желанию) и соберите ещё раз.'))
     values = {}
     with open(path, encoding='utf-8') as f:
         for line in f:
@@ -41,7 +66,8 @@ def read_config(path):
     def number(key, default):
         v = values.get(key, '') or default
         if not re.match(r'^-?\d+(\.\d+)?$', v):
-            sys.exit('config.properties: %s must be a number (got "%s")' % (key, v))
+            sys.exit(say('config.properties: %s must be a number (got "%s")',
+                         'config.properties: в %s должно быть число (сейчас «%s»)') % (key, v))
         return v
 
     return {

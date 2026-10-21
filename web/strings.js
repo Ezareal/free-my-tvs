@@ -74,7 +74,7 @@ var I18N = (function () {
     "Live TV": "Телеканалы",
     "All Apps": "Приложения",
     "Settings": "Настройки",
-    "Home Settings": "Главный экран",
+    "Home Settings": "Настройки",
     "TV Settings": "Настройки ТВ",
     "HDMI Inputs": "Входы HDMI",
     "Inputs": "Входы",
@@ -117,7 +117,7 @@ var I18N = (function () {
     "Thunderstorms": "Гроза",
     "Rain": "Дождь",
     "On · ": "В избранном · ",
-    "OK adds or removes · ← → change the order": "OK — добавить или убрать · ← → — изменить порядок",
+    "OK adds or removes · ← → change the order": "OK добавляет или убирает · ← → меняют порядок",
     "Couldn't open TV Settings": "Не удалось открыть настройки телевизора",
     "Action & Adventure": "Боевик и приключения",
     "Sci-Fi & Fantasy": "Фантастика и фэнтези",
@@ -134,9 +134,26 @@ var I18N = (function () {
     var m = /^(\d+) (min|h) ago$/.exec(en);
     if (m) return m[1] + (m[2] === 'min' ? ' мин назад' : ' ч назад');
     m = /^The shelf holds up to (\d+) apps\.$/.exec(en);
-    if (m) return 'В избранное можно добавить не более ' + m[1] + ' приложений.';
+    if (m) return 'В избранном помещается до ' + m[1] + (m[1] % 10 === 1 && m[1] % 100 !== 11 ? ' приложения.' : ' приложений.');
     return en;
   }
+
+  /** The main city of each time zone where many people speak Russian, for builds that take the city from it (--generic). */
+  var russianCities = {
+    "Europe/Kaliningrad": "Калининград", "Europe/Moscow": "Москва", "Europe/Kirov": "Киров", "Europe/Volgograd": "Волгоград",
+    "Europe/Astrakhan": "Астрахань", "Europe/Saratov": "Саратов", "Europe/Ulyanovsk": "Ульяновск", "Europe/Samara": "Самара",
+    "Asia/Yekaterinburg": "Екатеринбург", "Asia/Omsk": "Омск", "Asia/Novosibirsk": "Новосибирск", "Asia/Barnaul": "Барнаул",
+    "Asia/Tomsk": "Томск", "Asia/Novokuznetsk": "Новокузнецк", "Asia/Krasnoyarsk": "Красноярск", "Asia/Irkutsk": "Иркутск",
+    "Asia/Chita": "Чита", "Asia/Yakutsk": "Якутск", "Asia/Khandyga": "Хандыга", "Asia/Vladivostok": "Владивосток",
+    "Asia/Ust-Nera": "Усть-Нера", "Asia/Magadan": "Магадан", "Asia/Sakhalin": "Южно-Сахалинск",
+    "Asia/Srednekolymsk": "Среднеколымск", "Asia/Kamchatka": "Петропавловск-Камчатский", "Asia/Anadyr": "Анадырь",
+    "Europe/Simferopol": "Симферополь", "Europe/Minsk": "Минск", "Europe/Kyiv": "Киев", "Europe/Chisinau": "Кишинёв",
+    "Europe/Riga": "Рига", "Europe/Vilnius": "Вильнюс", "Europe/Tallinn": "Таллин", "Asia/Tbilisi": "Тбилиси",
+    "Asia/Yerevan": "Ереван", "Asia/Baku": "Баку", "Asia/Almaty": "Алматы", "Asia/Qyzylorda": "Кызылорда",
+    "Asia/Qostanay": "Костанай", "Asia/Aqtobe": "Актобе", "Asia/Aqtau": "Актау", "Asia/Atyrau": "Атырау",
+    "Asia/Oral": "Уральск", "Asia/Tashkent": "Ташкент", "Asia/Samarkand": "Самарканд", "Asia/Bishkek": "Бишкек",
+    "Asia/Dushanbe": "Душанбе", "Asia/Ashgabat": "Ашхабад"
+  };
 
   function detect(setting) {
     var v = (setting || 'auto').toLowerCase();
@@ -152,6 +169,8 @@ var I18N = (function () {
     },
     get lang() { return lang; },
     tr: function (pt, en, es) { return lang === 'ru' ? russianText(en) : lang === 'de' ? germanText(en) : lang === 'es' ? (es || en) : lang === 'en' ? en : pt; },
+    /** A time zone's city in the current language, or '' to keep zones.js's name. */
+    city: function (zone) { return lang === 'ru' && russianCities.hasOwnProperty(zone) ? russianCities[zone] : ''; },
     /** BCP 47 tag for dates, numbers and TMDB. */
     locale: function () { return lang === 'ru' ? 'ru-RU' : lang === 'de' ? 'de-DE' : lang === 'es' ? 'es-MX' : lang === 'en' ? 'en-US' : 'pt-BR'; }
   };

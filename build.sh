@@ -4,6 +4,13 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+# Messages in Russian on a computer set to Russian (FREEMYTV_LANG=en or ru wins), as tools/webapp.py does.
+case "${FREEMYTV_LANG:-${LANGUAGE:-${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}}}" in
+  [Rr][Uu]*) RU=1 ;;
+  *) RU= ;;
+esac
+say() { if [ -n "$RU" ]; then printf '%s\n' "$2"; else printf '%s\n' "$1"; fi; }
+
 # --- Tools
 SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
 if [ -z "$SDK" ]; then
@@ -12,18 +19,22 @@ if [ -z "$SDK" ]; then
     if [ -d "$d/build-tools" ]; then SDK="$d"; break; fi
   done
 fi
-[ -n "$SDK" ] && [ -d "$SDK/build-tools" ] || { echo "Android SDK not found. Install it and set ANDROID_HOME (see README)."; exit 1; }
+[ -n "$SDK" ] && [ -d "$SDK/build-tools" ] || { say "Android SDK not found. Install it and set ANDROID_HOME (see README)." \
+  "Android SDK не найден. Установите его и укажите путь в ANDROID_HOME (см. README.ru.md)."; exit 1; }
 BT="$SDK/build-tools/$(ls "$SDK/build-tools" | sort -V | tail -1)"
 AJ="$(ls -d "$SDK"/platforms/android-*/android.jar 2>/dev/null | sort -V | tail -1 || true)"
-[ -f "${AJ:-}" ] || { echo "Android platform not found. Run: sdkmanager \"platforms;android-34\""; exit 1; }
+[ -f "${AJ:-}" ] || { say "Android platform not found. Run: sdkmanager \"platforms;android-34\"" \
+  "Платформа Android не найдена. Выполните: sdkmanager \"platforms;android-34\""; exit 1; }
 JAVAC="${JAVA_HOME:+$JAVA_HOME/bin/}javac"
 KEYTOOL="${JAVA_HOME:+$JAVA_HOME/bin/}keytool"
-command -v "$JAVAC" >/dev/null 2>&1 || { echo "JDK not found. Install JDK 17 and set JAVA_HOME."; exit 1; }
+command -v "$JAVAC" >/dev/null 2>&1 || { say "JDK not found. Install JDK 17 and set JAVA_HOME." \
+  "JDK не найден. Установите JDK 17 и укажите путь в JAVA_HOME."; exit 1; }
 
 # --- Settings: config.properties -> Config.java
 if [ ! -f config.properties ]; then
   cp config.example.properties config.properties
-  echo "Created config.properties: add your TMDB key and your city there (optional), then build again."
+  say "Created config.properties: add your TMDB key and your city there (optional), then build again." \
+    "Создан config.properties: впишите туда свой ключ TMDB и город (по желанию) и соберите ещё раз."
 fi
 prop() {
   local v
@@ -33,7 +44,8 @@ prop() {
 }
 number() {
   local v; v="$(prop "$1" "$2")"
-  [[ "$v" =~ ^-?[0-9]+(\.[0-9]+)?$ ]] || { echo "config.properties: $1 must be a number (got \"$v\")" >&2; exit 1; }
+  [[ "$v" =~ ^-?[0-9]+(\.[0-9]+)?$ ]] || { say "config.properties: $1 must be a number (got \"$v\")" \
+    "config.properties: в ${1} должно быть число (сейчас «${v}»)" >&2; exit 1; }
   printf '%s' "$v"
 }
 LAT="$(number latitude 40.7128)"
@@ -121,4 +133,6 @@ if [ ! -f freemytv.keystore ]; then
     -storepass freemytv -keypass freemytv -dname "CN=Free My TV" >/dev/null 2>&1
 fi
 "$BT/apksigner" sign --ks freemytv.keystore --ks-pass pass:freemytv --key-pass pass:freemytv --out FreeMyTV.apk out/aligned.apk
-echo "Built FreeMyTV.apk ($(du -h FreeMyTV.apk | cut -f1)). Install: adb install -r FreeMyTV.apk"
+SIZE="$(du -h FreeMyTV.apk | cut -f1)"
+say "Built FreeMyTV.apk ($SIZE). Install: adb install -r FreeMyTV.apk" \
+  "Готово: FreeMyTV.apk ($SIZE). Установка: adb install -r FreeMyTV.apk"

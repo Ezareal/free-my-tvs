@@ -1297,6 +1297,13 @@ h2 {
   }
 }
 
+/* The Russian section names are longer: keep them on one line in the nav. */
+@media (min-width: 901px) and (max-width: 1000px) {
+  .links a {
+    padding: 8px 10px;
+  }
+}
+
 @media (max-width: 680px) {
   .tabs {
     display: grid;
@@ -1318,6 +1325,20 @@ h2 {
 
   .nav {
     margin: 10px 12px 0;
+  }
+
+  /* Two language links need the room: the GitHub button keeps its icon, its label stays for screen readers. */
+  .nav-end .btn {
+    padding: 0 11px;
+  }
+
+  .nav-end .btn span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
   .hero,

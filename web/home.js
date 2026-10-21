@@ -477,7 +477,7 @@
         step: function () { Prefs.set('quotes', !Prefs.quotes()); Data.settingsChanged(); }}
     ];
     var names = ['Bitcoin', 'Ethereum', 'Solana', tr('Dólar', 'Dollar', 'Dólar')];
-    var count = Data.currency === 'BRL' ? 4 : 3;
+    var count = Data.dollar ? 4 : 3;
     for (var i = 0; i < count; i++) {
       (function (i) {
         rows.push({label: names[i], toggle: Prefs.quotes() && Prefs.coin(i), dim: !Prefs.quotes(),

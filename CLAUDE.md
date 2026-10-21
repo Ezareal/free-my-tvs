@@ -5,9 +5,10 @@ Free My TV and the TV's original home screen. A plain Android app in Java, built
 LG TVs (webOS) and Samsung TVs (Tizen) get the same home screen as a web app: `web/`, packed by `webos/` and `tizen/`
 (see below).
 The website (freemytv.io) is in `docs/`: static HTML, CSS and JS, no build step. A push to `main` that changes it
-publishes it to GitHub Pages (`.github/workflows/pages.yml`). `docs/index.html` (English) and `docs/pt/index.html`
-(Brazilian Portuguese) are the same page in two languages, so change both; visitors from Brazil land on the
-Portuguese one by themselves, and the PT/EN switch in the menu is remembered.
+publishes it to GitHub Pages (`.github/workflows/pages.yml`). `docs/index.html` (English), `docs/pt/index.html`
+(Brazilian Portuguese) and `docs/ru/index.html` (Russian) are the same page in three languages, so change all three;
+visitors from Brazil land on the Portuguese one by themselves, Russian browsers on the Russian one, and the language
+switch in the menu is remembered.
 
 The person you're helping may not be technical. Keep it short and friendly, say what you're about to do on their TV
 before you do it, and let them do the taps on the TV.
@@ -96,6 +97,30 @@ screen stays. Two ways:
    signed by another (`tizen uninstall -p FreeMyTVio.FreeMyTV -t <serial>` first).
 8. **Tell them:** *Autorun Last App* in the TV's settings (under Start Screen Options; where it is changes by year)
    makes the TV turn on into Free My TV.
+
+## In Russian
+
+When the person writes in Russian, answer in Russian and point them to `README.ru.md` and freemytv.io/ru/.
+
+- **The scripts speak Russian** on a computer set to Russian (`LANG=ru_…` and the like; `FREEMYTV_LANG=en` or `ru`
+  wins): the success lines read `Готово: FreeMyTV.apk`, `Готово: FreeMyTV-webos.ipk` and
+  `Готово: FreeMyTV-tizen.wgt (…)` instead of `Built …`.
+- **The TV's menus in Russian** (Google TV; brands word them a little differently, so ask what they see if a step
+  doesn't match): Настройки → Система → Об устройстве → *Сборка ОС Android TV* (7 times), then Система →
+  *Для разработчиков* → *Отладка по USB*; the IP is in Настройки → Сеть и Интернет. The prompt reads
+  «Разрешить отладку по USB?», with «Всегда разрешать с этого компьютера» to tick.
+- **Free My TV's own names** on a Russian TV: *Главный экран* (*Free My TV* or *Заводской*, the Original mode),
+  *Заставка*, *Настройки* (Home Settings), *Избранные приложения* (the shelf), *Кнопки пульта*, *Настройки ТВ*.
+- **config.properties:** `city` as they write it («Москва»), `tmdb_region` their country (`RU`, `KZ`, `BY`…),
+  `currency=RUB` in Russia (Binance lists BTC, ETH, SOL and the dollar in rubles, so the dollar row comes too, as with
+  reais), `language=auto` (the TV's) or `ru`.
+- **The picks** only come from the services in `Recs.SERVICES` (Netflix, Prime Video, Disney+, Hulu, Paramount+,
+  Peacock, Globoplay, Max, Apple TV); Russian ones (Кинопоиск, Okko, ivi, Wink) aren't there yet. Without one of
+  those apps the settings show «Ошибка: в TMDB нет ни одного сервиса из установленных на ТВ» under РЕКОМЕНДАЦИИ:
+  tell them before they make a TMDB key.
+- Russian text follows the same rules as the rest: what's on screen is in `Russian.java` and `web/strings.js`,
+  `README.ru.md` mirrors `README.md` (change both), and `docs/ru/index.html` mirrors the English page. No em dashes
+  and no bureaucratese («данный», «является», «осуществить»): check with github.com/ilyautov/humanizer-ru.
 
 ## Releases
 

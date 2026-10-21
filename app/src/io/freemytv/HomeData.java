@@ -48,7 +48,12 @@ final class HomeData {
     private static final long PRICES_EVERY = 5 * 60_000L, WEATHER_EVERY = 30 * 60_000L;
     interface Listener { void onData(); }
 
-    /** BTC, ETH and SOL; in Brazilian reais also the dollar (USDT/BRL), which Binance doesn't list for most currencies. */
+    /** In Brazilian reais and Russian rubles the dollar comes too (USDT/BRL, USDT/RUB): Binance doesn't list it for most currencies. */
+    static boolean dollar() {
+        return CURRENCY.equals("BRL") || CURRENCY.equals("RUB");
+    }
+
+    /** BTC, ETH and SOL, and the dollar where Binance lists it (dollar()). */
     static int coinCount() {
         return Prefs.quotes() ? active().length : 0;
     }
@@ -62,7 +67,7 @@ final class HomeData {
         if (a != null && activeVersion == Prefs.version) return a;
         int n = 0;
         int[] tmp = new int[COINS.length];
-        for (int i = 0; i < COINS.length; i++) if (Prefs.coin(i) && (i < 3 || CURRENCY.equals("BRL"))) tmp[n++] = i;
+        for (int i = 0; i < COINS.length; i++) if (Prefs.coin(i) && (i < 3 || dollar())) tmp[n++] = i;
         a = java.util.Arrays.copyOf(tmp, n);
         activeCoins = a;
         activeVersion = Prefs.version;
@@ -305,9 +310,10 @@ final class HomeData {
         return Ui.locale();
     }
 
-    /** 580.4k · 21.0k · 1.04k · 5.61 (as short as possible; the dollar always with cents). */
+    /** 3.90M · 580.4k · 21.0k · 1.04k · 5.61 (as short as possible; the dollar always with cents). */
     static String price(double v) {
         if (Double.isNaN(v)) return "—";
+        if (v >= 1_000_000) return millions(v);
         if (v >= 10_000) return String.format(locale(), "%.1fk", v / 1000);
         if (v >= 1000) return String.format(locale(), "%.2fk", v / 1000);
         return String.format(locale(), "%.2f", v);
@@ -316,18 +322,24 @@ final class HomeData {
     /** 416.3k · 12.2k · 1.04k · 531 · 5.05: abbreviated, for the price row on the home screen. */
     static String compact(double v) {
         if (Double.isNaN(v)) return "—";
+        if (v >= 1_000_000) return millions(v);
         if (v >= 10_000) return String.format(locale(), "%.1fk", v / 1000);
         if (v >= 1000) return String.format(locale(), "%.2fk", v / 1000);
         if (v >= 100) return String.format(locale(), "%.0f", v);
         return String.format(locale(), "%.2f", v);
     }
 
-    /** $108,234 · $185.20 · R$ 581.234 · R$ 5,61 (cents only below a thousand), in the configured currency. */
+    /** 3.90M · 12.4M: bitcoin in rubles or yen, which "k" would make "3900.0k". */
+    private static String millions(double v) {
+        return String.format(locale(), v >= 10_000_000 ? "%.1fM" : "%.2fM", v / 1_000_000);
+    }
+
+    /** $108,234 · $185.20 · R$ 581.234 · R$ 5,61 · 3 900 027 ₽ (cents only below a thousand), in the configured currency. */
     static String brl(double v) {
-        String symbol = currencySymbol();
-        if (Double.isNaN(v)) return symbol + "—";
-        return Ui.once("brl", v, () -> v >= 1000 ? String.format(locale(), symbol + "%,.0f", v)
-                : String.format(locale(), symbol + "%.2f", v));
+        String symbol = currencySymbol(), after = CURRENCY.equals("RUB") ? " ₽" : "";   // the ruble sign goes after
+        if (Double.isNaN(v)) return symbol + "—" + after;
+        return Ui.once("brl", v, () -> v >= 1000 ? String.format(locale(), symbol + "%,.0f" + after, v)
+                : String.format(locale(), symbol + "%.2f" + after, v));
     }
 
     /** The weather in words, from Open-Meteo's WMO code. */
@@ -400,6 +412,7 @@ final class HomeData {
             case "EUR": return "€";
             case "GBP": return "£";
             case "JPY": return "¥";
+            case "RUB": return "";   // after the number (brl)
             default: return CURRENCY + " ";
         }
     }
