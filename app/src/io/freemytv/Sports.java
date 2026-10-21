@@ -343,7 +343,8 @@ final class Sports {
                 e.minutes = soccer ? 115 : tennis ? 180 : 75;
                 String[] info = soccer ? europa : moto;
                 e.logoComp = !info[0].isEmpty() ? info[0] : clean(j.optString("strLeagueBadge"));
-                e.art = !info[1].isEmpty() ? info[1] : clean(j.optString("strThumb"));
+                e.art = soccer && !Config.EUROPA_ART.trim().isEmpty() ? Config.EUROPA_ART.trim()
+                        : !info[1].isEmpty() ? info[1] : clean(j.optString("strThumb"));
                 if (soccer || tennis) {
                     e.home = j.optString("strHomeTeam");
                     e.away = j.optString("strAwayTeam");
