@@ -54,6 +54,7 @@ final class Config {
     static final String TMDB_SESSION = "$(prop tmdb_session '')";
     static final String FOOTBALL_KEY = "$(prop football_key '')";
     static final String CHAMPIONS_ART = "$(prop champions_art '')";
+    static final String SERIEA_ART = "$(prop seriea_art '')";
     static final String EUROPA_ART = "$(prop europa_art '')";
     static final String SPORTS_APPS = "$(prop sports_apps com.dazn,com.amazon.amazonvideo.livingroom)";
     static final boolean SPORTS = $SPORTS;
