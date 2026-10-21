@@ -7,6 +7,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  @font-face { font-family: F1; font-display: swap;
+    src: url('fonts/Formula1-Black.woff2') format('woff2'), url('https://www.formula1.com/s/fonts/formula1/Formula1-Black.woff2') format('woff2'); }
+  #gallery { position: absolute; inset: 0; background: rgba(10,10,12,.94); display: none; z-index: 20; color: #fff; }
+  #gallery h2 { position: absolute; left: 80px; top: 46px; font-size: 44px; font-weight: 600; }
+  #gallery .hint { position: absolute; right: 80px; top: 62px; font-size: 24px; color: #aaa; }
+  #gallery .cell { position: absolute; width: 1040px; height: 442px; transform: scale(.55); transform-origin: 0 0; cursor: pointer; }
+  #gallery .cell .card { top: 0; left: 0 !important; width: 1040px !important; transition: none; }
+  #gallery .lab { position: absolute; font-size: 26px; font-weight: 600; color: #ddd; }
   :root { --ink:#1d1d1f; --dim:#6e6e73; --faint:#8e8e93; --glass:rgba(255,255,255,.55); }
   .night { --ink:#fff; --dim:#8e8e93; --faint:rgba(255,255,255,.7); --glass:rgba(40,40,44,.55); }
   * { box-sizing: border-box; margin: 0; }
@@ -77,11 +85,12 @@
   <div id="cards"></div>
   <div id="platter" class="abs"></div>
   <div id="quote" class="abs"></div>
+  <div id="gallery"></div>
 </div>
 <div id="bar">
   <button id="gear">⚙ Impostazioni e dati veri</button>
   <span id="status">Dati di esempio: apri le impostazioni e inserisci la chiave TMDB</span>
-  <span>← → muovi · 1 2 3 schede · S evento sport · N giorno/notte · D dati sport</span>
+  <button id="gal">▦ Prova tutti gli sport (G)</button><span>← → muovi · 1 2 3 schede · S evento sport · G galleria sport · N giorno/notte · D dati</span>
 </div>
 <div id="panel">
   <b>Dati reali</b>
@@ -140,6 +149,7 @@
       { sport: 4, comp: 'MotoGP', start: Date.now() + 27 * 3600e3, minutes: 75, title: "Gran Premio d'Italia · Gara", logoComp: '', art: '', c1: '#b5470b', c2: '#2a1203', italian: 3 }
     ]
   };
+  data.sports.forEach(function (e) { e.sample = true; });
   var ACCENT = [['#0b5fa5', '#052a4a'], ['#1b2a8a', '#0b1250'], ['#e8650a', '#2a0f02'], ['#14141C', '#14141C'], ['#b5470b', '#2a1203'], ['#2e8b57', '#0b2a1a']];
 
   // ---------- state & chrome ----------
@@ -373,6 +383,7 @@
     if (e.home && e.away) { crest(c, e.logoHome, e.home, 165); crest(c, e.logoAway, e.away, 685); el('div', 'when', c).textContent = when(e); }
     else {
       var s = el('div', '', c); s.style.cssText = 'position:absolute;left:44px;right:44px;top:170px;font-size:60px;font-weight:600;text-align:left'; s.textContent = e.title;
+      if (e.sport === 3) { s.style.cssText = "position:absolute;left:44px;right:44px;top:176px;font:400 50px/1.15 F1, 'Inter', sans-serif;text-align:left;text-transform:uppercase"; }
       var w = el('div', '', c); w.style.cssText = 'position:absolute;left:44px;bottom:44px;font-size:36px;font-weight:500'; w.textContent = when(e);
     }
     return c;
@@ -437,7 +448,39 @@
     load();
   };
 
+  // ---------- gallery: every sport at once, with real data where it was found, a sample otherwise ----------
+  var NAMES = ['Serie A', 'Champions League', 'Europa League', 'Formula 1', 'MotoGP', 'Tennis'];
+  var SAMPLE = [
+    { home: 'Milan', away: 'Napoli', comp: 'Serie A' }, { home: 'Inter', away: 'Barcellona', comp: 'Champions League' },
+    { home: 'Roma', away: 'Ajax', comp: 'Europa League' }, { title: "Gran Premio d'Italia · Gara", comp: 'Formula 1' },
+    { title: "Gran Premio d'Italia · Gara", comp: 'MotoGP' }, { home: 'Jannik Sinner', away: 'Carlos Alcaraz', comp: 'Tennis' }];
+  function galleryEvent(sp) {
+    var real = data.sports.filter(function (e) { return e.sport === sp; })[0];
+    if (real) return { e: real, real: !real.sample };
+    var s = SAMPLE[sp], e = mk(sp, Date.now() + (3 + sp) * 36e5, s.comp, s.title || '');
+    if (s.home) { e.home = s.home; e.away = s.away; }
+    e.art = sp === 1 ? '../app/assets/sports/champions.webp' : sp === 2 ? '../app/assets/sports/europa.jpg' : sp === 3 ? '../app/assets/sports/f1.png' : '';
+    return { e: e, real: false };
+  }
+  function openGallery() {
+    var g = document.getElementById('gallery'); g.innerHTML = ''; g.style.display = 'block';
+    el('h2', '', g).textContent = 'Tutti gli sport';
+    el('div', 'hint', g).textContent = 'Clic su una card per vederla in Esplora · G o Esc per chiudere';
+    for (var sp = 0; sp < 6; sp++) (function (sp) {
+      var it = galleryEvent(sp), cell = el('div', 'cell', g);
+      cell.style.left = (80 + (sp % 3) * 600) + 'px'; cell.style.top = (150 + Math.floor(sp / 3) * 400) + 'px';
+      cell.appendChild(sportCard(it.e));
+      var lab = el('div', 'lab', g); lab.style.left = (80 + (sp % 3) * 600) + 'px'; lab.style.top = (150 + Math.floor(sp / 3) * 400 + 252) + 'px';
+      lab.textContent = NAMES[sp] + (it.real ? ' · dati veri' : ' · esempio');
+      cell.onclick = function () { var at = data.sports.indexOf(it.e); if (at < 0) { data.sports.push(it.e); at = data.sports.length - 1; } sportIdx = at; tab = 0; idx = 0; closeGallery(); render(); };
+    })(sp);
+  }
+  function closeGallery() { document.getElementById('gallery').style.display = 'none'; }
+  document.getElementById('gal').onclick = openGallery;
+
   addEventListener('keydown', function (e) {
+    if (e.key === 'g' || e.key === 'G') { var gg = document.getElementById('gallery'); return gg.style.display === 'block' ? closeGallery() : openGallery(); }
+    if (e.key === 'Escape') return closeGallery();
     if (/INPUT|SELECT/.test((e.target || {}).tagName || '')) return;
     var max = tab === 0 ? 2 : 9;
     if (e.key === 'ArrowRight') idx = Math.min(max, idx + 1);

@@ -147,7 +147,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private final Rect fitSrc = new Rect();
     private static final String[] RANKS = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"};
     private final List<HomeApps.Item> lightButtons = new ArrayList<>();
-    private Paint lSportName, lSportMono, lSportLabel, lSportTitle, lSportWhen, lRank, lCaption, lAvatar, lClock, lTitle, lTab, lTabOn, lCardTitle, lCardMeta, lQuote, lTip;
+    private Paint lSportF1, lSportName, lSportMono, lSportLabel, lSportTitle, lSportWhen, lRank, lCaption, lAvatar, lClock, lTitle, lTab, lTabOn, lCardTitle, lCardMeta, lQuote, lTip;
     private Shader lightGradient;
 
     // Shelf
@@ -548,6 +548,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         lSportLabel.setLetterSpacing(0.12f);
         lSportTitle = Ui.text(Ui.displaySemibold, 60 * k, 0xFFFFFFFF);
         lSportWhen = Ui.text(Ui.displayMedium, 36 * k, 0xE6FFFFFF);
+        lSportF1 = Ui.text(Ui.f1 != null ? Ui.f1 : Ui.displaySemibold, 50 * k, 0xFFFFFFFF);
         lSportName = Ui.text(Ui.semibold, 27 * k, 0xFFFFFFFF);
         lSportName.setTextAlign(Paint.Align.CENTER);
         lSportMono = Ui.text(Ui.displaySemibold, 84 * k, 0xFFFFFFFF);
@@ -2467,9 +2468,10 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         int slash = p.meta.indexOf(" · ");
         String when = slash < 0 ? p.meta : p.meta.substring(0, slash);
         if (p.home.isEmpty() || p.away.isEmpty()) {
-            TextPaint tp = new TextPaint(lSportTitle);
-            String title = TextUtils.ellipsize(p.title, tp, width, TextUtils.TruncateAt.END).toString();
-            c.drawText(title, area.left + pad, area.centerY() + Ui.halfCap(lSportTitle) + 20 * k, lSportTitle);
+            Paint face = p.flat ? lSportF1 : lSportTitle;       // Formula 1: its own font, in capitals
+            TextPaint tp = new TextPaint(face);
+            String title = TextUtils.ellipsize(p.flat ? p.title.toUpperCase(Ui.locale()) : p.title, tp, width, TextUtils.TruncateAt.END).toString();
+            c.drawText(title, area.left + pad, area.centerY() + Ui.halfCap(face) + 20 * k, face);
             c.drawText(when, area.left + pad, area.bottom - pad, lSportWhen);
             return;
         }

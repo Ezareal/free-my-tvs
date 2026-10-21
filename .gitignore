@@ -10,5 +10,9 @@ out/
 *.wgt
 __pycache__/
 
+# Formula 1's font is theirs: tools/f1_font.py puts it here on your machine only
+app/assets/fonts/Formula1-Black.ttf
+preview/fonts/
+
 # macOS
 .DS_Store
