@@ -34,8 +34,8 @@ import java.util.concurrent.Executors;
  */
 final class Sports {
     private static final long EVERY = 30 * 60_000L, FAST = 5 * 60_000L, AHEAD = 30 * 3600_000L, WEEK = 7 * 86_400_000L;
-    private static final int SERIE_A = 0, CHAMPIONS = 1, EUROPA = 2, F1 = 3, MOTO = 4, TENNIS = 5;   // also the priority order
-    private static final int[] ACCENT = {0xFF0B5FA5, 0xFF1B2A8A, 0xFFE8650A, 0xFF14141C, 0xFF0E0E12, 0xFF2E8B57};
+    static final int SERIE_A = 0, CHAMPIONS = 1, EUROPA = 2, F1 = 3, MOTO = 4, TENNIS = 5, PREMIER = 6, LALIGA = 7, BUNDES = 8, LIGUE1 = 9;   // 0 to 5 also the priority order
+    private static final int[] ACCENT = {0xFF0B5FA5, 0xFF1B2A8A, 0xFFE8650A, 0xFF14141C, 0xFF0E0E12, 0xFF2E8B57, 0xFF37003C, 0xFFEE8707, 0xFFD3010C, 0xFF091C3E};
 
     private static Sports instance;
 
@@ -44,7 +44,8 @@ final class Sports {
         return instance;
     }
 
-    private static final class Event {
+    /** One match, race or session. */
+    static final class Event {
         int sport, italian;      // italian: 3 for an Italian club, rider, driver or player (the screen is in Italian)
         long start, minutes;     // minutes: how long it lasts, to move on to the next one when it is over
         String competition, title, home = "", away = "", logoHome = "", logoAway = "", logoComp = "", art = "", country = "", place = "";
@@ -113,19 +114,8 @@ final class Sports {
             if (best == null || before(e, best, now, italy)) best = e;
         }
         if (best == null) return null;
-        String pkg = null, app = "";
-        android.content.pm.PackageManager pm = context.getPackageManager();
-        for (String candidate : Config.SPORTS_APPS.split(",")) {
-            String name = candidate.trim();
-            if (!name.isEmpty() && HomeApps.launchIntent(pm, name) != null) {
-                pkg = name;
-                try {
-                    app = String.valueOf(pm.getApplicationLabel(pm.getApplicationInfo(name, 0)));
-                } catch (android.content.pm.PackageManager.NameNotFoundException ignored) {
-                }
-                break;
-            }
-        }
+        String[] opener = opener();
+        String pkg = opener[0], app = opener[1];
         Recs.Pick p = new Recs.Pick();
         p.kind = "sport";
         p.home = best.home;
@@ -136,19 +126,19 @@ final class Sports {
         // The competition's own picture is chosen here, not saved with the event, so a new picture applies at once.
         p.art = best.sport == CHAMPIONS ? art(Config.CHAMPIONS_ART, "asset:sports/champions.webp")
                 : best.sport == EUROPA ? art(Config.EUROPA_ART, "asset:sports/europa.jpg")
-                : best.sport == F1 ? "asset:sports/f1.png" : best.sport == MOTO ? motoArt() : best.sport == SERIE_A ? "" : best.art;
+                : best.sport == F1 ? "asset:sports/f1.png" : best.sport == MOTO ? motoArt() : best.sport == SERIE_A ? art(Config.SERIEA_ART, SERIEA_BACKGROUND) : best.art;
         p.title = best.title;
         p.accent = ACCENT[best.sport];
         p.flat = best.sport == F1 || best.sport == MOTO;     // Formula 1 and MotoGP: a flat color with their artwork over it
         p.face = best.sport == F1 ? 1 : best.sport == MOTO ? 2 : 0;
-        if (best.sport == SERIE_A) {      // Serie A: a vertical gradient, light blue at the bottom
+        if (best.sport == SERIE_A) {      // Serie A: a vertical gradient, light blue at the bottom (under its picture)
             p.gradTop = 0xFF28519F;
             p.gradBottom = 0xFF38A8BC;
         }
         p.place = best.place;
         p.flag = best.country.isEmpty() ? "" : "https://flagcdn.com/w160/" + best.country + ".png";
         p.label = best.competition;
-        p.pkg = pkg;
+        p.pkg = pkg.isEmpty() ? null : pkg;
         p.detailed = true;
         p.meta = when(best.start, now) + (app.isEmpty() ? "" : " · " + app);
         p.id = (p.title + p.meta).hashCode();
@@ -167,6 +157,21 @@ final class Sports {
         if (ia != ib) return ia > ib;
         if (a.sport != b.sport) return a.sport < b.sport;
         return a.start < b.start;
+    }
+
+    /** {package, name} of the first app of config "sports_apps" that is installed, or {"", ""}. */
+    String[] opener() {
+        android.content.pm.PackageManager pm = context.getPackageManager();
+        for (String candidate : Config.SPORTS_APPS.split(",")) {
+            String name = candidate.trim();
+            if (name.isEmpty() || HomeApps.launchIntent(pm, name) == null) continue;
+            try {
+                return new String[] {name, String.valueOf(pm.getApplicationLabel(pm.getApplicationInfo(name, 0)))};
+            } catch (android.content.pm.PackageManager.NameNotFoundException e) {
+                return new String[] {name, ""};
+            }
+        }
+        return new String[] {"", ""};
     }
 
     private static String when(long start, long now) {
@@ -390,6 +395,7 @@ final class Sports {
         return false;
     }
 
+    private static final String SERIEA_BACKGROUND = "https://images.legaseriea.it/image/private/t_ratio16_9-size60-f_webp-c_fill/prd/assets/backgrounds/fallback-logo.png";
     private static final String MOTOGP_BAR = "https://www.motogp.com/resources/v8.28.8/i/svg-files/elements/slim-bar-background.svg";
 
     /** MotoGP's background: the converted picture in the app if tools/sport_assets.py made it, else the SVG online. */
@@ -491,6 +497,209 @@ final class Sports {
         }
         if (!badge.isEmpty()) cache.edit().putString(key, badge).apply();
         return badge;
+    }
+
+    // MARK: - The day's agenda (the Sport button)
+
+    /** Names of the competitions, by sport id, and the order they are listed in. */
+    static final String[] NAMES = {"Serie A", "Champions League", "Europa League", "Formula 1", "MotoGP", "Tennis",
+            "Premier League", "LaLiga", "Bundesliga", "Ligue 1"};
+    static final int[] ORDER = {SERIE_A, CHAMPIONS, EUROPA, PREMIER, LALIGA, BUNDES, LIGUE1, F1, MOTO, TENNIS};
+
+    private final ExecutorService agendaIo = Executors.newSingleThreadExecutor();
+    private final java.util.Map<String, List<Event>> agendas = new java.util.HashMap<>();
+    private final java.util.Map<String, Long> agendaAt = new java.util.HashMap<>();
+    private final java.util.Set<String> agendaLoading = new java.util.HashSet<>();
+
+    private static String localDay(long at) {
+        SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+        return f.format(new Date(at));
+    }
+
+    /** Midnight (local) of the day `offset` days from today. */
+    static long dayStart(int offset) {
+        Calendar c = Calendar.getInstance();
+        c.set(Calendar.HOUR_OF_DAY, 0);
+        c.set(Calendar.MINUTE, 0);
+        c.set(Calendar.SECOND, 0);
+        c.set(Calendar.MILLISECOND, 0);
+        c.add(Calendar.DAY_OF_YEAR, offset);
+        return c.getTimeInMillis();
+    }
+
+    /**
+     * Every event of one day (local time), in time order, or null while it is being fetched (`changed` runs, on the
+     * main thread, when it arrives). Kept for 15 minutes.
+     */
+    List<Event> agenda(long start, Runnable changed) {
+        String key = localDay(start);
+        synchronized (agendas) {
+            List<Event> have = agendas.get(key);
+            Long at = agendaAt.get(key);
+            if (have != null && at != null && System.currentTimeMillis() - at < 15 * 60_000L) return have;
+            if (!agendaLoading.add(key)) return have;
+        }
+        agendaIo.execute(() -> {
+            List<Event> found = new ArrayList<>();
+            try {
+                found = fetchAgenda(start);
+            } catch (RuntimeException e) {
+                AppLog.w("agenda: " + e.getMessage());
+            }
+            synchronized (agendas) {
+                agendaLoading.remove(key);
+                agendas.put(key, found);
+                agendaAt.put(key, System.currentTimeMillis());
+            }
+            main.post(changed);
+        });
+        synchronized (agendas) {
+            return agendas.get(key);
+        }
+    }
+
+    private List<Event> fetchAgenda(long start) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(start);
+        cal.add(Calendar.DAY_OF_YEAR, 1);
+        long end = cal.getTimeInMillis();
+        List<Event> raw = new ArrayList<>();
+        String key = Config.FOOTBALL_KEY.trim();
+        boolean football = false;
+        if (!key.isEmpty()) {
+            try {
+                footballDay(raw, key, start, end);
+                football = true;
+            } catch (Exception e) {
+                AppLog.w("agenda football: " + e.getMessage());
+            }
+        }
+        try {
+            formula1Season(raw);
+        } catch (Exception e) {
+            AppLog.w("agenda formula 1: " + e.getMessage());
+        }
+        for (String sport : new String[] {"Soccer", "Motorsport", "Tennis"}) {
+            for (long day : new long[] {start, end}) {      // TheSportsDB lists by UTC date: look at both
+                try {
+                    dayListing(raw, sport, day, football);
+                } catch (Exception e) {
+                    AppLog.w("agenda " + sport + ": " + e.getMessage());
+                }
+            }
+        }
+        List<Event> out = new ArrayList<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (Event e : raw) {
+            if (e.start < start || e.start >= end) continue;
+            if (seen.add(e.sport + "|" + e.title + "|" + e.home + "|" + e.away + "|" + e.start)) out.add(e);
+        }
+        java.util.Collections.sort(out, (a, b) -> a.start != b.start ? Long.compare(a.start, b.start) : Integer.compare(b.italian, a.italian));
+        return out;
+    }
+
+    private void footballDay(List<Event> out, String key, long start, long end) throws Exception {
+        java.util.Set<String> italian = serieATeams(key);
+        String url = "https://api.football-data.org/v4/matches?competitions=SA,CL,PL,PD,BL1,FL1&dateFrom=" + day(start - 86_400_000L)
+                + "&dateTo=" + day(end + 86_400_000L);
+        JSONArray matches = new JSONObject(get(url, key)).getJSONArray("matches");
+        for (int i = 0; i < matches.length(); i++) {
+            JSONObject m = matches.getJSONObject(i);
+            JSONObject comp = m.getJSONObject("competition");
+            String code = comp.optString("code");
+            int sport = code.equals("SA") ? SERIE_A : code.equals("CL") ? CHAMPIONS : code.equals("PL") ? PREMIER
+                    : code.equals("PD") ? LALIGA : code.equals("BL1") ? BUNDES : code.equals("FL1") ? LIGUE1 : -1;
+            long at = utc(m.optString("utcDate"));
+            String status = m.optString("status");
+            if (sport < 0 || at == 0 || status.equals("POSTPONED") || status.equals("CANCELLED")) continue;
+            JSONObject home = m.getJSONObject("homeTeam"), away = m.getJSONObject("awayTeam");
+            Event e = event(sport, at, NAMES[sport], team(home) + " – " + team(away));
+            e.minutes = 115;
+            e.home = team(home);
+            e.away = team(away);
+            e.logoHome = home.optString("crest");
+            e.logoAway = away.optString("crest");
+            e.logoComp = comp.optString("emblem");
+            e.italian = italian.contains(home.optString("id")) || italian.contains(away.optString("id")) ? 3 : 0;
+            out.add(e);
+        }
+    }
+
+    /** The whole Formula 1 season (every session of every weekend), from Jolpica. */
+    private void formula1Season(List<Event> out) throws Exception {
+        JSONArray races = new JSONObject(get("https://api.jolpi.ca/ergast/f1/current.json", null))
+                .getJSONObject("MRData").getJSONObject("RaceTable").getJSONArray("Races");
+        String[][] sessions = {{"FirstPractice", Ui.tr("Treino livre 1", "Free practice 1", "Libres 1", "Prove libere 1")},
+                {"SecondPractice", Ui.tr("Treino livre 2", "Free practice 2", "Libres 2", "Prove libere 2")},
+                {"ThirdPractice", Ui.tr("Treino livre 3", "Free practice 3", "Libres 3", "Prove libere 3")},
+                {"SprintQualifying", Ui.tr("Classificação sprint", "Sprint qualifying", "Clasificación sprint", "Qualifiche sprint")}, {"Sprint", "Sprint"}, {"Qualifying", Ui.tr("Classificação", "Qualifying", "Clasificación", "Qualifiche")},
+                {"", Ui.tr("Corrida", "Race", "Carrera", "Gara")}};
+        for (int i = 0; i < races.length(); i++) {
+            JSONObject race = races.getJSONObject(i);
+            JSONObject where = race.optJSONObject("Circuit") == null ? null : race.getJSONObject("Circuit").optJSONObject("Location");
+            for (String[] s : sessions) {
+                JSONObject o = s[0].isEmpty() ? race : race.optJSONObject(s[0]);
+                if (o == null) continue;
+                long at = utc(o.optString("date") + "T" + o.optString("time", "12:00:00Z"));
+                if (at == 0) continue;
+                Event e = event(F1, at, "Formula 1", race.optString("raceName") + " · " + s[1]);
+                e.minutes = s[0].isEmpty() ? 120 : 75;
+                e.italian = 3;
+                if (where != null) {
+                    e.country = iso(where.optString("country"));
+                    e.place = where.optString("locality");
+                }
+                if (e.country.isEmpty()) e.country = iso(race.optString("raceName"));
+                out.add(e);
+            }
+        }
+    }
+
+    private static final String[][] LEAGUES = {{"italian serie a", "0"}, {"uefa champions league", "1"}, {"uefa europa league", "2"},
+            {"english premier league", "6"}, {"spanish la liga", "7"}, {"german bundesliga", "8"}, {"french ligue 1", "9"}};
+
+    /** One day of TheSportsDB's listing for a sport: the leagues in LEAGUES, MotoGP, ATP and WTA tennis. */
+    private void dayListing(List<Event> out, String sport, long day, boolean footballKnown) throws Exception {
+        JSONArray list = new JSONObject(get("https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=" + day(day) + "&s=" + sport, null))
+                .optJSONArray("events");
+        int tennisCount = 0;
+        for (int i = 0; list != null && i < list.length(); i++) {
+            JSONObject j = list.getJSONObject(i);
+            String league = j.optString("strLeague"), lower = league.toLowerCase(Locale.ROOT), title = j.optString("strEvent");
+            long at = utc(j.optString("strTimestamp"));
+            if (at == 0) continue;
+            int kind = -1;
+            if (sport.equals("Soccer")) {
+                for (String[] l : LEAGUES) {
+                    if (lower.contains(l[0]) && !lower.contains("women") && !lower.contains("conference")) kind = Integer.parseInt(l[1]);
+                }
+                if (kind >= 0 && footballKnown && kind != EUROPA) continue;      // football-data already gave those, with crests
+            } else if (sport.equals("Motorsport")) {
+                if (lower.contains("motogp") && !lower.contains("moto2") && !lower.contains("moto3")) kind = MOTO;
+            } else if ((lower.contains("atp") || lower.contains("wta") || lower.contains("grand slam")) && tennisCount < 14) {
+                kind = TENNIS;
+                tennisCount++;
+            }
+            if (kind < 0) continue;
+            Event e = event(kind, at, NAMES[kind], title);
+            e.minutes = kind == TENNIS ? 180 : kind == MOTO ? 75 : 115;
+            e.logoComp = clean(j.optString("strLeagueBadge"));
+            if (kind != MOTO) {
+                e.home = j.optString("strHomeTeam");
+                e.away = j.optString("strAwayTeam");
+                e.logoHome = clean(j.optString("strHomeTeamBadge"));
+                e.logoAway = clean(j.optString("strAwayTeamBadge"));
+                if (e.home.isEmpty() || e.away.isEmpty()) {
+                    e.home = "";
+                    e.away = "";
+                }
+            } else {
+                e.country = iso(j.optString("strCountry") + " " + title + " " + j.optString("strVenue") + " " + j.optString("strCity"));
+                e.place = !clean(j.optString("strCity")).isEmpty() ? j.optString("strCity") : clean(j.optString("strVenue"));
+            }
+            e.italian = kind == MOTO ? 3 : kind == TENNIS ? (italianPlayer(e.home + " " + e.away) ? 3 : 0) : italianClub(e.home + " " + e.away) ? 3 : 0;
+            out.add(e);
+        }
     }
 
     // MARK: - Logos

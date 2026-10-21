@@ -133,7 +133,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private int tab, topIndex, cardIndex;
     private List<Recs.Pick> cards = new ArrayList<>();
     /** Top row: the three tabs, then the corner buttons (Live TV, HDMI, Settings, profile). */
-    private static final int TOP = 7;
+    private static final int TOP = 8;
     private final Spring[] topFocus = new Spring[TOP];
     private final RectF[] topRects = new RectF[TOP];
     /** Explore shows 3 cards; Movies and Shows, the country's Top 10 as a carousel (up to 10). */
@@ -430,6 +430,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         lightButtons.add(HomeApps.action(HomeApps.LIVE_TV, "live", Ui.tr("TV aberta", "Live TV"), "live_tv"));
         lightButtons.add(HomeApps.action(HomeApps.INPUTS, "inputs", Ui.tr("Entradas HDMI", "HDMI Inputs"), "hdmi"));
         lightButtons.add(HomeApps.action(HomeApps.SETTINGS, "settings", Ui.tr("Configurações", "Settings"), "settings"));
+        lightButtons.add(HomeApps.action(HomeApps.SPORTS, "sports", Ui.tr("Esportes", "Sports", "Deportes", "Sport"), "sports"));
         lightButtons.add(HomeApps.action(HomeApps.PROFILE, "profile",
                 Profile.email.isEmpty() ? Ui.tr("Conta Google", "Google account") : Profile.email, "profile"));
     }
@@ -2648,6 +2649,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             }
             if (lightButtons.get(i).kind == HomeApps.PROFILE) {
                 drawAvatar(c, cell.centerX(), cell.centerY(), rad - 6 * k * s, f);
+            } else if (lightButtons.get(i).kind == HomeApps.SPORTS) {
+                drawBall(c, cell.centerX(), cell.centerY(), 15 * k * s, blend(tone(L_INK, 0xEBFFFFFF), L_INK, f));
             } else {
                 Symbols.draw(getContext(), c, lightButtons.get(i).symbol, cell.centerX(), cell.centerY(), 27 * k * s,
                         blend(tone(L_INK, 0xEBFFFFFF), L_INK, f));
@@ -2660,6 +2663,29 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
                 c.drawText(label, x, r.bottom + (40 + 4 * f) * k, lTip);
             }
         }
+    }
+
+    private final Path ballPath = new Path();
+    private final Paint ballStroke = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+    /** A football as an icon: the ball's outline, a pentagon in the middle and the seams to the edge. */
+    private void drawBall(Canvas c, float cx, float cy, float r, int color) {
+        ballStroke.setStyle(Paint.Style.STROKE);
+        ballStroke.setStrokeWidth(2.4f * k);
+        ballStroke.setStrokeJoin(Paint.Join.ROUND);
+        ballStroke.setStrokeCap(Paint.Cap.ROUND);
+        ballStroke.setColor(color);
+        c.drawCircle(cx, cy, r, ballStroke);
+        ballPath.reset();
+        float p = r * 0.42f;
+        for (int i = 0; i < 5; i++) {
+            double a = -Math.PI / 2 + i * 2 * Math.PI / 5;
+            float px = cx + (float) Math.cos(a) * p, py = cy + (float) Math.sin(a) * p;
+            if (i == 0) ballPath.moveTo(px, py); else ballPath.lineTo(px, py);
+            c.drawLine(px, py, cx + (float) Math.cos(a) * r * 0.98f, cy + (float) Math.sin(a) * r * 0.98f, ballStroke);
+        }
+        ballPath.close();
+        c.drawPath(ballPath, ballStroke);
     }
 
     /** The Google account: its initial on a colored disc, or a person's silhouette while the name isn't known. */

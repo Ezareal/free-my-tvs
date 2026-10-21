@@ -13,6 +13,20 @@
     src: url('fonts/MGPDisplay-Bold.woff2') format('woff2'), url('https://www.motogp.com/resources/v8.28.8/fonts/MGPDisplay-Bold.woff2') format('woff2'); }
   .flag { position: absolute; bottom: 44px; height: 56px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,.4); }
   .place { position: absolute; bottom: 44px; font-size: 36px; font-weight: 500; line-height: 56px; }
+  #agenda { position: absolute; inset: 0; background: linear-gradient(#16161C, #07070A); display: none; z-index: 30; color: #fff; overflow: hidden; }
+  #agenda h2 { position: absolute; left: 80px; top: 62px; font-size: 70px; font-weight: 600; line-height: 90px; }
+  #agenda .day { position: absolute; right: 80px; top: 76px; font-size: 40px; font-weight: 500; color: rgba(255,255,255,.9); cursor: pointer; }
+  #agenda .list { position: absolute; left: 80px; right: 80px; top: 190px; bottom: 60px; overflow-y: auto; }
+  #agenda .hd { display: flex; align-items: center; gap: 16px; height: 74px; padding-top: 18px; font-size: 28px; font-weight: 600; letter-spacing: .12em; color: rgba(255,255,255,.8); text-transform: uppercase; }
+  #agenda .hd i { width: 8px; height: 26px; border-radius: 4px; display: block; }
+  #agenda .ev { display: flex; align-items: center; height: 92px; padding: 0 6px; border-radius: 20px; font-size: 32px; font-weight: 600; }
+  #agenda .ev:hover { background: rgba(255,255,255,.18); }
+  #agenda .ev .t { width: 170px; font-size: 36px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  #agenda .ev .s { display: flex; align-items: center; gap: 16px; flex: 0 1 460px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #agenda .ev .s img { width: 52px; height: 52px; object-fit: contain; }
+  #agenda .ev .v { width: 80px; text-align: center; color: rgba(255,255,255,.6); font-weight: 500; }
+  #agenda .msg { color: rgba(255,255,255,.6); font-size: 30px; padding-top: 30px; }
+  #agenda .help { position: absolute; left: 80px; bottom: 18px; font-size: 24px; color: rgba(255,255,255,.5); }
   #gallery { position: absolute; inset: 0; background: rgba(10,10,12,.94); display: none; z-index: 20; color: #fff; }
   #gallery h2 { position: absolute; left: 80px; top: 46px; font-size: 44px; font-weight: 600; }
   #gallery .hint { position: absolute; right: 80px; top: 62px; font-size: 24px; color: #aaa; }
@@ -90,6 +104,7 @@
   <div id="platter" class="abs"></div>
   <div id="quote" class="abs"></div>
   <div id="gallery"></div>
+  <div id="agenda"></div>
 </div>
 <div id="bar">
   <button id="gear">⚙ Impostazioni e dati veri</button>
@@ -153,13 +168,14 @@
     sports: [
       { sport: 1, comp: 'UEFA Champions League', start: Date.now() + 3600e3, minutes: 115, home: 'Inter', away: 'Barcellona', logoComp: '', logoHome: '', logoAway: '', art: '../app/assets/sports/champions.webp', c1: '#1b2a8a', c2: '#0b1250', italian: 3 },
       { sport: 2, comp: 'UEFA Europa League', start: Date.now() - 600e3, minutes: 115, home: 'Roma', away: 'Ajax', logoComp: '', logoHome: '', logoAway: '', art: '../app/assets/sports/europa.jpg', c1: '#e8650a', c2: '#2a0f02', italian: 3 },
-      { sport: 0, comp: 'Serie A', start: Date.now() + 20 * 3600e3, minutes: 115, home: 'Milan', away: 'Napoli', logoComp: '', logoHome: '', logoAway: '', art: '', c1: '#0b5fa5', c2: '#052a4a', italian: 3 },
+      { sport: 0, comp: 'Serie A', start: Date.now() + 20 * 3600e3, minutes: 115, home: 'Milan', away: 'Napoli', logoComp: '', logoHome: '', logoAway: '', art: 'https://images.legaseriea.it/image/private/t_ratio16_9-size60-f_webp-c_fill/prd/assets/backgrounds/fallback-logo.png', c1: '#0b5fa5', c2: '#052a4a', italian: 3 },
       { sport: 3, comp: 'Formula 1', start: Date.now() + 26 * 3600e3, minutes: 120, title: "Gran Premio d'Italia · Gara", logoComp: '', art: '../app/assets/sports/f1.png', country: 'it', place: 'Monza', c1: '#14141C', c2: '#14141C', italian: 3 },
       { sport: 4, comp: 'MotoGP', start: Date.now() + 27 * 3600e3, minutes: 75, title: "Gran Premio d'Italia · Gara", logoComp: '', art: '', country: 'it', place: 'Mugello', c1: '#0E0E12', c2: '#0E0E12', italian: 3 }
     ]
   };
   data.sports.forEach(function (e) { e.sample = true; });
-  var ACCENT = [['#28519F', '#38A8BC'], ['#1b2a8a', '#0b1250'], ['#e8650a', '#2a0f02'], ['#14141C', '#14141C'], ['#0E0E12', '#0E0E12'], ['#2e8b57', '#0b2a1a']];
+  var SERIEA = 'https://images.legaseriea.it/image/private/t_ratio16_9-size60-f_webp-c_fill/prd/assets/backgrounds/fallback-logo.png';
+  var ACCENT = [['#28519F', '#38A8BC'], ['#1b2a8a', '#0b1250'], ['#e8650a', '#2a0f02'], ['#14141C', '#14141C'], ['#0E0E12', '#0E0E12'], ['#2e8b57', '#0b2a1a'], ['#37003C', '#12001a'], ['#EE8707', '#3a2000'], ['#D3010C', '#2a0003'], ['#091C3E', '#030a18']];
 
   // ---------- state & chrome ----------
   var tab = 0, idx = 0, sportIdx = -1, night = false;
@@ -167,9 +183,11 @@
   var APPS = [['Netflix', '#e50914'], ['YouTube', '#ff0033'], ['Prime Video', '#1a98ff'], ['Nuvio TV', '#8b5cf6'], ['Mono Player', '#22a7f0'], ['Disney+', '#1838c8'], ['Apple TV', '#8a8d96'], ['Spotify', '#1db954']];
   var ICONS = ['<path d="M3 6h18v12H3zM8 21h8"/>', '<path d="M4 6h16v12H4zM8 10h2M14 10h2"/>', '<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2 2M16.4 16.4l2 2M18.4 5.6l-2 2M7.6 16.4l-2 2"/>'];
   var btns = document.getElementById('btns'), right = 1840;
-  for (var b = 3; b >= 0; b--) {
+  var BALL = '<circle cx="12" cy="12" r="9"/><path d="M12 8.2l3.4 2.5-1.3 4h-4.2l-1.3-4zM12 8.2V3.2M15.4 10.7l4.6-1.6M14.1 14.7l2.9 4M9.9 14.7l-2.9 4M8.6 10.7L4 9.1"/>';
+  for (var b = 4; b >= 0; b--) {
     var e = document.createElement('div'); e.className = 'btn abs'; e.style.left = (right - 68) + 'px'; right -= 88;
-    if (b === 3) e.id = 'avatar'; else e.innerHTML = '<svg viewBox="0 0 24 24">' + ICONS[b] + '</svg>';
+    if (b === 4) e.id = 'avatar'; else if (b === 3) { e.innerHTML = '<svg viewBox="0 0 24 24">' + BALL + '</svg>'; e.style.cursor = 'pointer'; e.title = 'Sport'; e.onclick = function () { openAgenda(); }; }
+    else e.innerHTML = '<svg viewBox="0 0 24 24">' + ICONS[b] + '</svg>';
     btns.appendChild(e);
   }
   function avatar() {
@@ -265,7 +283,7 @@
   }
 
   // ---------- sports (the same sources and rules as Sports.java) ----------
-  var DUR = { 0: 115, 1: 115, 2: 115, 3: 120, 4: 75, 5: 180 };
+  var DUR = { 0: 115, 1: 115, 2: 115, 3: 120, 4: 75, 5: 180, 6: 115, 7: 115, 8: 115, 9: 115 };
   var CLUBS = ['inter', 'milan', 'juventus', 'napoli', 'roma', 'lazio', 'atalanta', 'fiorentina', 'bologna', 'torino', 'genoa', 'udinese'];
   var PLAYERS = ['sinner', 'musetti', 'berrettini', 'paolini', 'cobolli', 'arnaldi', 'darderi', 'errani', 'cocciaretto', 'sonego', 'fognini', 'bellucci', 'nardi', 'passaro'];
   function hasAny(text, list) { text = (text || '').toLowerCase(); return list.some(function (x) { return text.indexOf(x) >= 0; }); }
@@ -343,7 +361,7 @@
       }));
     })));
     return Promise.all(jobs).then(function () {
-      out.forEach(function (e) { if (e.sport === 0) e.art = ''; if (e.sport === 1) e.art = '../app/assets/sports/champions.webp'; if (e.sport === 2) e.art = '../app/assets/sports/europa.jpg'; if (e.sport === 3) e.art = '../app/assets/sports/f1.png'; if (e.sport === 4) e.art = 'MOTOGP'; });
+      out.forEach(function (e) { if (e.sport === 0) e.art = SERIEA; if (e.sport === 1) e.art = '../app/assets/sports/champions.webp'; if (e.sport === 2) e.art = '../app/assets/sports/europa.jpg'; if (e.sport === 3) e.art = '../app/assets/sports/f1.png'; if (e.sport === 4) e.art = 'MOTOGP'; });
       return { events: out, notes: notes };
     });
   }
@@ -389,7 +407,7 @@
   function sportCard(e) {
     var c = el('div', 'card sport');
     c.style.background = e.sport === 3 ? '#14141C' : e.sport === 4 ? '#0E0E12' : e.sport === 0 ? 'linear-gradient(180deg,#28519F,#38A8BC)' : 'linear-gradient(135deg,' + e.c2 + ',' + e.c1 + ')';
-    if (e.art) { var a = el('div', 'art', c); a.style.backgroundImage = e.art === 'MOTOGP' ? "url('fonts/motogp-bar.svg'), url('https://www.motogp.com/resources/v8.28.8/i/svg-files/elements/slim-bar-background.svg')" : 'url(' + e.art + ')'; if (e.sport !== 3 && e.sport !== 4) { var t = el('div', 'tint', c); t.style.background = e.c2; t.style.opacity = .5; } }
+    if (e.art) { var a = el('div', 'art', c); a.style.backgroundImage = e.art === 'MOTOGP' ? "url('fonts/motogp-bar.svg'), url('https://www.motogp.com/resources/v8.28.8/i/svg-files/elements/slim-bar-background.svg')" : 'url(' + e.art + ')'; if (e.sport > 4 || e.sport === 1 || e.sport === 2) { var t = el('div', 'tint', c); t.style.background = e.c2; t.style.opacity = .5; } }
     var comp = el('div', 'comp', c);
     if (e.logoComp) { var im = el('img', '', comp); im.src = e.logoComp; im.onerror = function () { im.remove(); comp.textContent = e.comp; }; } else comp.textContent = e.comp;
     if (e.home && e.away) { crest(c, e.logoHome, e.home, 165); crest(c, e.logoAway, e.away, 685); el('div', 'when', c).textContent = when(e); }
@@ -500,6 +518,97 @@
     load();
   };
 
+  // ---------- the Sport button: every event of one day, by competition ----------
+  var LEAGUES = [['italian serie a', 0], ['uefa champions league', 1], ['uefa europa league', 2], ['english premier league', 6], ['spanish la liga', 7], ['german bundesliga', 8], ['french ligue 1', 9]];
+  var NAMES2 = ['Serie A', 'Champions League', 'Europa League', 'Formula 1', 'MotoGP', 'Tennis', 'Premier League', 'LaLiga', 'Bundesliga', 'Ligue 1'];
+  var ORDER = [0, 1, 2, 6, 7, 8, 9, 3, 4, 5];
+  var COLORS = { 0: '#38A8BC', 1: '#4A6CF7', 2: '#E8650A', 6: '#A64CC8', 7: '#EE8707', 8: '#D3010C', 9: '#2F6BFF', 3: '#E10600', 4: '#E8590C', 5: '#2E8B57' };
+  var agendaOffset = 0, agendaCache = {};
+  function dayStart(off) { var d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + off); return d.getTime(); }
+  function ae(sp, start, title) { var e = mk(sp, start, NAMES2[sp], title || ''); return e; }
+  function fetchAgenda(off) {
+    var start = dayStart(off), end = dayStart(off + 1), raw = [], notes = [], jobs = [];
+    function src(n, p) { return p.catch(function (e) { notes.push(n + ': ' + e.message); }); }
+    var haveFootball = false;
+    if (cfg.football) jobs.push(src('football-data', jget('https://api.football-data.org/v4/matches?competitions=SA,CL,PL,PD,BL1,FL1&dateFrom=' + day(start - 864e5) + '&dateTo=' + day(end + 864e5), { 'X-Auth-Token': cfg.football }).then(function (r) {
+      haveFootball = true;
+      r.matches.forEach(function (m) {
+        var sp = { SA: 0, CL: 1, PL: 6, PD: 7, BL1: 8, FL1: 9 }[m.competition.code]; if (sp === undefined || /POSTPONED|CANCELLED/.test(m.status)) return;
+        var e = ae(sp, ts(m.utcDate)); e.home = m.homeTeam.shortName || m.homeTeam.name; e.away = m.awayTeam.shortName || m.awayTeam.name; e.logoHome = m.homeTeam.crest; e.logoAway = m.awayTeam.crest; e.logoComp = m.competition.emblem;
+        e.italian = hasAny(e.home + ' ' + e.away, CLUBS) ? 3 : 0; raw.push(e);
+      });
+    })));
+    jobs.push(src('formula 1', jget('https://api.jolpi.ca/ergast/f1/current.json').then(function (r) {
+      r.MRData.RaceTable.Races.forEach(function (race) {
+        var loc = race.Circuit && race.Circuit.Location;
+        [['FirstPractice', 'Prove libere 1'], ['SecondPractice', 'Prove libere 2'], ['ThirdPractice', 'Prove libere 3'], ['SprintQualifying', 'Qualifiche sprint'], ['Sprint', 'Sprint'], ['Qualifying', T().quali], ['', T().race]].forEach(function (s) {
+          var o = s[0] ? race[s[0]] : race; if (!o) return; var e = ae(3, ts(o.date + 'T' + (o.time || '12:00:00Z')), race.raceName + ' · ' + s[1]); e.italian = 3;
+          if (loc) { e.country = iso(loc.country); e.place = loc.locality || ''; } raw.push(e);
+        });
+      });
+    })));
+    ['Soccer', 'Motorsport', 'Tennis'].forEach(function (sp) { [start, end].forEach(function (d) {
+      jobs.push(src('TheSportsDB ' + sp, jget('https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=' + day(d) + '&s=' + sp).then(function (r) {
+        var tn = 0; (r.events || []).forEach(function (j) {
+          var lg = (j.strLeague || '').toLowerCase(), kind = -1, at = ts(j.strTimestamp); if (!at) return;
+          if (sp === 'Soccer') { LEAGUES.forEach(function (l) { if (lg.indexOf(l[0]) >= 0 && lg.indexOf('women') < 0 && lg.indexOf('conference') < 0) kind = l[1]; }); if (kind >= 0 && haveFootball && kind !== 2) return; }
+          else if (sp === 'Motorsport') { if (lg.indexOf('motogp') >= 0 && !/moto2|moto3/.test(lg)) kind = 4; }
+          else if (/atp|wta|grand slam/.test(lg) && tn < 14) { kind = 5; tn++; }
+          if (kind < 0) return;
+          var e = ae(kind, at, j.strEvent || ''); e.logoComp = j.strLeagueBadge || '';
+          if (kind !== 4) { e.home = j.strHomeTeam || ''; e.away = j.strAwayTeam || ''; e.logoHome = j.strHomeTeamBadge || ''; e.logoAway = j.strAwayTeamBadge || ''; if (!e.home || !e.away) { e.home = ''; e.away = ''; } }
+          else { e.country = iso([j.strCountry, j.strEvent, j.strVenue, j.strCity].join(' ')); e.place = j.strCity || j.strVenue || ''; }
+          e.italian = kind === 4 ? 3 : kind === 5 ? (hasAny(e.home + ' ' + e.away, PLAYERS) ? 3 : 0) : (hasAny(e.home + ' ' + e.away, CLUBS) ? 3 : 0); raw.push(e);
+        });
+      })));
+    }); });
+    return Promise.all(jobs).then(function () {
+      var seen = {}, out = raw.filter(function (e) { if (e.start < start || e.start >= end) return false; var k = e.sport + e.title + e.home + e.away + e.start; if (seen[k]) return false; return (seen[k] = true); });
+      out.sort(function (a, b) { return a.start - b.start || b.italian - a.italian; });
+      return { events: out, notes: notes };
+    });
+  }
+  function sampleAgenda() {
+    var base = dayStart(agendaOffset), h = function (x) { return base + x * 36e5; }, out = [];
+    [[0, 18.75, 'Milan', 'Napoli'], [0, 20.75, 'Inter', 'Juventus'], [1, 21, 'Real Madrid', 'Napoli'], [6, 17.5, 'Arsenal', 'Chelsea'], [6, 20, 'Liverpool', 'Man City'],
+     [7, 21, 'Barcelona', 'Sevilla'], [8, 15.5, 'Bayern', 'Dortmund'], [9, 21, 'PSG', 'Marseille']].forEach(function (a) { var e = ae(a[0], h(a[1])); e.home = a[2]; e.away = a[3]; e.italian = hasAny(a[2] + a[3], CLUBS) ? 3 : 0; out.push(e); });
+    var f = ae(3, h(14), "Gran Premio d'Italia · Gara"); f.place = 'Monza'; out.push(f); var m = ae(4, h(13), "Gran Premio d'Italia · Gara"); m.place = 'Mugello'; out.push(m);
+    var t = ae(5, h(15)); t.home = 'Jannik Sinner'; t.away = 'Carlos Alcaraz'; out.push(t);
+    return out.sort(function (a, b) { return a.start - b.start; });
+  }
+  function openAgenda() { document.getElementById('agenda').style.display = 'block'; drawAgenda(); }
+  function closeAgenda() { document.getElementById('agenda').style.display = 'none'; }
+  function drawAgenda() {
+    var g = document.getElementById('agenda'), off = agendaOffset; g.innerHTML = '';
+    el('h2', '', g).textContent = cfg.lang === 'it' ? 'Sport' : 'Sports';
+    var dl = el('div', 'day', g), d = new Date(dayStart(off));
+    dl.textContent = '‹  ' + (off === 0 ? T().today + ' · ' : off === 1 ? T().tomorrow + ' · ' : '') + d.toLocaleDateString(T().loc, { weekday: 'long', day: 'numeric', month: 'long' }) + '  ›';
+    var list = el('div', 'list', g); el('div', 'help', g).textContent = '← → cambia giorno · Esc chiude · clic su un evento (qui solo anteprima)';
+    var hit = agendaCache[off];
+    function paint(res, sample) {
+      list.innerHTML = '';
+      if (!res.events.length) { el('div', 'msg', list).textContent = 'Nessun evento in questo giorno.'; return; }
+      if (sample) el('div', 'msg', list).textContent = 'Nessun dato vero trovato per questo giorno: ecco un esempio.';
+      ORDER.forEach(function (sp) {
+        var evs = res.events.filter(function (e) { return e.sport === sp; }); if (!evs.length) return;
+        var hd = el('div', 'hd', list); var bar = el('i', '', hd); bar.style.background = COLORS[sp]; hd.appendChild(document.createTextNode(NAMES2[sp]));
+        evs.forEach(function (e) {
+          var row = el('div', 'ev', list), tm = new Date(e.start); el('div', 't', row).textContent = ('0' + tm.getHours()).slice(-2) + ':' + ('0' + tm.getMinutes()).slice(-2);
+          function side(parent, logo, nm) { var s = el('div', 's', parent); if (logo) { var im = el('img', '', s); im.src = logo; im.onerror = function () { im.remove(); }; } s.appendChild(document.createTextNode(nm)); }
+          if (e.home && e.away) { side(row, e.logoHome, e.home); el('div', 'v', row).textContent = '–'; side(row, e.logoAway, e.away); }
+          else { var s = el('div', 's', row); s.textContent = e.title + (e.place ? '  ·  ' + e.place : ''); }
+        });
+      });
+    }
+    if (hit) return paint(hit, hit.sample);
+    el('div', 'msg', list).textContent = 'Carico gli eventi…';
+    fetchAgenda(off).then(function (res) {
+      if (!res.events.length) { res = { events: sampleAgenda(), notes: res.notes, sample: true }; }
+      agendaCache[off] = res; res.notes.forEach(function (n) { log('agenda: ' + n); });
+      if (document.getElementById('agenda').style.display === 'block' && agendaOffset === off) paint(res, res.sample);
+    });
+  }
+
   // ---------- gallery: every sport at once, with real data where it was found, a sample otherwise ----------
   var NAMES = ['Serie A', 'Champions League', 'Europa League', 'Formula 1', 'MotoGP', 'Tennis'];
   var SAMPLE = [
@@ -532,7 +641,9 @@
 
   addEventListener('keydown', function (e) {
     if (e.key === 'g' || e.key === 'G') { var gg = document.getElementById('gallery'); return gg.style.display === 'block' ? closeGallery() : openGallery(); }
-    if (e.key === 'Escape') return closeGallery();
+    var ag = document.getElementById('agenda').style.display === 'block';
+    if (ag && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { agendaOffset += e.key === 'ArrowRight' ? 1 : -1; return drawAgenda(); }
+    if (e.key === 'Escape') { closeAgenda(); return closeGallery(); }
     if (/INPUT|SELECT/.test((e.target || {}).tagName || '')) return;
     var max = tab === 0 ? 2 : 9;
     if (e.key === 'ArrowRight') idx = Math.min(max, idx + 1);
