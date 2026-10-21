@@ -131,7 +131,9 @@ final class Sports {
         p.logoHome = best.logoHome;
         p.logoAway = best.logoAway;
         p.logoComp = best.logoComp;
-        p.art = best.art;
+        // The competition's own picture is chosen here, not saved with the event, so a new picture applies at once.
+        p.art = best.sport == CHAMPIONS ? art(Config.CHAMPIONS_ART, "asset:sports/champions.webp")
+                : best.sport == EUROPA ? art(Config.EUROPA_ART, "asset:sports/europa.jpg") : best.art;
         p.title = best.title;
         p.accent = ACCENT[best.sport];
         p.label = best.competition;
