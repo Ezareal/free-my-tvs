@@ -25,7 +25,9 @@ before you do it, and let them do the taps on the TV.
    degrees) and `city` for their city, `tmdb_region` (two-letter country), `show_crypto`, `currency` and `temperature` to match.
 4. **Android TV recommendations:** *Home Settings* → *Recommendations* chooses *From your apps* (the default),
    *Discover (TMDB)* or *Off*. App feeds read Android TV Preview Programs and Watch Next from shelf apps only;
-   allow TV-listing access when prompted. Only apps that publish entries contribute. Three cards fit onscreen,
+   allow TV-listing access when prompted. App-feed tabs are Explore, Movies, TV Shows and Continue Watching;
+   movie/show categories use the publisher’s media type, while music and clips stay in Explore.
+   Only apps that publish entries contribute. Three cards fit onscreen,
    the selected card expands, and the row scrolls to the rest. Cards open the publishing app's content link;
    unavailable artwork uses its app logo. No key is needed for app feeds. Discover keeps the original TMDB feed,
    installed-service matching and three hourly picks, with Movies and Shows tabs. Both sources share the expanding card row. Existing installs start with

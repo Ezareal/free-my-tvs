@@ -7,6 +7,7 @@ import android.content.ContextWrapper;
 import android.content.pm.PackageManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.tv.TvContract;
 import android.os.Bundle;
 import android.os.Looper;
 
@@ -112,12 +113,14 @@ public final class RecommendationsTest extends Instrumentation {
         Prefs.setRecommendations("apps");
         Prefs.setShelf(Collections.singletonList(c.getPackageName()));
         NativeRecs nativeRecs = NativeRecs.get(c);
-        Recs.Pick video = pick(c.getPackageName(), "preview", 1, "video", false);
+        Recs.Pick video = pick(c.getPackageName(), "preview", 1, "movie", false);
+        Recs.Pick series = pick(c.getPackageName(), "preview", 2, "tv", false);
+        Recs.Pick clip = pick(c.getPackageName(), "preview", 3, "video", false);
         Recs.Pick music = pick(c.getPackageName(), "watch-next", 1, "music", true);
         Recs.Pick hidden = pick("other.app", "preview", 2, "video", false);
         Field field = NativeRecs.class.getDeclaredField("picks");
         field.setAccessible(true);
-        field.set(nativeRecs, new ArrayList<>(Arrays.asList(video, music, hidden)));
+        field.set(nativeRecs, new ArrayList<>(Arrays.asList(video, series, clip, music, hidden)));
         check(!Recs.key(video).equals(Recs.key(music)), "provider tables have separate identities");
         // Repeated artwork callbacks and screensaver tabs must only read the cached eligibility.
         for (int i = 0; i < 3; i++) {
@@ -131,14 +134,20 @@ public final class RecommendationsTest extends Instrumentation {
                 "reset to default does not reuse custom eligibility");
         Prefs.setShelf(Collections.singletonList(c.getPackageName()));
         if (Recs.canRead(c)) {
-            check(nativeRecs.now().size() == 2, "only shelf apps contribute");
-            check(nativeRecs.now("video").equals(Collections.singletonList(video)), "Videos filter");
+            check(nativeRecs.now().size() == 4, "only shelf apps contribute");
+            check(nativeRecs.now("movie").equals(Collections.singletonList(video)), "Movies filter excludes clips and music");
+            check(nativeRecs.now("tv").equals(Collections.singletonList(series)), "TV Shows filter");
             check(nativeRecs.now("continue").equals(Collections.singletonList(music)), "Watch Next filter");
             Prefs.setShelf(Collections.emptyList());
             check(nativeRecs.now().isEmpty() && nativeRecs.showcase().isEmpty(), "shelf removal hides cached picks");
         } else {
             check(nativeRecs.now().isEmpty() && nativeRecs.showcase().isEmpty(), "permission denial hides cached picks");
         }
+        check(NativeRecs.kind(TvContract.PreviewPrograms.TYPE_MOVIE).equals("movie"), "published movie type");
+        for (int type : new int[] {TvContract.PreviewPrograms.TYPE_TV_SERIES, TvContract.PreviewPrograms.TYPE_TV_SEASON,
+                TvContract.PreviewPrograms.TYPE_TV_EPISODE}) check(NativeRecs.kind(type).equals("tv"), "published show types");
+        check(NativeRecs.kind(TvContract.PreviewPrograms.TYPE_CLIP).equals("video"), "clips stay in Explore");
+        check(NativeRecs.kind(TvContract.PreviewPrograms.TYPE_TRACK).equals("music"), "music stays in Explore");
         Intent safe = nativeRecs.intent(video);
         check(safe != null && c.getPackageName().equals(safe.getPackage()), "content opens in publisher");
         Intent crossApp = new Intent(Intent.ACTION_VIEW).setComponent(new ComponentName("other.app", "other.app.Player"));

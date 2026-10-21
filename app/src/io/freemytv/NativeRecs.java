@@ -257,10 +257,7 @@ final class NativeRecs {
                 p.title = title;
                 p.link = link;
                 p.resume = resume;
-                int type = rows.getInt(6);
-                p.kind = type == TvContract.PreviewPrograms.TYPE_TRACK || type == TvContract.PreviewPrograms.TYPE_ALBUM
-                        || type == TvContract.PreviewPrograms.TYPE_ARTIST || type == TvContract.PreviewPrograms.TYPE_PLAYLIST
-                        || type == TvContract.PreviewPrograms.TYPE_STATION ? "music" : "video";
+                p.kind = kind(rows.getInt(6));
                 p.backdrop = rows.getString(3);
                 p.thumbnail = rows.getString(4);
                 if (p.backdrop == null || p.backdrop.isEmpty()) p.backdrop = rows.getString(4);
@@ -274,9 +271,24 @@ final class NativeRecs {
         }
     }
 
+    static String kind(int type) {
+        switch (type) {
+            case TvContract.PreviewPrograms.TYPE_MOVIE: return "movie";
+            case TvContract.PreviewPrograms.TYPE_TV_SERIES:
+            case TvContract.PreviewPrograms.TYPE_TV_SEASON:
+            case TvContract.PreviewPrograms.TYPE_TV_EPISODE: return "tv";
+            case TvContract.PreviewPrograms.TYPE_TRACK:
+            case TvContract.PreviewPrograms.TYPE_ALBUM:
+            case TvContract.PreviewPrograms.TYPE_ARTIST:
+            case TvContract.PreviewPrograms.TYPE_PLAYLIST:
+            case TvContract.PreviewPrograms.TYPE_STATION: return "music";
+            default: return "video";
+        }
+    }
+
     List<Pick> wanted() {
         Map<String, Pick> out = new LinkedHashMap<>();
-        for (String kind : new String[] {null, "video", "continue"}) {
+        for (String kind : new String[] {null, "movie", "tv", "continue"}) {
             List<Pick> list = now(kind);
             for (int i = 0; i < Math.min(3, list.size()); i++) out.put(key(list.get(i)), list.get(i));
         }
