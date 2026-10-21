@@ -33,7 +33,7 @@ final class Ui {
     static volatile String language = language();
     static volatile boolean en = "en".equals(language), es = "es".equals(language), de = "de".equals(language),
             ru = "ru".equals(language);
-    static Typeface thin, light, displayMedium, displaySemibold, regular, medium, semibold;
+    static Typeface thin, light, displayMedium, displaySemibold, regular, medium, semibold, bold;
     private static boolean loaded;
     private static final Rect BOUNDS = new Rect();
     private static final RectF OVAL = new RectF();
@@ -49,6 +49,7 @@ final class Ui {
         regular = font(a, 14, 400);
         medium = font(a, 14, 500);
         semibold = font(a, 14, 600);
+        bold = font(a, 14, 700);
     }
 
     /** Inter at an optical size (14 = text, 32 = display) and weight; the system font if the file is missing. */
@@ -97,6 +98,11 @@ final class Ui {
         p.setTextSize(size);
         p.setColor(color);
         return p;
+    }
+
+    /** One weight up (Text size: Large): regular to medium, medium to semibold, semibold to bold. */
+    static Typeface heavier(Typeface face) {
+        return face == regular ? medium : face == medium ? semibold : face == semibold ? bold : face;
     }
 
     /** Fixed-width digits (the clock and the prices don't jitter when a digit changes). */

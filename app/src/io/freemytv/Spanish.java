@@ -87,6 +87,12 @@ final class Spanish {
             case "Automatic": return "Automático";
             case "Light": return "Claro";
             case "Dark": return "Oscuro";
+            case "Look": return "Apariencia";
+            case "Glass": return "Cristal";
+            case "Sharp": return "Nítido";
+            case "Text size": return "Tamaño del texto";
+            case "Normal": return "Normal";
+            case "Large": return "Grande";
             case "Navigation sounds": return "Sonidos de navegación";
             case "Weather widget": return "Widget del clima";
             // What TalkBack reads on the drawer's weather card (#47)

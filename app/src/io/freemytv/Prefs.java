@@ -90,6 +90,22 @@ final class Prefs {
 
     static void setTheme(String v) { put("theme", v); }
 
+    /** "glass" (frosted glass) or "sharp" (flat panels, hairline borders, more contrast). */
+    static String look() {
+        String v = sp().getString("look", Config.LOOK).trim().toLowerCase(Locale.ROOT);
+        return v.equals("sharp") ? "sharp" : "glass";
+    }
+
+    static void setLook(String v) { put("look", v); }
+
+    /** "normal" or "large" (the home screen's smaller text, bigger and a little bolder). */
+    static String textSize() {
+        String v = sp().getString("textSize", Config.TEXT_SIZE).trim().toLowerCase(Locale.ROOT);
+        return v.equals("large") ? "large" : "normal";
+    }
+
+    static void setTextSize(String v) { put("textSize", v); }
+
     // MARK: - City
 
     static String city() { return sp().getString("city", Config.CITY).trim(); }

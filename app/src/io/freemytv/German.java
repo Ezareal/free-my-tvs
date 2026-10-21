@@ -95,6 +95,12 @@ final class German {
             case "Automatic": return "Automatisch";
             case "Light": return "Hell";
             case "Dark": return "Dunkel";
+            case "Look": return "Darstellung";
+            case "Glass": return "Glas";
+            case "Sharp": return "Scharf";
+            case "Text size": return "Textgröße";
+            case "Normal": return "Normal";
+            case "Large": return "Groß";
             case "Navigation sounds": return "Navigationstöne";
             case "Weather widget": return "Wetter-Widget";
             // What TalkBack reads on the drawer's weather card (#47)
