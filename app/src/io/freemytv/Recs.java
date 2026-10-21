@@ -450,13 +450,13 @@ final class Recs {
         //    ones don't come back (what people already watch a lot is in the trending list above).
         int page = 1 + (int) ((System.currentTimeMillis() / 86_400_000L) % 3);
         String best = "&sort_by=vote_average.desc&page=" + page + common.replaceAll("&sort_by=[a-z._]+", "");
-        JSONArray topMovies = get("/discover/movie?vote_count.gte=1500&primary_release_date.gte=" + day(-365 * 8)
+        JSONArray bestMovies = get("/discover/movie?vote_count.gte=1500&primary_release_date.gte=" + day(-365 * 8)
                 + best).getJSONArray("results");
-        JSONArray topShows = get("/discover/tv?vote_count.gte=500&first_air_date.gte=" + day(-365 * 8)
+        JSONArray bestShows = get("/discover/tv?vote_count.gte=500&first_air_date.gte=" + day(-365 * 8)
                 + best).getJSONArray("results");
         List<Pick> gemMovies = new ArrayList<>(), gemShows = new ArrayList<>();
-        for (int i = 0; i < topMovies.length(); i++) add(gemMovies, topMovies.getJSONObject(i), "movie");
-        for (int i = 0; i < topShows.length(); i++) add(gemShows, topShows.getJSONObject(i), "tv");
+        for (int i = 0; i < bestMovies.length(); i++) add(gemMovies, bestMovies.getJSONObject(i), "movie");
+        for (int i = 0; i < bestShows.length(); i++) add(gemShows, bestShows.getJSONObject(i), "tv");
         // Each source gets its share (up to 10 trending, 10 new, 10 to discover); movies and shows alternating, no repeats.
         List<Pick> list = new ArrayList<>();
         java.util.Set<String> seen = new java.util.HashSet<>();
@@ -471,16 +471,16 @@ final class Recs {
         alternate(candidates, new java.util.HashSet<>(), tasteMovies, tasteShows, 24);
         // Only what plays on an app the TV has (the details say where), up to 12.
         List<Pick> mine = new ArrayList<>();
-        for (Pick p : candidates) {
+        for (Pick t : candidates) {
             if (mine.size() >= 12) break;
             try {
-                fetchDetails(p);
+                fetchDetails(t);
             } catch (Exception e) {
                 continue;
             }
-            if (p.pkg != null && seen.add(key(p))) {
-                p.taste = true;
-                mine.add(p);
+            if (t.pkg != null && seen.add(key(t))) {
+                t.taste = true;
+                mine.add(t);
             }
         }
         list.addAll(mine);
