@@ -262,7 +262,7 @@ final class Sports {
             e.logoAway = away.optString("crest");
             String[] info = code.equals("SA") ? leagueInfo(4332, "serie a") : leagueInfo(4480, "champions");
             e.logoComp = info[0].isEmpty() ? comp.optString("emblem") : info[0];
-            e.art = info[1];
+            e.art = code.equals("CL") && !Config.CHAMPIONS_ART.trim().isEmpty() ? Config.CHAMPIONS_ART.trim() : info[1];
             e.italian = italian.contains(home.optString("id")) || italian.contains(away.optString("id")) ? 3 : 0;
             out.add(e);
         }

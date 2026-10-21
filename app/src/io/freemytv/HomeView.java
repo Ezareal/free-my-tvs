@@ -546,11 +546,11 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         lQuote = Ui.numbers(Ui.regular, 21 * k, L_FAINT);
         lSportLabel = Ui.text(Ui.semibold, 27 * k, 0xCCFFFFFF);
         lSportLabel.setLetterSpacing(0.12f);
-        lSportTitle = Ui.text(Ui.displaySemibold, 76 * k, 0xFFFFFFFF);
-        lSportWhen = Ui.text(Ui.displayMedium, 44 * k, 0xE6FFFFFF);
-        lSportName = Ui.text(Ui.semibold, 34 * k, 0xFFFFFFFF);
+        lSportTitle = Ui.text(Ui.displaySemibold, 60 * k, 0xFFFFFFFF);
+        lSportWhen = Ui.text(Ui.displayMedium, 36 * k, 0xE6FFFFFF);
+        lSportName = Ui.text(Ui.semibold, 27 * k, 0xFFFFFFFF);
         lSportName.setTextAlign(Paint.Align.CENTER);
-        lSportMono = Ui.text(Ui.displaySemibold, 84 * k, 0xFF1D1D1F);
+        lSportMono = Ui.text(Ui.displaySemibold, 84 * k, 0xFFFFFFFF);
         lSportMono.setTextAlign(Paint.Align.CENTER);
         lCaption = Ui.text(Ui.medium, 30 * k, L_DIM);
         lCaption.setTextAlign(Paint.Align.RIGHT);
@@ -2431,8 +2431,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     }
 
     /**
-     * A match or race: the competition's color, its logo and name; for two sides, their logos (on white discs) with
-     * the time between and the names below; otherwise the title and the time.
+     * A match or race: the competition's artwork and color, its logo in white at the top center; for two sides, their
+     * logos with the time between and the names below; otherwise the title and the time.
      */
     private void drawSportCard(Canvas c, Recs.Pick p, RectF area, float r) {
         Sports sports = Sports.get(getContext());
@@ -2441,59 +2441,63 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         c.drawRoundRect(area, r, r, fill);
         fill.setShader(null);
         Bitmap art = sports.bitmap(p.art, null);
-        if (art != null) {       // the competition's artwork behind everything, dimmed so the text reads
+        if (art != null) {       // artwork behind everything, dimmed so the text reads
             roundImageFit(c, art, area, r, 1);
-            fill.setColor(Ui.alpha(blend(p.accent, 0xFF000000, 0.6f), 0.72f));
+            fill.setColor(Ui.alpha(blend(p.accent, 0xFF000000, 0.6f), 0.5f));
             c.drawRoundRect(area, r, r, fill);
         }
         float pad = 44 * k, width = area.width() - 2 * pad;
-        float x = area.left + pad, d = 76 * k;
         Bitmap comp = sports.bitmap(p.logoComp, null);
-        if (comp != null) {
-            drawLogoDisc(c, comp, x + d / 2, area.top + pad + d / 2, d);
-            x += d + 20 * k;
+        float logoBottom;
+        if (comp != null) {      // the competition's logo, in white, centered at the top
+            drawLogo(c, comp, area.centerX(), area.top + pad * 0.7f + 40 * k, 300 * k, 80 * k, true);
+            logoBottom = area.top + pad * 0.7f + 80 * k;
+        } else {
+            c.drawText(p.label.toUpperCase(Ui.locale()), area.centerX() - lSportLabel.measureText(p.label.toUpperCase(Ui.locale())) / 2,
+                    area.top + pad + Ui.cap(lSportLabel), lSportLabel);
+            logoBottom = area.top + pad + Ui.cap(lSportLabel);
         }
-        float labelBase = area.top + pad + (comp != null ? d / 2 : Ui.cap(lSportLabel)) + (comp != null ? Ui.halfCap(lSportLabel) : 0);
-        c.drawText(p.label.toUpperCase(Ui.locale()), x, labelBase, lSportLabel);
         int slash = p.meta.indexOf(" · ");
         String when = slash < 0 ? p.meta : p.meta.substring(0, slash);
         if (p.home.isEmpty() || p.away.isEmpty()) {
             TextPaint tp = new TextPaint(lSportTitle);
             String title = TextUtils.ellipsize(p.title, tp, width, TextUtils.TruncateAt.END).toString();
-            c.drawText(title, area.left + pad, area.centerY() + Ui.halfCap(lSportTitle), lSportTitle);
+            c.drawText(title, area.left + pad, area.centerY() + Ui.halfCap(lSportTitle) + 20 * k, lSportTitle);
             c.drawText(when, area.left + pad, area.bottom - pad, lSportWhen);
             return;
         }
-        float size = 176 * k, cy = area.top + area.height() * 0.5f;
+        float size = 190 * k;
+        float cy = (logoBottom + area.bottom - pad * 1.9f) / 2;
         float leftX = area.left + area.width() * 0.25f, rightX = area.left + area.width() * 0.75f;
         drawSide(c, sports.bitmap(p.logoHome, p.home), p.home, leftX, cy, size);
         drawSide(c, sports.bitmap(p.logoAway, p.away), p.away, rightX, cy, size);
         c.drawText(when, area.centerX() - lSportWhen.measureText(when) / 2, cy + Ui.halfCap(lSportWhen), lSportWhen);
         TextPaint np = new TextPaint(lSportName);
-        float maxName = area.width() * 0.42f, nameBase = area.bottom - pad * 0.8f;
+        float maxName = area.width() * 0.42f, nameBase = area.bottom - pad * 0.7f;
         c.drawText(TextUtils.ellipsize(p.home, np, maxName, TextUtils.TruncateAt.END).toString(), leftX, nameBase, lSportName);
         c.drawText(TextUtils.ellipsize(p.away, np, maxName, TextUtils.TruncateAt.END).toString(), rightX, nameBase, lSportName);
     }
 
-    /** One side's logo on a white disc; while it loads (or has none) its first letter. */
+    /** One side's logo as it is; while it loads (or has none) its first letter in a faint disc. */
     private void drawSide(Canvas c, Bitmap logo, String name, float cx, float cy, float size) {
         if (logo != null) {
-            drawLogoDisc(c, logo, cx, cy, size);
+            drawLogo(c, logo, cx, cy, size, size, false);
             return;
         }
-        fill.setColor(0xF2FFFFFF);
-        c.drawCircle(cx, cy, size * 0.56f, fill);
+        fill.setShader(null);
+        fill.setColor(0x33FFFFFF);
+        c.drawCircle(cx, cy, size * 0.45f, fill);
         if (!name.isEmpty()) c.drawText(name.substring(0, 1).toUpperCase(Ui.locale()), cx, cy + Ui.halfCap(lSportMono), lSportMono);
     }
 
-    private void drawLogoDisc(Canvas c, Bitmap logo, float cx, float cy, float size) {
-        fill.setShader(null);
-        fill.setColor(0xF2FFFFFF);
-        c.drawCircle(cx, cy, size * 0.56f, fill);
-        float scale = Math.min(size / logo.getWidth(), size / logo.getHeight()) * 0.86f;
+    /** The logo fitted inside a box around (cx, cy); `white` turns it into a white silhouette. */
+    private void drawLogo(Canvas c, Bitmap logo, float cx, float cy, float boxW, float boxH, boolean white) {
+        float scale = Math.min(boxW / logo.getWidth(), boxH / logo.getHeight());
         float lw = logo.getWidth() * scale, lh = logo.getHeight() * scale;
         tmp.set(cx - lw / 2, cy - lh / 2, cx + lw / 2, cy + lh / 2);
+        bitmapPaint.setColorFilter(white ? whiteLogo : null);
         c.drawBitmap(logo, null, tmp, bitmapPaint);
+        bitmapPaint.setColorFilter(null);
     }
 
     /** The Top 10: posters, with the selected title opened up into its horizontal cover. */

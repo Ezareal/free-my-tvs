@@ -53,6 +53,7 @@ final class Config {
     static final String TMDB_KEY = "$(prop tmdb_key '')";
     static final String TMDB_SESSION = "$(prop tmdb_session '')";
     static final String FOOTBALL_KEY = "$(prop football_key '')";
+    static final String CHAMPIONS_ART = "$(prop champions_art https://sportsworld.co.uk/wp-content/smush-webp/2026/02/Champions-league-cover-1440x810.png.webp)";
     static final String SPORTS_APPS = "$(prop sports_apps com.dazn,com.amazon.amazonvideo.livingroom)";
     static final boolean SPORTS = $SPORTS;
     static final String TMDB_REGION = "$(prop tmdb_region US)";
