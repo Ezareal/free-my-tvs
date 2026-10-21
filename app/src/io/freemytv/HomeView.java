@@ -2440,9 +2440,15 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
                 blend(p.accent, 0xFF000000, 0.45f), p.accent, Shader.TileMode.CLAMP));
         c.drawRoundRect(area, r, r, fill);
         fill.setShader(null);
+        Bitmap art = sports.bitmap(p.art, null);
+        if (art != null) {       // the competition's artwork behind everything, dimmed so the text reads
+            roundImageFit(c, art, area, r, 1);
+            fill.setColor(Ui.alpha(blend(p.accent, 0xFF000000, 0.6f), 0.72f));
+            c.drawRoundRect(area, r, r, fill);
+        }
         float pad = 44 * k, width = area.width() - 2 * pad;
         float x = area.left + pad, d = 76 * k;
-        Bitmap comp = sports.bitmap(p.logoComp);
+        Bitmap comp = sports.bitmap(p.logoComp, null);
         if (comp != null) {
             drawLogoDisc(c, comp, x + d / 2, area.top + pad + d / 2, d);
             x += d + 20 * k;
@@ -2460,8 +2466,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         }
         float size = 176 * k, cy = area.top + area.height() * 0.5f;
         float leftX = area.left + area.width() * 0.25f, rightX = area.left + area.width() * 0.75f;
-        drawSide(c, sports.bitmap(p.logoHome), p.home, leftX, cy, size);
-        drawSide(c, sports.bitmap(p.logoAway), p.away, rightX, cy, size);
+        drawSide(c, sports.bitmap(p.logoHome, p.home), p.home, leftX, cy, size);
+        drawSide(c, sports.bitmap(p.logoAway, p.away), p.away, rightX, cy, size);
         c.drawText(when, area.centerX() - lSportWhen.measureText(when) / 2, cy + Ui.halfCap(lSportWhen), lSportWhen);
         TextPaint np = new TextPaint(lSportName);
         float maxName = area.width() * 0.42f, nameBase = area.bottom - pad * 0.8f;

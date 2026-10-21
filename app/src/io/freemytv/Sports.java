@@ -34,8 +34,8 @@ import java.util.concurrent.Executors;
  */
 final class Sports {
     private static final long EVERY = 30 * 60_000L, FAST = 5 * 60_000L, AHEAD = 30 * 3600_000L, WEEK = 7 * 86_400_000L;
-    private static final int SERIE_A = 0, CHAMPIONS = 1, F1 = 2, MOTO = 3, TENNIS = 4;   // also the priority order
-    private static final int[] ACCENT = {0xFF0B5FA5, 0xFF1B2A8A, 0xFFE10600, 0xFFE8590C, 0xFF2E8B57};
+    private static final int SERIE_A = 0, CHAMPIONS = 1, EUROPA = 2, F1 = 3, MOTO = 4, TENNIS = 5;   // also the priority order
+    private static final int[] ACCENT = {0xFF0B5FA5, 0xFF1B2A8A, 0xFFE8650A, 0xFFE10600, 0xFFB5470B, 0xFF2E8B57};
 
     private static Sports instance;
 
@@ -47,7 +47,7 @@ final class Sports {
     private static final class Event {
         int sport, italian;      // italian: 3 for an Italian club, rider, driver or player (the screen is in Italian)
         long start, minutes;     // minutes: how long it lasts, to move on to the next one when it is over
-        String competition, title, home = "", away = "", logoHome = "", logoAway = "", logoComp = "";
+        String competition, title, home = "", away = "", logoHome = "", logoAway = "", logoComp = "", art = "";
         boolean live, done;
     }
 
@@ -56,7 +56,8 @@ final class Sports {
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private final ExecutorService art = Executors.newSingleThreadExecutor();     // logos, apart from the schedule fetch
     private final java.util.Map<String, android.graphics.Bitmap> bitmaps = new java.util.LinkedHashMap<>();
-    private final java.util.Set<String> loading = new java.util.HashSet<>(), failed = new java.util.HashSet<>();
+    private final java.util.Set<String> loading = new java.util.HashSet<>();
+    private final java.util.Map<String, Long> failedAtMap = new java.util.HashMap<>();
     private final Handler main = new Handler(Looper.getMainLooper());
     private volatile List<Event> events = new ArrayList<>();
     private volatile long fetchedAt;
@@ -67,7 +68,7 @@ final class Sports {
         cache = c.getSharedPreferences("sports", Context.MODE_PRIVATE);
         try {
             fetchedAt = cache.getLong("at", 0);
-            JSONArray a = new JSONArray(cache.getString("events", "[]"));
+            JSONArray a = new JSONArray(cache.getString("events2", "[]"));
             for (int i = 0; i < a.length(); i++) {
                 JSONObject o = a.getJSONObject(i);
                 Event e = event(o.getInt("sport"), o.getLong("start"), o.getString("competition"), o.getString("title"));
@@ -79,6 +80,7 @@ final class Sports {
                 e.logoHome = o.optString("logoHome");
                 e.logoAway = o.optString("logoAway");
                 e.logoComp = o.optString("logoComp");
+                e.art = o.optString("art");
                 events.add(e);
             }
         } catch (Exception ignored) {
@@ -129,6 +131,7 @@ final class Sports {
         p.logoHome = best.logoHome;
         p.logoAway = best.logoAway;
         p.logoComp = best.logoComp;
+        p.art = best.art;
         p.title = best.title;
         p.accent = ACCENT[best.sport];
         p.label = best.competition;
@@ -194,7 +197,7 @@ final class Sports {
             } catch (Exception e) {
                 AppLog.w("formula 1: " + e.getMessage());
             }
-            for (String sport : new String[] {"Motorsport", "Tennis"}) {
+            for (String sport : new String[] {"Motorsport", "Tennis", "Soccer"}) {
                 try {
                     sportsDb(found, sport);
                 } catch (Exception e) {
@@ -216,9 +219,9 @@ final class Sports {
                 a.put(new JSONObject().put("sport", e.sport).put("start", e.start).put("competition", e.competition)
                         .put("title", e.title).put("minutes", e.minutes).put("italian", e.italian).put("live", e.live)
                         .put("home", e.home).put("away", e.away).put("logoHome", e.logoHome).put("logoAway", e.logoAway)
-                        .put("logoComp", e.logoComp));
+                        .put("logoComp", e.logoComp).put("art", e.art));
             }
-            cache.edit().putString("events", a.toString()).putLong("at", fetchedAt).apply();
+            cache.edit().putString("events2", a.toString()).putLong("at", fetchedAt).apply();
         } catch (Exception ignored) {
         }
     }
@@ -251,7 +254,9 @@ final class Sports {
             e.away = team(away);
             e.logoHome = home.optString("crest");
             e.logoAway = away.optString("crest");
-            e.logoComp = comp.optString("emblem");
+            String[] info = code.equals("SA") ? leagueInfo(4332, "serie a") : leagueInfo(4480, "champions");
+            e.logoComp = info[0].isEmpty() ? comp.optString("emblem") : info[0];
+            e.art = info[1];
             e.italian = italian.contains(home.optString("id")) || italian.contains(away.optString("id")) ? 3 : 0;
             out.add(e);
         }
@@ -285,7 +290,8 @@ final class Sports {
     private void formula1(List<Event> out) throws Exception {
         JSONObject race = new JSONObject(get("https://api.jolpi.ca/ergast/f1/current/next.json", null))
                 .getJSONObject("MRData").getJSONObject("RaceTable").getJSONArray("Races").getJSONObject(0);
-        String name = race.optString("raceName"), logo = leagueLogo(4370, "formula");
+        String name = race.optString("raceName");
+        String[] info = leagueInfo(4370, "formula");
         Object[][] sessions = {{"Qualifying", Ui.tr("Classificação", "Qualifying", "Clasificación", "Qualifiche"), 75L},
                 {"Sprint", "Sprint", 60L}, {"", Ui.tr("Corrida", "Race", "Carrera", "Gara"), 120L}};
         for (Object[] s : sessions) {
@@ -297,15 +303,20 @@ final class Sports {
             Event e = event(F1, start, "Formula 1", name + " · " + s[1]);
             e.minutes = (Long) s[2];
             e.italian = 3;      // Ferrari (and an Italian driver on the grid)
-            e.logoComp = logo;
+            e.logoComp = info[0];
+            e.art = info[1];
             out.add(e);
         }
     }
 
-    /** TheSportsDB's day listing for a sport over the next days: MotoGP, and tennis finals. */
+    private static final String[] ITALIAN_CLUBS = {"inter", "milan", "juventus", "napoli", "roma", "lazio", "atalanta",
+            "fiorentina", "bologna", "torino", "genoa", "udinese"};
+
+    /** TheSportsDB's day listing for a sport over the next days: MotoGP, tennis finals and the Europa League. */
     private void sportsDb(List<Event> out, String sport) throws Exception {
-        boolean tennis = sport.equals("Tennis");
-        String motoLogo = tennis ? "" : leagueLogo(4407, "moto");
+        boolean tennis = sport.equals("Tennis"), soccer = sport.equals("Soccer");
+        String[] moto = sport.equals("Motorsport") ? leagueInfo(4407, "moto") : new String[] {"", ""};
+        String[] europa = soccer ? leagueInfo(4481, "europa") : new String[] {"", ""};
         for (int d = 0; d < 3; d++) {
             long when = System.currentTimeMillis() + d * 86_400_000L;
             JSONObject o = new JSONObject(get("https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=" + day(when)
@@ -314,26 +325,37 @@ final class Sports {
             for (int i = 0; list != null && i < list.length(); i++) {
                 JSONObject j = list.getJSONObject(i);
                 String league = j.optString("strLeague"), title = j.optString("strEvent");
+                String lower = league.toLowerCase(Locale.ROOT);
                 String text = (league + " " + title + " " + j.optString("strRound")).toLowerCase(Locale.ROOT);
-                if (tennis ? !(text.contains("final") && (text.contains("atp") || text.contains("wta")
-                        || text.contains("grand slam"))) : !league.toLowerCase(Locale.ROOT).contains("motogp")) continue;
+                if (soccer ? !(lower.contains("europa league") && !lower.contains("conference") && !lower.contains("women"))
+                        : tennis ? !(text.contains("final") && (text.contains("atp") || text.contains("wta")
+                        || text.contains("grand slam"))) : !lower.contains("motogp")) continue;
                 long start = utc(j.optString("strTimestamp"));
                 if (start == 0) continue;
-                Event e = event(tennis ? TENNIS : MOTO, start, tennis ? "Tennis" : "MotoGP", title);
-                e.minutes = tennis ? 180 : 75;
-                e.logoComp = tennis ? clean(j.optString("strLeagueBadge")) : motoLogo.isEmpty() ? clean(j.optString("strLeagueBadge")) : motoLogo;
-                if (tennis) {
+                Event e = event(soccer ? EUROPA : tennis ? TENNIS : MOTO, start,
+                        soccer ? "Europa League" : tennis ? "Tennis" : "MotoGP", title);
+                e.minutes = soccer ? 115 : tennis ? 180 : 75;
+                String[] info = soccer ? europa : moto;
+                e.logoComp = !info[0].isEmpty() ? info[0] : clean(j.optString("strLeagueBadge"));
+                e.art = !info[1].isEmpty() ? info[1] : clean(j.optString("strThumb"));
+                if (soccer || tennis) {
                     e.home = j.optString("strHomeTeam");
                     e.away = j.optString("strAwayTeam");
                     e.logoHome = clean(j.optString("strHomeTeamBadge"));
                     e.logoAway = clean(j.optString("strAwayTeamBadge"));
-                    e.italian = italianPlayer(e.home + " " + e.away) ? 3 : 0;
+                    e.italian = soccer ? (italianClub(e.home + " " + e.away) ? 3 : 0) : (italianPlayer(e.home + " " + e.away) ? 3 : 0);
                 } else {
                     e.italian = 3;     // Ducati and the Italian riders
                 }
                 out.add(e);
             }
         }
+    }
+
+    private static boolean italianClub(String names) {
+        String n = names.toLowerCase(Locale.ROOT);
+        for (String p : ITALIAN_CLUBS) if (n.contains(p)) return true;
+        return false;
     }
 
     private static boolean italianPlayer(String names) {
@@ -346,12 +368,15 @@ final class Sports {
         return url == null || url.isEmpty() || "null".equals(url) ? "" : url;
     }
 
-    /** A league's logo from TheSportsDB by id, only if its name contains `must` (so a wrong id gives nothing); kept for a week. */
-    private String leagueLogo(int id, String must) {
+    /**
+     * {logo, picture} of a league from TheSportsDB by id, only if its name contains `must` (so a wrong id gives
+     * nothing); kept for a week. The picture is the league's wide artwork, the card's background.
+     */
+    private String[] leagueInfo(int id, String must) {
         String key = "league" + id;
         String saved = cache.getString(key, null);
-        if (saved != null && System.currentTimeMillis() - cache.getLong(key + "At", 0) < WEEK) return saved;
-        String logo = "";
+        if (saved != null && System.currentTimeMillis() - cache.getLong(key + "At", 0) < WEEK) return split(saved);
+        String logo = "", art = "";
         try {
             JSONArray leagues = new JSONObject(get("https://www.thesportsdb.com/api/v1/json/3/lookupleague.php?id=" + id, null))
                     .optJSONArray("leagues");
@@ -359,36 +384,73 @@ final class Sports {
             if (l != null && l.optString("strLeague").toLowerCase(Locale.ROOT).contains(must)) {
                 logo = clean(l.optString("strBadge"));
                 if (logo.isEmpty()) logo = clean(l.optString("strLogo"));
+                art = clean(l.optString("strFanart1"));
+                if (art.isEmpty()) art = clean(l.optString("strBanner"));
             }
         } catch (Exception e) {
-            AppLog.w("league logo: " + e.getMessage());
-            return saved == null ? "" : saved;
+            AppLog.w("league " + id + ": " + e.getMessage());
+            return saved == null ? new String[] {"", ""} : split(saved);
         }
-        cache.edit().putString(key, logo).putLong(key + "At", System.currentTimeMillis()).apply();
-        return logo;
+        cache.edit().putString(key, logo + "|" + art).putLong(key + "At", System.currentTimeMillis()).apply();
+        return new String[] {logo, art};
+    }
+
+    private static String[] split(String saved) {
+        String[] parts = saved.split("\\|", -1);
+        return new String[] {parts.length > 0 ? parts[0] : "", parts.length > 1 ? parts[1] : ""};
+    }
+
+    /** A club's badge (PNG) from TheSportsDB by name: the way back when its crest won't load. */
+    private String badgeFor(String name) {
+        String key = "badge:" + name.toLowerCase(Locale.ROOT);
+        String saved = cache.getString(key, null);
+        if (saved != null) return saved;
+        String badge = "";
+        try {
+            JSONArray teams = new JSONObject(get("https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t="
+                    + java.net.URLEncoder.encode(name, "UTF-8"), null)).optJSONArray("teams");
+            for (int i = 0; teams != null && i < teams.length() && badge.isEmpty(); i++) {
+                JSONObject t = teams.getJSONObject(i);
+                if (t.optString("strSport").equals("Soccer")) badge = clean(t.optString("strBadge"));
+            }
+        } catch (Exception e) {
+            AppLog.w("badge " + name + ": " + e.getMessage());
+            return "";
+        }
+        cache.edit().putString(key, badge).apply();
+        return badge;
     }
 
     // MARK: - Logos
 
     /** The logo at `url` if it is ready (otherwise starts loading it and the home screen redraws when it arrives). */
-    android.graphics.Bitmap bitmap(String url) {
+    android.graphics.Bitmap bitmap(String url, String club) {
         if (url == null || url.isEmpty()) return null;
         synchronized (bitmaps) {
             android.graphics.Bitmap b = bitmaps.get(url);
             if (b != null) return b;
-            if (failed.contains(url) || !loading.add(url)) return null;
+            Long failedAt = failedAtMap.get(url);
+            if ((failedAt != null && System.currentTimeMillis() - failedAt < 10 * 60_000L) || !loading.add(url)) return null;
         }
         art.execute(() -> {
             android.graphics.Bitmap b = null;
             try {
                 b = loadLogo(url);
             } catch (IOException | RuntimeException e) {
-                AppLog.w("logo: " + e.getMessage());
+                AppLog.w("logo " + url + ": " + e.getMessage());
+                String other = club == null || club.isEmpty() ? "" : badgeFor(club);
+                if (!other.isEmpty()) {
+                    try {
+                        b = loadLogo(other);
+                    } catch (IOException | RuntimeException again) {
+                        AppLog.w("badge " + other + ": " + again.getMessage());
+                    }
+                }
             }
             synchronized (bitmaps) {
                 loading.remove(url);
                 if (b == null) {
-                    failed.add(url);
+                    failedAtMap.put(url, System.currentTimeMillis());
                 } else {
                     bitmaps.put(url, b);
                     while (bitmaps.size() > 16) bitmaps.remove(bitmaps.keySet().iterator().next());
@@ -421,7 +483,13 @@ final class Sports {
             }
             if (!part.renameTo(f)) throw new IOException("couldn't save the logo");
         }
-        android.graphics.Bitmap b = android.graphics.BitmapFactory.decodeFile(f.getPath());
+        android.graphics.BitmapFactory.Options bounds = new android.graphics.BitmapFactory.Options();
+        bounds.inJustDecodeBounds = true;
+        android.graphics.BitmapFactory.decodeFile(f.getPath(), bounds);
+        android.graphics.BitmapFactory.Options opts = new android.graphics.BitmapFactory.Options();
+        opts.inSampleSize = 1;
+        while (bounds.outWidth / (opts.inSampleSize * 2) >= 1280) opts.inSampleSize *= 2;    // artwork can be huge
+        android.graphics.Bitmap b = android.graphics.BitmapFactory.decodeFile(f.getPath(), opts);
         if (b == null) {
             //noinspection ResultOfMethodCallIgnored
             f.delete();

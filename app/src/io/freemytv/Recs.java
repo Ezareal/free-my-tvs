@@ -47,7 +47,7 @@ final class Recs {
         boolean detailed;
         int accent;             // sport cards: the competition's color
         String label = "";      // sport cards: the competition's name
-        String home = "", away = "", logoHome = "", logoAway = "", logoComp = "";   // sport cards: teams or athletes, logos (URLs)
+        String home = "", away = "", logoHome = "", logoAway = "", logoComp = "", art = "";   // sport cards: teams or athletes, logos (URLs)
         boolean posterClean, coverClean;   // textless images (BetterPoster style): the title's logo goes on top
         boolean top;            // in the country's Top 10 (Movies and Shows tabs): cover and poster, whatever app plays it
         boolean taste;          // picked from the TMDB profile (Explore)
