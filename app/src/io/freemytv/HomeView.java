@@ -2436,15 +2436,22 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
      */
     private void drawSportCard(Canvas c, Recs.Pick p, RectF area, float r) {
         Sports sports = Sports.get(getContext());
-        fill.setShader(new LinearGradient(area.left, area.top, area.right, area.bottom,
-                blend(p.accent, 0xFF000000, 0.45f), p.accent, Shader.TileMode.CLAMP));
+        if (p.flat) {
+            fill.setShader(null);
+            fill.setColor(p.accent);
+        } else {
+            fill.setShader(new LinearGradient(area.left, area.top, area.right, area.bottom,
+                    blend(p.accent, 0xFF000000, 0.45f), p.accent, Shader.TileMode.CLAMP));
+        }
         c.drawRoundRect(area, r, r, fill);
         fill.setShader(null);
         Bitmap art = sports.bitmap(p.art, null);
-        if (art != null) {       // artwork behind everything, dimmed so the text reads
+        if (art != null) {       // artwork behind everything, dimmed so the text reads (not on the flat card)
             roundImageFit(c, art, area, r, 1);
-            fill.setColor(Ui.alpha(blend(p.accent, 0xFF000000, 0.6f), 0.5f));
-            c.drawRoundRect(area, r, r, fill);
+            if (!p.flat) {
+                fill.setColor(Ui.alpha(blend(p.accent, 0xFF000000, 0.6f), 0.5f));
+                c.drawRoundRect(area, r, r, fill);
+            }
         }
         float pad = 44 * k, width = area.width() - 2 * pad;
         Bitmap comp = sports.bitmap(p.logoComp, null);

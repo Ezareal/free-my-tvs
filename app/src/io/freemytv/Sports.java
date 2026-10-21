@@ -35,7 +35,7 @@ import java.util.concurrent.Executors;
 final class Sports {
     private static final long EVERY = 30 * 60_000L, FAST = 5 * 60_000L, AHEAD = 30 * 3600_000L, WEEK = 7 * 86_400_000L;
     private static final int SERIE_A = 0, CHAMPIONS = 1, EUROPA = 2, F1 = 3, MOTO = 4, TENNIS = 5;   // also the priority order
-    private static final int[] ACCENT = {0xFF0B5FA5, 0xFF1B2A8A, 0xFFE8650A, 0xFFE10600, 0xFFB5470B, 0xFF2E8B57};
+    private static final int[] ACCENT = {0xFF0B5FA5, 0xFF1B2A8A, 0xFFE8650A, 0xFF14141C, 0xFFB5470B, 0xFF2E8B57};
 
     private static Sports instance;
 
@@ -133,9 +133,11 @@ final class Sports {
         p.logoComp = best.logoComp;
         // The competition's own picture is chosen here, not saved with the event, so a new picture applies at once.
         p.art = best.sport == CHAMPIONS ? art(Config.CHAMPIONS_ART, "asset:sports/champions.webp")
-                : best.sport == EUROPA ? art(Config.EUROPA_ART, "asset:sports/europa.jpg") : best.art;
+                : best.sport == EUROPA ? art(Config.EUROPA_ART, "asset:sports/europa.jpg")
+                : best.sport == F1 ? "asset:sports/f1.png" : best.art;
         p.title = best.title;
         p.accent = ACCENT[best.sport];
+        p.flat = best.sport == F1;        // Formula 1: a flat #14141C rectangle with the stripes over it
         p.label = best.competition;
         p.pkg = pkg;
         p.detailed = true;

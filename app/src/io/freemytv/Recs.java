@@ -45,6 +45,7 @@ final class Recs {
         String kind;            // "movie" or "tv"
         String title, backdrop, cover = "", poster = "", logo = "", meta = "", app, pkg;   // backdrop: wide card; poster: tall cards (TMDB)
         boolean detailed;
+        boolean flat;           // sport cards: one flat color instead of a gradient
         int accent;             // sport cards: the competition's color
         String label = "";      // sport cards: the competition's name
         String home = "", away = "", logoHome = "", logoAway = "", logoComp = "", art = "";   // sport cards: teams or athletes, logos (URLs)
