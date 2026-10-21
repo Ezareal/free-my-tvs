@@ -158,7 +158,8 @@ HDMI (Chromecast with Google TV, Google TV Streamer, onn 4K, NVIDIA Shield). Set
   `live_tv_app` (a package, such as TiviMate's `ar.tvplayer.tv`) makes the Live TV button open that app instead of the
   antenna.
 - The home screen tabs are `Recs.TAB_KINDS` (Explore, Movies, Shows, Kids, Stremio, Soccer, News); `HomeView` sizes
-  everything from it. Only the tab on screen and its two neighbors keep their card images (`Recs.preload`; the cache
+  everything from it. Each tab is a row of `Recs.CARDS` equal cards, 5 on screen, that slides (`cardScroll`). Only the
+  tab on screen (all its cards) and the first 3 of its two neighbors keep their card images (`Recs.preload`; the cache
   evicts the others first): all seven tabs' cards are too much memory for a 2 GB TV, and a cache smaller than what is
   requested makes the cards push each other out and reload forever. Kids and Stremio picks carry `Pick.tab`; the
   Stremio tab shows only with Stremio installed and opens titles by IMDb id. Soccer and News (`Feeds`) are the newest

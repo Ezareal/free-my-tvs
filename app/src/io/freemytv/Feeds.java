@@ -98,7 +98,7 @@ final class Feeds {
         return out;
     }
 
-    /** This tab's 3 cards (Recs.SOCCER or Recs.NEWS); the same objects until the lists change. */
+    /** This tab's cards (Recs.SOCCER or Recs.NEWS); the same objects until the lists change. */
     List<Recs.Pick> now(String kind) {
         return Recs.SOCCER.equals(kind) ? soccer : news;
     }
@@ -143,7 +143,7 @@ final class Feeds {
         });
     }
 
-    /** Picks each tab's 3 cards again; true if either changed. */
+    /** Picks each tab's cards again; true if either changed. */
     private boolean rebuild() {
         List<Video> s = new ArrayList<>(), n = new ArrayList<>();
         synchronized (videos) {
@@ -170,10 +170,11 @@ final class Feeds {
     }
 
     /**
-     * Your club's newest video first; then the newest highlights from everyone else, then their newest anything (the
-     * other two cards show the rest of the football world); more of the club's only if there's nothing else.
+     * Your club's newest video first; then highlights with your club in the title (from the league channels), the
+     * newest highlights of everyone else, and the rest, newest first.
      */
     private static List<Recs.Pick> chooseSoccer(List<Video> list) {
+        int n = Recs.CARDS;
         List<Recs.Pick> out = new ArrayList<>();
         Set<String> used = new HashSet<>();
         for (Video v : list) {
@@ -182,18 +183,19 @@ final class Feeds {
                 break;
             }
         }
-        for (Video v : list) if (out.size() < 3 && !v.team && v.highlights && used.add(v.pick.video)) out.add(v.pick);
-        for (Video v : list) if (out.size() < 3 && !v.team && used.add(v.pick.video)) out.add(v.pick);
-        for (Video v : list) if (out.size() < 3 && used.add(v.pick.video)) out.add(v.pick);
+        for (Video v : list) if (out.size() < n && v.team && v.highlights && used.add(v.pick.video)) out.add(v.pick);
+        for (Video v : list) if (out.size() < n && v.highlights && used.add(v.pick.video)) out.add(v.pick);
+        for (Video v : list) if (out.size() < n && used.add(v.pick.video)) out.add(v.pick);
         return out;
     }
 
-    /** The newest 3, each from a different channel when there are 3 with news. */
+    /** The newest from each channel first (a few different stories), then the next newest. */
     private static List<Recs.Pick> chooseNews(List<Video> list) {
+        int n = Recs.CARDS;
         List<Recs.Pick> out = new ArrayList<>();
         Set<String> channels = new HashSet<>();
-        for (Video v : list) if (out.size() < 3 && channels.add(v.channel)) out.add(v.pick);
-        for (Video v : list) if (out.size() < 3 && !out.contains(v.pick)) out.add(v.pick);
+        for (Video v : list) if (out.size() < n && channels.add(v.channel)) out.add(v.pick);
+        for (Video v : list) if (out.size() < n && !out.contains(v.pick)) out.add(v.pick);
         return out;
     }
 

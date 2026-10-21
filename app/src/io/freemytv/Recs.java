@@ -66,6 +66,12 @@ final class Recs {
     static final String SOCCER = "soccer", NEWS = "news";
     /** The home screen tabs' kinds, in order (Explore, Movies, Shows, Kids, Stremio, Soccer, News). */
     static final String[] TAB_KINDS = {null, "movie", "tv", KIDS, STREMIO, SOCCER, NEWS};
+    /** Cards per tab: a row that scrolls (5 on screen at once). */
+    static final int CARDS = 8;
+    /** Card images kept ready: the tab on screen (all of its cards) and the first 3 of each neighbor, plus one. */
+    private static final int READY = CARDS + 2 * 3 + 1;
+    /** Downloaded originals kept on disk: every tab's cards, and some room for the next hour's. */
+    private static final int ON_DISK = TAB_KINDS.length * CARDS + 8;
     /** "Learn today" plays in the YouTube app (YouTube Kids for TV closed: kids' profiles are in YouTube now). */
     private static final String YOUTUBE = "com.google.android.youtube.tv";
     private static final int MANHA = 0, TARDE = 1, NOITE = 2;
@@ -212,9 +218,10 @@ final class Recs {
         if (learn != null) out.add(learn);
         if (list.isEmpty()) return out;
         long hour = System.currentTimeMillis() / 3600_000L;
-        // Three per hour, never two from the same franchise ("Law & Order" and "Law & Order: Special…").
+        // A new row every hour (it starts 3 further along), never two from the same franchise ("Law & Order" and
+        // "Law & Order: Special…").
         java.util.Set<String> seen = new java.util.HashSet<>();
-        for (int i = 0; i < list.size() && out.size() < 3; i++) {
+        for (int i = 0; i < list.size() && out.size() < CARDS; i++) {
             Pick p = list.get((int) ((hour * 3 + i) % list.size()));
             if (seen.add(franchise(p.title))) out.add(p);
         }
@@ -819,9 +826,9 @@ final class Recs {
             if (forLight != light) return;   // the design changed midway: this one is stale
             synchronized (images) {
                 images.put(p.backdrop, backdrop);
-                // Light design: the cards of the tab on screen and its two neighbors (preload), plus one. The ones in
-                // use go last, or they would push each other out and reload forever.
-                int max = forLight ? 3 * 3 + 1 : 4;
+                // Light design: what preload asked for (READY). The ones in use go last, or they would push each other
+                // out and reload forever.
+                int max = forLight ? READY : 4;
                 java.util.Iterator<String> old = images.keySet().iterator();
                 while (images.size() > max && old.hasNext()) if (!keep.contains(old.next())) old.remove();
                 while (images.size() > max) images.remove(images.keySet().iterator().next());
@@ -852,9 +859,9 @@ final class Recs {
             if (parts[i].lastModified() < stale) parts[i].delete();
         }
         File[] files = dir.listFiles((d, name) -> !name.endsWith(".part"));
-        if (files == null || files.length <= 24) return;
+        if (files == null || files.length <= ON_DISK) return;
         Arrays.sort(files, (a, b) -> Long.compare(a.lastModified(), b.lastModified()));
-        for (int i = 0; i < files.length - 24; i++) {
+        for (int i = 0; i < files.length - ON_DISK; i++) {
             //noinspection ResultOfMethodCallIgnored
             files[i].delete();
         }

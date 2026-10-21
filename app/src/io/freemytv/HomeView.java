@@ -48,8 +48,9 @@ import java.util.function.Consumer;
  *  - at the top left, the "For You" title and the tabs (Explore, Movies, Shows); at the top right, icon-only glass
  *    buttons (Live TV, HDMI Inputs, Settings), with the focused one's name below it, and the small crypto quotes
  *    (logo + price) at the right end of the tab row;
- *  - three cards with the titles recommended for right now in the selected tab (Recs, from TMDB); the background is
- *    the first card's photo, heavily blurred and almost white (Backdrop); without one, a light gradient;
+ *  - a row of equal cards (5 on screen; it slides left and right) with the titles recommended for right now in the
+ *    selected tab (Recs, from TMDB; Feeds for Soccer and News); the background is the first card's photo, heavily
+ *    blurred and almost white (Backdrop); without one, a light gradient;
  *  - at the bottom, the glass shelf with the apps (icons in each brand's color, like the tvOS Dock; the focused one
  *    grows);
  *  - ↓ on the shelf: everything moves up and the bottom drawer appears (inputs, shortcuts, weather for the next hours
@@ -89,9 +90,11 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private static final int Z_STATUS = 0, Z_HERO = 1, Z_SHELF = 2, Z_DRAWER = 3;
     private static final ExecutorService LOADER = Executors.newSingleThreadExecutor();
     // Light design (the L_ constants): title, tab bar, three recommendation cards and the shelf.
-    // The tab bar is a 68 px capsule; the cards sit on the 5-column grid (the wide one spans 3).
+    // The tab bar is a 68 px capsule; the cards sit on the 5-column grid, one per column.
     private static final float L_TITLE_BASE = 130, L_TABBAR_TOP = 158, L_TABBAR_H = 68, L_CARDS_TOP = 262, L_CARD_H = 442;
-    private static final float L_TALL_W = 320, L_CARD_GAP = 40, L_BUTTON = 68, L_BUTTON_GAP = 20, L_BUTTON_CY = 103;
+    private static final float L_CARD_GAP = 40, L_BUTTON = 68, L_BUTTON_GAP = 20, L_BUTTON_CY = 103;
+    /** Cards on screen at once (320 px each at 1920); the row slides to the others. */
+    private static final int CARDS_SEEN = 5;
     private static final float L_PLATTER_TOP = 814, L_TILE_H = 126;
     private static final float L_DATE_BASE = 330, L_CLOCK_BASE = 540, L_WEATHER_BASE = 626, L_QUOTES_BASE = 694;
     private static final int L_INK = 0xFF1D1D1F, L_DIM = 0xFF6E6E73, L_FAINT = 0xFF8E8E93;
@@ -136,15 +139,18 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private boolean nightPair;          // the glass holds both photos (day and night), blended by `night`
     private Shader nightGradient;
 
-    // At the top: tabs (0 to TAB_COUNT - 1) and icon-only buttons (the next 3); the three cards
+    // At the top: tabs (0 to TAB_COUNT - 1) and icon-only buttons (the next 3); the row of cards
     private int tab, topIndex, cardIndex;
     private boolean stremioOn;  // the Stremio tab shows only with Stremio on the TV
     private int widgetIndex;    // with TalkBack on, the drawer's weather (0) or quotes (1) card can take the focus
     private List<Recs.Pick> cards = new ArrayList<>();
     private final Spring[] topFocus = new Spring[TAB_COUNT + 3];
     private final RectF[] topRects = new RectF[TAB_COUNT + 3];
-    private final Spring[] cardFocus = new Spring[3];
-    private final RectF[] cardRects = new RectF[3];
+    // The cards: a row of equal cards laid out unscrolled in cardRects; cardScroll slides it so the focused card
+    // stays on screen.
+    private final Spring[] cardFocus = new Spring[Recs.CARDS];
+    private final RectF[] cardRects = new RectF[Recs.CARDS];
+    private final Spring cardScroll = new Spring(0.38f, 1f, 0);
     private final List<HomeApps.Item> lightButtons = new ArrayList<>();
     private Paint lTitle, lTab, lTabOn, lCardTitle, lCardMeta, lQuote, lTip, lDate, lClock, lWeather, lClockQuote;
     private Paint lVerse, lVerseRef, lVerseDate;
@@ -384,7 +390,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             topFocus[i] = new Spring(0.26f, 0.85f, 0);
             topRects[i] = new RectF();
         }
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < Recs.CARDS; i++) {
             cardFocus[i] = new Spring(0.32f, 0.78f, 0);
             cardRects[i] = new RectF();
         }
@@ -657,7 +663,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         if (reorderAnim) tilesMoving |= stepReorder(dt, up);
         boolean statusMoving = step(statusFocus, dt);
         boolean heroMoving = heroFocus.step(dt);
-        boolean topMoving = step(topFocus, dt), cardsMoving = step(cardFocus, dt);
+        boolean topMoving = step(topFocus, dt), cardsMoving = step(cardFocus, dt) | cardScroll.step(dt);
         if (topMoving) status.invalidate();
         heroMoving |= topMoving | cardsMoving;
         boolean drawerItemsMoving = step(drawerFocus, dt);
@@ -1768,6 +1774,12 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         if (snap) heroFocus.snap(heroFocus.target);
         boolean topChanged = aim(topFocus, !sheetOpen && zone == Z_TOP ? topIndex : -1, snap);
         heroChanged |= aim(cardFocus, !sheetOpen && zone == Z_CARDS ? cardIndex : -1, snap) | topChanged;
+        if (zone == Z_CARDS && cardIndex < cardRects.length) {
+            float s = scrollFor(cardIndex);
+            heroChanged |= s != cardScroll.target;
+            cardScroll.target = s;
+        }
+        if (snap) cardScroll.snap(cardScroll.target);
         statusChanged |= topChanged;
         tilesDirty |= snap || tilesChanged;
         statusDirty |= snap || statusChanged;
@@ -2239,7 +2251,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             if (p == null || p.pkg == null) return;
             String link = Recs.link(p);
             it = link != null ? HomeApps.video(p.pkg, Recs.serviceName(p), link) : HomeApps.app(p.pkg, Recs.serviceName(p));
-            r = cardRects[cardIndex];
+            r = onScreen(cardIndex);
         } else {
             if (shelf.isEmpty()) return;
             it = shelf.get(shelfIndex);
@@ -2459,7 +2471,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         for (int i = picksOn() ? 0 : TAB_COUNT; i < TAB_COUNT + lightButtons.size(); i++) {
             if (i >= TAB_COUNT || tabShown(i)) out.add(a11yId(Z_TOP, i));
         }
-        for (int i = 0; i < Math.min(3, cards.size()); i++) out.add(a11yId(Z_CARDS, i));
+        for (int i = 0; i < Math.min(Recs.CARDS, cards.size()); i++) out.add(a11yId(Z_CARDS, i));
         for (int i = 0; i < shelf.size(); i++) out.add(a11yId(Z_SHELF, i));
         for (int i = 0; i < drawerItems.size(); i++) out.add(a11yId(Z_DRAWER, i));
         if (drawerOpen && Prefs.weather()) out.add(a11yId(WIDGETS, 0));
@@ -2511,8 +2523,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
                 dy = (i < TAB_COUNT ? heroLayer : status).getTranslationY();
                 break;
             case Z_CARDS:
-                if (i >= Math.min(3, cards.size())) return false;
-                a11yRect.set(cardRects[i]);
+                if (i >= Math.min(Recs.CARDS, cards.size())) return false;
+                a11yRect.set(onScreen(i));
                 dy = heroLayer.getTranslationY();
                 break;
             case Z_SHELF:
@@ -2682,32 +2694,38 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             topRects[TAB_COUNT + i].set(right - b, cy - b / 2, right, cy + b / 2);
             right -= b + L_BUTTON_GAP * k;
         }
-        float top = L_CARDS_TOP * k, ch = L_CARD_H * k, g = L_CARD_GAP * k, left = MARGIN * k, tall = L_TALL_W * k;
-        float wide = (CONTENT_R - MARGIN) * k - 2 * tall - 2 * g;
-        cardRects[0].set(left, top, left + wide, top + ch);
-        cardRects[1].set(cardRects[0].right + g, top, cardRects[0].right + g + tall, top + ch);
-        cardRects[2].set(cardRects[1].right + g, top, cardRects[1].right + g + tall, top + ch);
+        float top = L_CARDS_TOP * k, ch = L_CARD_H * k, g = L_CARD_GAP * k, left = MARGIN * k;
+        // Equal cards, CARDS_SEEN across the screen; the rest continue to the right (the row slides).
+        float cw = ((CONTENT_R - MARGIN) * k - (CARDS_SEEN - 1) * g) / CARDS_SEEN;
+        for (int i = 0; i < cardRects.length; i++) {
+            float cx = left + i * (cw + g);
+            cardRects[i].set(cx, top, cx + cw, top + ch);
+        }
         heroDirty = statusDirty = true;
     }
 
-    /** The three cards of the current tab (Explore, Movies, Shows, Kids) and the background taken from the first one. */
+    /** The row of cards of the current tab and the background taken from the first one. */
     private void updateCards() {
         List<Recs.Pick> list = recs.now(TAB_KIND[tab]);
         if (!samePicks(list, cards)) {
+            boolean otherTab = cards.isEmpty() || list.isEmpty() || !Recs.key(cards.get(0)).equals(Recs.key(list.get(0)));
             cards = list;
             cardIndex = Math.min(cardIndex, Math.max(0, list.size() - 1));
+            if (otherTab && zone != Z_CARDS) cardScroll.snap(0);    // a new row starts at its first card
             if (zone == Z_CARDS && list.isEmpty()) {
                 zone = Z_SHELF;
                 retarget(false);
             }
         }
-        // This tab and the next one on each side preloaded: moving to a tab is instant. Not all of them: seven tabs'
-        // cards are too much memory for a 2 GB TV.
+        // This tab's cards and the first 3 of the next tab on each side preloaded (what's on screen when you get
+        // there): moving to a tab is instant. Not all of them: seven tabs' cards are too much memory for a 2 GB TV.
         List<Recs.Pick> preload = new ArrayList<>(cards);
         for (int d = -1; d <= 1; d += 2) {
             int t = tab + d;
             while (t >= 0 && t < TAB_COUNT && !tabShown(t)) t += d;
-            if (t >= 0 && t < TAB_COUNT) preload.addAll(recs.now(TAB_KIND[t]));
+            if (t < 0 || t >= TAB_COUNT) continue;
+            List<Recs.Pick> next = recs.now(TAB_KIND[t]);
+            preload.addAll(next.subList(0, Math.min(3, next.size())));
         }
         recs.preload(preload);
         Backdrop b = cards.isEmpty() ? null : recs.backdrop(cards.get(0));
@@ -2719,8 +2737,27 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private void selectTab(int index) {
         if (index == tab) return;
         tab = index;
+        cardIndex = 0;
+        cardScroll.snap(0);
         updateCards();
         heroDirty = true;
+    }
+
+    /** How far the row slides so card i is whole on screen (it moves only when the card would go past an edge). */
+    private float scrollFor(int i) {
+        float s = cardScroll.target, min = MARGIN * k, max = CONTENT_R * k;
+        if (cardRects[i].right - s > max) s = cardRects[i].right - max;
+        if (cardRects[i].left - s < min) s = cardRects[i].left - min;
+        return Math.max(0, s);
+    }
+
+    private final RectF onScreen = new RectF();
+
+    /** Card i where it is now on screen (the row slid by cardScroll). */
+    private RectF onScreen(int i) {
+        onScreen.set(cardRects[i]);
+        onScreen.offset(-cardScroll.value, 0);
+        return onScreen;
     }
 
     /**
@@ -2804,10 +2841,17 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             if (i == tab) lTabOn.setColor(blend(tone(L_INK, WHITE), L_INK, focus));   // always dark on the white pill
             c.drawText(tabs()[i], r.centerX() - p.measureText(tabs()[i]) / 2, r.centerY() + Ui.halfCap(p), p);
         }
-        int top = -1;
-        for (int i = 0; i < 3; i++) if (cardFocus[i].value > 0.02f && (top < 0 || cardFocus[i].value > cardFocus[top].value)) top = i;
-        for (int i = 0; i < 3; i++) if (i != top) drawLightCard(c, i);
+        int top = -1, n = Math.min(cardRects.length, cards.size());
+        for (int i = 0; i < n; i++) if (cardFocus[i].value > 0.02f && (top < 0 || cardFocus[i].value > cardFocus[top].value)) top = i;
+        // The row slides; the cards outside the screen aren't drawn.
+        float scrolled = cardScroll.value;
+        c.save();
+        c.translate(-scrolled, 0);
+        for (int i = 0; i < n; i++) {
+            if (i != top && cardRects[i].right - scrolled > -40 * k && cardRects[i].left - scrolled < w + 40 * k) drawLightCard(c, i);
+        }
         if (top >= 0) drawLightCard(c, top);
+        c.restore();
         if (HomeData.coinCount() > 0) drawQuotes(c);
     }
 
@@ -2860,7 +2904,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         shadows.draw(c, tmp, r0, DEEP_BLUR * k, shadowDeep);
         c.restore();
         Backdrop b = p == null ? null : recs.backdrop(p);
-        Bitmap img = b == null ? null : (i == 0 ? b.wide : b.tall);
+        Bitmap img = b == null ? null : b.tall;
         if (img != null) {
             roundImage(c, img, cell, r);
         } else {
@@ -2899,7 +2943,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         if (p == null) return;
         fitPaint.set(lCardTitle);
         c.drawText(TextUtils.ellipsize(p.title, fitPaint, bw, TextUtils.TruncateAt.END).toString(), base.left, base.bottom + 46 * k, lCardTitle);
-        if (i == 0 && p.meta != null && !p.meta.isEmpty()) {
+        if (p.meta != null && !p.meta.isEmpty()) {
             fitPaint.set(lCardMeta);
             c.drawText(TextUtils.ellipsize(p.meta, fitPaint, bw, TextUtils.TruncateAt.END).toString(), base.left, base.bottom + 80 * k, lCardMeta);
         }
@@ -2947,7 +2991,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
                     topIndex = picksOn() ? tab : TAB_COUNT;
                 } else {
                     zone = Z_CARDS;
-                    cardIndex = nearest(cardRects, cards.size(), tileRects[shelfIndex].centerX());
+                    cardIndex = nearest(cardRects, cards.size(), tileRects[shelfIndex].centerX() + cardScroll.target);
                 }
                 break;
             case Z_CARDS:
@@ -2960,7 +3004,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
                     topIndex = tab;     // as on Apple TV: moving up to the tabs focuses the selected tab
                 } else {
                     zone = Z_SHELF;
-                    if (!shelf.isEmpty()) shelfIndex = nearest(tileRects, tileRects.length, cardRects[cardIndex].centerX());
+                    if (!shelf.isEmpty()) shelfIndex = nearest(tileRects, tileRects.length, cardRects[cardIndex].centerX() - cardScroll.target);
                 }
                 break;
             case Z_TOP:
@@ -2976,7 +3020,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
                         zone = Z_SHELF;
                     } else {
                         zone = Z_CARDS;
-                        cardIndex = nearest(cardRects, cards.size(), topRects[topIndex].centerX());
+                        cardIndex = nearest(cardRects, cards.size(), topRects[topIndex].centerX() + cardScroll.target);
                     }
                 } else {
                     return true;
