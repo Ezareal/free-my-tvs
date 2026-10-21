@@ -95,6 +95,8 @@ final class German {
             case "Automatic": return "Automatisch";
             case "Light": return "Hell";
             case "Dark": return "Dunkel";
+            case "TMDB key required": return "TMDB-Schlüssel nötig";
+            case "For You picks": return "Tipps „Für dich“";
             case "Weather widget": return "Wetter-Widget";
             // What TalkBack reads on the drawer's weather card (#47)
             case ". High ": return ". Höchstwert ";

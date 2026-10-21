@@ -226,7 +226,7 @@
   // MARK: - Picks and background
 
   function renderCards() {
-    var list = Data.picks(TAB_KIND[st.tab]);
+    var list = Prefs.picks() ? Data.picks(TAB_KIND[st.tab]) : [];
     var holder = $('cards');
     setClass(body, 'no-picks', !list.length);
     var same = list.length === cards.length;
@@ -473,6 +473,11 @@
         step: function (d) { cycle('theme', ['auto', 'light', 'dark'], theme, d); checkNight(); }},
       {label: tr('Widget do clima', 'Weather widget', 'Widget del clima'), toggle: Prefs.weather(),
         step: function () { Prefs.set('weather', !Prefs.weather()); renderPanels(); }},
+      Data.hasKey()
+        ? {label: tr('Sugestões Para você', 'For You picks', 'Sugerencias Para ti'), toggle: Prefs.picks(),
+          step: function () { Prefs.set('picks', !Prefs.picks()); renderAll(); }}
+        : {label: tr('Sugestões Para você', 'For You picks', 'Sugerencias Para ti'), dim: true, step: function () {},
+          note: tr('Requer chave TMDB', 'TMDB key required', 'Requiere clave TMDB')},
       {label: tr('Widget de cotações', 'Quotes widget', 'Widget de cotizaciones'), toggle: Prefs.quotes(),
         step: function () { Prefs.set('quotes', !Prefs.quotes()); Data.settingsChanged(); }}
     ];
@@ -508,6 +513,7 @@
     for (var i = 0; i < rowsNow.length; i++) {
       var r = rowsNow[i], row = el('div', 'row' + (r.dim ? ' dim' : ''), holder, r.label);
       if (r.toggle !== undefined) setClass(el('div', 'toggle', row), 'on', r.toggle);
+      else if (r.note) el('span', 'value', row, r.note);
       else {
         var v = el('span', 'value', row);
         if (r.value === '›') v.textContent = '›';

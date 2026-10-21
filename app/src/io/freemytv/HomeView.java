@@ -2611,7 +2611,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
 
     /** The three cards of the current tab (Explore, Movies, Shows) and the background taken from the first one. */
     private void updateCards() {
-        List<Recs.Pick> list = recs.now(TAB_KIND[tab]);
+        List<Recs.Pick> list = picksOn() ? recs.now(TAB_KIND[tab]) : new ArrayList<>();
+        if (!picksOn() && zone == Z_TOP && topIndex < 3) topIndex = 3;   // the tabs are gone: the first corner button
         if (!samePicks(list, cards)) {
             cards = list;
             cardIndex = Math.min(cardIndex, Math.max(0, list.size() - 1));
@@ -2714,7 +2715,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     }
 
     private boolean picksOn() {
-        return Recs.hasKey(getContext());
+        return Recs.hasKey(getContext()) && Prefs.picks();
     }
 
     private void drawClock(Canvas c) {
