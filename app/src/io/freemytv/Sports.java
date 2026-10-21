@@ -136,11 +136,15 @@ final class Sports {
         // The competition's own picture is chosen here, not saved with the event, so a new picture applies at once.
         p.art = best.sport == CHAMPIONS ? art(Config.CHAMPIONS_ART, "asset:sports/champions.webp")
                 : best.sport == EUROPA ? art(Config.EUROPA_ART, "asset:sports/europa.jpg")
-                : best.sport == F1 ? "asset:sports/f1.png" : best.sport == MOTO ? motoArt() : best.art;
+                : best.sport == F1 ? "asset:sports/f1.png" : best.sport == MOTO ? motoArt() : best.sport == SERIE_A ? "" : best.art;
         p.title = best.title;
         p.accent = ACCENT[best.sport];
         p.flat = best.sport == F1 || best.sport == MOTO;     // Formula 1 and MotoGP: a flat color with their artwork over it
         p.face = best.sport == F1 ? 1 : best.sport == MOTO ? 2 : 0;
+        if (best.sport == SERIE_A) {      // Serie A: a vertical gradient, light blue at the bottom
+            p.gradTop = 0xFF28519F;
+            p.gradBottom = 0xFF38A8BC;
+        }
         p.place = best.place;
         p.flag = best.country.isEmpty() ? "" : "https://flagcdn.com/w160/" + best.country + ".png";
         p.label = best.competition;
@@ -275,7 +279,7 @@ final class Sports {
             e.logoAway = away.optString("crest");
             String[] info = code.equals("SA") ? leagueInfo(4332, "serie a") : leagueInfo(4480, "champions");
             e.logoComp = info[0].isEmpty() ? comp.optString("emblem") : info[0];
-            e.art = code.equals("CL") ? art(Config.CHAMPIONS_ART, "asset:sports/champions.webp") : info[1];
+            e.art = code.equals("CL") ? art(Config.CHAMPIONS_ART, "asset:sports/champions.webp") : "";
             e.italian = italian.contains(home.optString("id")) || italian.contains(away.optString("id")) ? 3 : 0;
             out.add(e);
         }
@@ -327,6 +331,7 @@ final class Sports {
                 e.country = iso(where.optString("country"));
                 e.place = where.optString("locality");
             }
+            if (e.country.isEmpty()) e.country = iso(name);       // "Italian Grand Prix"
             e.logoComp = info[0];
             e.art = info[1];
             out.add(e);
@@ -371,7 +376,7 @@ final class Sports {
                     e.italian = soccer ? (italianClub(e.home + " " + e.away) ? 3 : 0) : (italianPlayer(e.home + " " + e.away) ? 3 : 0);
                 } else {
                     e.italian = 3;     // Ducati and the Italian riders
-                    e.country = iso(j.optString("strCountry"));
+                    e.country = iso(j.optString("strCountry") + " " + title + " " + j.optString("strVenue") + " " + j.optString("strCity"));
                     e.place = !clean(j.optString("strCity")).isEmpty() ? j.optString("strCity") : clean(j.optString("strVenue"));
                 }
                 out.add(e);
@@ -396,14 +401,18 @@ final class Sports {
         return MOTOGP_BAR;
     }
 
-    private static final String[][] COUNTRIES = {{"italy", "it"}, {"spain", "es"}, {"france", "fr"}, {"germany", "de"},
-            {"great britain", "gb"}, {"united kingdom", "gb"}, {"uk", "gb"}, {"netherlands", "nl"}, {"belgium", "be"}, {"austria", "at"},
-            {"hungary", "hu"}, {"czech", "cz"}, {"portugal", "pt"}, {"qatar", "qa"}, {"thailand", "th"}, {"malaysia", "my"},
-            {"japan", "jp"}, {"australia", "au"}, {"indonesia", "id"}, {"india", "in"}, {"argentina", "ar"},
-            {"united states", "us"}, {"usa", "us"}, {"america", "us"}, {"brazil", "br"}, {"mexico", "mx"}, {"canada", "ca"},
-            {"monaco", "mc"}, {"azerbaijan", "az"}, {"singapore", "sg"}, {"saudi", "sa"}, {"bahrain", "bh"},
-            {"emirates", "ae"}, {"uae", "ae"}, {"abu dhabi", "ae"}, {"china", "cn"}, {"korea", "kr"}, {"turk", "tr"},
-            {"kazakhstan", "kz"}, {"finland", "fi"}, {"sweden", "se"}, {"switzerland", "ch"}, {"vietnam", "vn"}, {"russia", "ru"}};
+    private static final String[][] COUNTRIES = {{"italy", "it"}, {"italia", "it"}, {"italian", "it"}, {"emilia", "it"}, {"mugello", "it"},
+            {"monza", "it"}, {"misano", "it"}, {"imola", "it"}, {"san marino", "sm"}, {"spain", "es"}, {"spagna", "es"}, {"spanish", "es"},
+            {"catalan", "es"}, {"catalunya", "es"}, {"aragon", "es"}, {"valencia", "es"}, {"jerez", "es"}, {"france", "fr"}, {"francia", "fr"},
+            {"french", "fr"}, {"germany", "de"}, {"german", "de"}, {"great britain", "gb"}, {"united kingdom", "gb"}, {"british", "gb"},
+            {"silverstone", "gb"}, {"netherlands", "nl"}, {"dutch", "nl"}, {"belgium", "be"}, {"belgian", "be"}, {"austria", "at"},
+            {"austrian", "at"}, {"hungary", "hu"}, {"hungarian", "hu"}, {"czech", "cz"}, {"portugal", "pt"}, {"portuguese", "pt"},
+            {"qatar", "qa"}, {"thai", "th"}, {"malaysia", "my"}, {"japan", "jp"}, {"australia", "au"}, {"indonesia", "id"}, {"india", "in"},
+            {"argentin", "ar"}, {"united states", "us"}, {"usa", "us"}, {"america", "us"}, {"miami", "us"}, {"las vegas", "us"},
+            {"brazil", "br"}, {"mexic", "mx"}, {"canad", "ca"}, {"monaco", "mc"}, {"azerbaijan", "az"}, {"singapore", "sg"},
+            {"saudi", "sa"}, {"bahrain", "bh"}, {"emirates", "ae"}, {"uae", "ae"}, {"abu dhabi", "ae"}, {"china", "cn"}, {"chinese", "cn"},
+            {"korea", "kr"}, {"turk", "tr"}, {"kazakhstan", "kz"}, {"finland", "fi"}, {"sweden", "se"}, {"switzerland", "ch"},
+            {"vietnam", "vn"}, {"russia", "ru"}};
 
     /** ISO code (lowercase, for the flag) of a country named in English, or "". */
     private static String iso(String country) {

@@ -47,6 +47,7 @@ final class Recs {
         boolean detailed;
         int face;               // sport cards: title font (0 normal, 1 Formula 1, 2 MotoGP)
         String flag = "", place = "";   // sport cards (F1, MotoGP): the circuit's country flag (URL) and place
+        int gradTop, gradBottom;   // sport cards: a vertical gradient (0 = the usual diagonal one)
         boolean flat;           // sport cards: one flat color instead of a gradient
         int accent;             // sport cards: the competition's color
         String label = "";      // sport cards: the competition's name

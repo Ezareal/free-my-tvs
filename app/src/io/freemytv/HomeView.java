@@ -2441,6 +2441,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         if (p.flat) {
             fill.setShader(null);
             fill.setColor(p.accent);
+        } else if (p.gradTop != 0) {
+            fill.setShader(new LinearGradient(0, area.top, 0, area.bottom, p.gradTop, p.gradBottom, Shader.TileMode.CLAMP));
         } else {
             fill.setShader(new LinearGradient(area.left, area.top, area.right, area.bottom,
                     blend(p.accent, 0xFF000000, 0.45f), p.accent, Shader.TileMode.CLAMP));

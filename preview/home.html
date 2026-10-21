@@ -106,6 +106,11 @@
   <label>Chiave football-data.org (Serie A e Champions; può essere bloccata dal browser)<input id="f-football" type="password" autocomplete="off"></label>
   <label>Foto profilo (link)<input id="f-photo"></label>
   <label>Nome profilo<input id="f-name"></label>
+  <label>Font F1 e MotoGP (se non si vedono): scarica i file .woff2 dai link e sceglili qui; restano salvati nel browser
+    <input id="f-font-f1" type="file" accept=".woff2,.woff,.ttf,.otf" title="Formula1-Black.woff2">
+    <input id="f-font-mgp" type="file" accept=".woff2,.woff,.ttf,.otf" title="MGPDisplay-Bold.woff2" style="margin-top:6px"></label>
+  <p><a style="color:#6cf" href="https://www.formula1.com/s/fonts/formula1/Formula1-Black.woff2" target="_blank">Formula1-Black.woff2</a> ·
+     <a style="color:#6cf" href="https://www.motogp.com/resources/v8.28.8/fonts/MGPDisplay-Bold.woff2" target="_blank">MGPDisplay-Bold.woff2</a> (tasto destro: salva con nome)</p>
   <button id="f-go">Carica dati</button> <button id="f-test" style="background:#444">Test loghi</button>
   <div id="log"></div>
 </div>
@@ -154,7 +159,7 @@
     ]
   };
   data.sports.forEach(function (e) { e.sample = true; });
-  var ACCENT = [['#0b5fa5', '#052a4a'], ['#1b2a8a', '#0b1250'], ['#e8650a', '#2a0f02'], ['#14141C', '#14141C'], ['#0E0E12', '#0E0E12'], ['#2e8b57', '#0b2a1a']];
+  var ACCENT = [['#28519F', '#38A8BC'], ['#1b2a8a', '#0b1250'], ['#e8650a', '#2a0f02'], ['#14141C', '#14141C'], ['#0E0E12', '#0E0E12'], ['#2e8b57', '#0b2a1a']];
 
   // ---------- state & chrome ----------
   var tab = 0, idx = 0, sportIdx = -1, night = false;
@@ -274,7 +279,7 @@
       return { logo: '', art: '' };
     }).catch(function () { return { logo: '', art: '' }; });
   }
-  var COUNTRIES = [['italy','it'],['spain','es'],['france','fr'],['germany','de'],['great britain','gb'],['united kingdom','gb'],['uk','gb'],['netherlands','nl'],['belgium','be'],['austria','at'],['hungary','hu'],['czech','cz'],['portugal','pt'],['qatar','qa'],['thailand','th'],['malaysia','my'],['japan','jp'],['australia','au'],['indonesia','id'],['india','in'],['argentina','ar'],['united states','us'],['usa','us'],['america','us'],['brazil','br'],['mexico','mx'],['canada','ca'],['monaco','mc'],['azerbaijan','az'],['singapore','sg'],['saudi','sa'],['bahrain','bh'],['emirates','ae'],['uae','ae'],['abu dhabi','ae'],['china','cn'],['korea','kr'],['turk','tr'],['kazakhstan','kz'],['finland','fi'],['sweden','se'],['switzerland','ch'],['vietnam','vn'],['russia','ru']];
+  var COUNTRIES = [['italy','it'],['italia','it'],['italian','it'],['emilia','it'],['mugello','it'],['monza','it'],['misano','it'],['imola','it'],['san marino','sm'],['spain','es'],['spagna','es'],['spanish','es'],['catalan','es'],['catalunya','es'],['aragon','es'],['valencia','es'],['jerez','es'],['french','fr'],['german','de'],['british','gb'],['silverstone','gb'],['dutch','nl'],['belgian','be'],['austrian','at'],['hungarian','hu'],['portuguese','pt'],['thai','th'],['chinese','cn'],['miami','us'],['las vegas','us'],['argentin','ar'],['mexic','mx'],['canad','ca'],['france','fr'],['germany','de'],['great britain','gb'],['united kingdom','gb'],['uk','gb'],['netherlands','nl'],['belgium','be'],['austria','at'],['hungary','hu'],['czech','cz'],['portugal','pt'],['qatar','qa'],['thailand','th'],['malaysia','my'],['japan','jp'],['australia','au'],['indonesia','id'],['india','in'],['argentina','ar'],['united states','us'],['usa','us'],['america','us'],['brazil','br'],['mexico','mx'],['canada','ca'],['monaco','mc'],['azerbaijan','az'],['singapore','sg'],['saudi','sa'],['bahrain','bh'],['emirates','ae'],['uae','ae'],['abu dhabi','ae'],['china','cn'],['korea','kr'],['turk','tr'],['kazakhstan','kz'],['finland','fi'],['sweden','se'],['switzerland','ch'],['vietnam','vn'],['russia','ru']];
   function iso(c) { c = (c || '').toLowerCase(); for (var i = 0; i < COUNTRIES.length; i++) if (c.indexOf(COUNTRIES[i][0]) >= 0) return COUNTRIES[i][1]; return ''; }
   function mk(sport, start, comp, title) { return { sport: sport, start: start, minutes: DUR[sport], comp: comp, title: title, home: '', away: '', logoHome: '', logoAway: '', logoComp: '', art: '', country: '', place: '', italian: 0, c1: ACCENT[sport][0], c2: ACCENT[sport][1] }; }
   function loadSports() {
@@ -300,7 +305,7 @@
       [['Qualifying', T().quali, 75], ['Sprint', 'Sprint', 60], ['', T().race, 120]].forEach(function (s) {
         var o = s[0] ? race[s[0]] : race; if (!o) return; var e = mk(3, ts(o.date + 'T' + (o.time || '12:00:00Z')), 'Formula 1', race.raceName + ' · ' + s[1]);
         e.minutes = s[2]; e.italian = 3; e.logoComp = info.logo; e.art = info.art;
-        var loc = race.Circuit && race.Circuit.Location; if (loc) { e.country = iso(loc.country); e.place = loc.locality || ''; } out.push(e);
+        var loc = race.Circuit && race.Circuit.Location; if (loc) { e.country = iso(loc.country); e.place = loc.locality || ''; } if (!e.country) e.country = iso(race.raceName); out.push(e);
       });
     })));
     ['Motorsport', 'Tennis', 'Soccer'].forEach(function (sp) {
@@ -316,7 +321,7 @@
               var e = mk(soccer ? 2 : tennis ? 5 : 4, ts(j.strTimestamp), soccer ? 'Europa League' : tennis ? 'Tennis' : 'MotoGP', j.strEvent || '');
               e.logoComp = info.logo || j.strLeagueBadge || ''; e.art = info.art || j.strThumb || '';
               if (soccer || tennis) { e.home = j.strHomeTeam; e.away = j.strAwayTeam; e.logoHome = j.strHomeTeamBadge || ''; e.logoAway = j.strAwayTeamBadge || ''; e.italian = (soccer ? hasAny(e.home + ' ' + e.away, CLUBS) : hasAny(e.home + ' ' + e.away, PLAYERS)) ? 3 : 0; }
-              else { e.italian = 3; e.country = iso(j.strCountry); e.place = j.strCity || j.strVenue || ''; }
+              else { e.italian = 3; e.country = iso([j.strCountry, j.strEvent, j.strVenue, j.strCity].join(' ')); e.place = j.strCity || j.strVenue || ''; }
               if (e.start) out.push(e);
             });
           });
@@ -338,7 +343,7 @@
       }));
     })));
     return Promise.all(jobs).then(function () {
-      out.forEach(function (e) { if (e.sport === 1) e.art = '../app/assets/sports/champions.webp'; if (e.sport === 2) e.art = '../app/assets/sports/europa.jpg'; if (e.sport === 3) e.art = '../app/assets/sports/f1.png'; if (e.sport === 4) e.art = 'MOTOGP'; });
+      out.forEach(function (e) { if (e.sport === 0) e.art = ''; if (e.sport === 1) e.art = '../app/assets/sports/champions.webp'; if (e.sport === 2) e.art = '../app/assets/sports/europa.jpg'; if (e.sport === 3) e.art = '../app/assets/sports/f1.png'; if (e.sport === 4) e.art = 'MOTOGP'; });
       return { events: out, notes: notes };
     });
   }
@@ -383,7 +388,7 @@
   }
   function sportCard(e) {
     var c = el('div', 'card sport');
-    c.style.background = e.sport === 3 ? '#14141C' : e.sport === 4 ? '#0E0E12' : 'linear-gradient(135deg,' + e.c2 + ',' + e.c1 + ')';
+    c.style.background = e.sport === 3 ? '#14141C' : e.sport === 4 ? '#0E0E12' : e.sport === 0 ? 'linear-gradient(180deg,#28519F,#38A8BC)' : 'linear-gradient(135deg,' + e.c2 + ',' + e.c1 + ')';
     if (e.art) { var a = el('div', 'art', c); a.style.backgroundImage = e.art === 'MOTOGP' ? "url('fonts/motogp-bar.svg'), url('https://www.motogp.com/resources/v8.28.8/i/svg-files/elements/slim-bar-background.svg')" : 'url(' + e.art + ')'; if (e.sport !== 3 && e.sport !== 4) { var t = el('div', 'tint', c); t.style.background = e.c2; t.style.opacity = .5; } }
     var comp = el('div', 'comp', c);
     if (e.logoComp) { var im = el('img', '', comp); im.src = e.logoComp; im.onerror = function () { im.remove(); comp.textContent = e.comp; }; } else comp.textContent = e.comp;
@@ -394,7 +399,7 @@
       if (e.sport === 3) { s.style.cssText = "position:absolute;left:44px;right:44px;top:176px;font:400 50px/1.15 F1, 'Inter', sans-serif;text-align:left;text-transform:uppercase"; }
       var w = el('div', '', c); w.style.cssText = 'position:absolute;left:44px;bottom:44px;font-size:36px;font-weight:500'; w.textContent = when(e);
       var rt = 44;
-      if (e.country) { var fl = el('img', 'flag', c); fl.src = 'https://flagcdn.com/w160/' + e.country + '.png'; fl.style.right = rt + 'px'; fl.onerror = function () { fl.remove(); }; rt += 104; }
+      if (e.country) { var fl = el('img', 'flag', c); fl.src = 'https://flagcdn.com/w160/' + e.country + '.png'; fl.style.right = rt + 'px'; fl.onerror = function () { var em = el('div', 'place', c); em.textContent = e.country.toUpperCase().replace(/./g, function (ch) { return String.fromCodePoint(127397 + ch.charCodeAt(0)); }); em.style.right = '44px'; em.style.fontSize = '48px'; fl.remove(); }; rt += 104; }
       if (e.place) { var pl = el('div', 'place', c); pl.textContent = e.place; pl.style.right = rt + 'px'; }
     }
     return c;
@@ -452,6 +457,19 @@
     log('Mostrato: ' + (p ? p.comp + ' · ' + (p.title || p.home + ' – ' + p.away) + ' · ' + when(p) : 'nessuno nelle prossime 30 ore'));
     s.events.slice(0, 12).forEach(function (e) { log(' · ' + new Date(e.start).toLocaleString() + ' ' + e.comp + ' ' + (e.title || e.home + ' – ' + e.away) + ' [logo comp: ' + (e.logoComp ? 'sì' : 'no') + ', stemmi: ' + (e.logoHome ? 'sì' : 'no') + ']'); });
   }
+  // fonts picked by hand (the sites don't let a page load them directly): kept in the browser
+  function b64(buf) { var s = '', a = new Uint8Array(buf); for (var i = 0; i < a.length; i += 8192) s += String.fromCharCode.apply(null, a.subarray(i, i + 8192)); return btoa(s); }
+  function useFont(family, buf) {
+    var ff = new FontFace(family, buf); return ff.load().then(function () { document.fonts.add(ff); render(); }).catch(function (e) { log('font ' + family + ': ' + e.message); });
+  }
+  [['F1', 'f-font-f1'], ['MGP', 'f-font-mgp']].forEach(function (f) {
+    var saved = null; try { saved = localStorage.getItem('fmtv-font-' + f[0]); } catch (e) {}
+    if (saved) { var bin = atob(saved), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); useFont(f[0], u.buffer); }
+    document.getElementById(f[1]).onchange = function () {
+      var file = this.files[0]; if (!file) return;
+      file.arrayBuffer().then(function (buf) { try { localStorage.setItem('fmtv-font-' + f[0], b64(buf)); } catch (e) { log('font troppo grande per essere salvato'); } return useFont(f[0], buf); });
+    };
+  });
   function probe(label, url) {
     return new Promise(function (res) {
       var i = new Image(), t = setTimeout(function () { res(label + ': nessuna risposta in 8 s'); }, 8000);
