@@ -94,6 +94,12 @@ final class Russian {
             case "Automatic": return "Автоматически";
             case "Light": return "Светлая";
             case "Dark": return "Тёмная";
+            case "Look": return "Вид";
+            case "Glass": return "Стекло";
+            case "Sharp": return "Чёткий";
+            case "Text size": return "Размер текста";
+            case "Normal": return "Обычный";
+            case "Large": return "Крупный";
             case "Navigation sounds": return "Звуки навигации";
             case "Weather widget": return "Виджет погоды";
             // What TalkBack reads on the drawer's weather card (#47)
