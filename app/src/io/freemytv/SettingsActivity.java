@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -64,6 +65,11 @@ public class SettingsActivity extends Activity {
             view.pause();
             showPreview();
         }
+    }
+
+    /** The TV's "Allow" for reading the apps' "continue watching" (Home Settings > Continue Watching). */
+    @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
+        view.continueAllowedChanged();
     }
 
     @Override protected void onNewIntent(Intent intent) {
@@ -113,7 +119,7 @@ public class SettingsActivity extends Activity {
     }
 
     static final class SettingsView extends View implements Choreographer.FrameCallback {
-        private static final int MAIN = 0, HOME_CHOICE = 1, HOME_SETTINGS = 2, REMOTE_KEYS = 3, PICKER = 4, SHELF_EDIT = 5;
+        private static final int MAIN = 0, HOME_CHOICE = 1, HOME_SETTINGS = 2, REMOTE_KEYS = 3, PICKER = 4, SHELF_EDIT = 5, CONTINUE_EDIT = 6;
         private static final float LIST_ROW_H = 68, LIST_ROW_GAP = 6;
         private static final int PICK_VISIBLE = 9;
         private static final float LIST_X = 1000, LIST_R = 1824, LIST_TOP = 186, ROW_H = 74, ROW_GAP = 8, CHOICE_H = 104;
@@ -122,7 +128,7 @@ public class SettingsActivity extends Activity {
         private final SettingsActivity activity;
         private final Scene scene = new Scene();
         private final Handler handler = new Handler(Looper.getMainLooper());
-        private final Spring[] pop = new Spring[12];
+        private final Spring[] pop = new Spring[14];
         private final List<String> appPkgs = new ArrayList<>(), appLabels = new ArrayList<>();
         // The list picker (the app of a remote button): what it shows, which one is in use, where we are.
         private final List<String> pickLabels = new ArrayList<>();
@@ -133,6 +139,11 @@ public class SettingsActivity extends Activity {
         private static final int PICK_CITY = 0;
         private final List<String[]> cities = new ArrayList<>();
         private String cityStatus = "";
+        // Continue Watching: the TV apps ({package, name}), how many entries each shares, and whether we may read them.
+        private final List<String[]> continueRows = new ArrayList<>();
+        private final Map<String, Integer> continueCounts = new java.util.HashMap<>();
+        private boolean continueAllowed;
+        private String playerNow = "service";   // currentPlayer(), read in poll: drawing asks every frame
         private final RectF tmp = new RectF(), rowRect = new RectF(), focusBox = new RectF();
         private JSONObject state = new JSONObject(), recs = new JSONObject();
         private boolean hasKey;
@@ -153,6 +164,8 @@ public class SettingsActivity extends Activity {
                 state = HomeMode.state(getContext());
                 hasKey = Recs.hasKey(getContext());
                 recs = Recs.status(getContext());
+                playerNow = currentPlayer();
+                continueAllowed = WatchNext.allowed(getContext());
                 boolean nowBusy = !busyText().isEmpty();
                 if (nowBusy) pendingAt = 0;
                 // A switch just ended: TalkBack reads how it went (the newest notice).
@@ -231,6 +244,12 @@ public class SettingsActivity extends Activity {
                     return pickLabels.get(at) + (at == pickCurrent ? Ui.tr(", escolhido", ", selected") : "")
                             + ", " + (at + 1) + Ui.tr(" de ", " of ") + pickLabels.size();
                 }
+                case CONTINUE_EDIT: {
+                    int at = pickScroll + row;
+                    if (at >= continueRows.size()) return "";
+                    String[] app = continueRows.get(at);
+                    return app[1] + ", " + continueValue(app[0]);
+                }
                 case SHELF_EDIT: {
                     int at = pickScroll + row;
                     if (at >= shelfRows.size()) return "";
@@ -253,11 +272,16 @@ public class SettingsActivity extends Activity {
                 top = LIST_TOP + 20 + row * (CHOICE_H + ROW_GAP);
                 height = CHOICE_H;
             } else {
-                top = LIST_TOP + 20 + row * (LIST_ROW_H + LIST_ROW_GAP);
-                height = LIST_ROW_H;
+                top = LIST_TOP + 20 + row * listStep();
+                height = listStep() - LIST_ROW_GAP;
             }
             focusBox.set(LIST_X * k, top * k, LIST_R * k, (top + height) * k);
             return focusBox;
+        }
+
+        /** Row pitch in the lists: Home Settings' rows get shorter when there are more than ten, to fit the screen. */
+        private float listStep() {
+            return screen == HOME_SETTINGS && settingLabels().length > 10 ? 64 : LIST_ROW_H + LIST_ROW_GAP;
         }
 
         void resume() {
@@ -337,6 +361,7 @@ public class SettingsActivity extends Activity {
                 case HOME_SETTINGS: return settingLabels().length;
                 case PICKER: return Math.min(PICK_VISIBLE, pickLabels.size());
                 case SHELF_EDIT: return Math.min(PICK_VISIBLE, shelfRows.size());
+                case CONTINUE_EDIT: return Math.min(PICK_VISIBLE, continueRows.size());
                 default: return Prefs.KEYS.length;
             }
         }
@@ -365,7 +390,7 @@ public class SettingsActivity extends Activity {
             c.drawText(Ui.tr("Início e tela de descanso da TV", "Your TV's home screen and screensaver"), cx, 660 * k, subtitle);
             c.drawText(versionName(getContext()), cx, 704 * k, version);
 
-            if (screen == MAIN) drawMain(c, seconds); else if (screen == HOME_CHOICE) drawChoice(c); else if (screen == PICKER) drawPicker(c); else if (screen == SHELF_EDIT) drawShelfEditor(c); else drawList(c);
+            if (screen == MAIN) drawMain(c, seconds); else if (screen == HOME_CHOICE) drawChoice(c); else if (screen == PICKER) drawPicker(c); else if (screen == SHELF_EDIT) drawShelfEditor(c); else if (screen == CONTINUE_EDIT) drawContinueEditor(c); else drawList(c);
         }
 
         private void drawMain(Canvas c, float seconds) {
@@ -604,6 +629,9 @@ public class SettingsActivity extends Activity {
                             if (screen == PICKER && pickFor == PICK_CITY) {
                                 focus = CITY_ROW;
                                 screen = HOME_SETTINGS;
+                            } else if (screen == CONTINUE_EDIT) {
+                                focus = CONTINUE_ROW;
+                                screen = HOME_SETTINGS;
                             } else if (screen == PICKER) {
                                 focus = pickFor - 1;
                                 screen = REMOTE_KEYS;
@@ -625,8 +653,11 @@ public class SettingsActivity extends Activity {
         // MARK: - Home Settings and Remote Buttons
 
         private static final String[] LANGUAGES = {"auto", "pt", "en", "es", "de", "ru"}, UNITS = {"auto", "C", "F"}, THEMES = {"auto", "light", "dark"};
-        /** Home Settings: language, temperature, theme, weather, quotes, then one row per coin. */
-        private static final int CITY_ROW = 4, COIN_ROWS = 6;
+        /**
+         * Home Settings: language, temperature, theme, the app that opens the picks, Continue Watching, weather, city,
+         * quotes, then one row per coin.
+         */
+        private static final int PLAYER_ROW = 3, CONTINUE_ROW = 4, WEATHER_ROW = 5, CITY_ROW = 6, QUOTES_ROW = 7, COIN_ROWS = 8;
 
         private boolean dollar() {
             return "BRL".equalsIgnoreCase(Config.CURRENCY.trim());
@@ -637,6 +668,8 @@ public class SettingsActivity extends Activity {
             l.add(Ui.tr("Idioma", "Language"));
             l.add(Ui.tr("Temperatura", "Temperature"));
             l.add(Ui.tr("Tema", "Theme"));
+            l.add(Ui.tr("Abrir recomendações em", "Open picks in"));
+            l.add(Ui.tr("Continuar assistindo", "Continue watching"));
             l.add(Ui.tr("Widget do clima", "Weather widget"));
             l.add(Ui.tr("Cidade", "City"));
             l.add(Ui.tr("Widget de cotações", "Quotes widget"));
@@ -657,12 +690,121 @@ public class SettingsActivity extends Activity {
             v[1] = unit.equals("C") ? "°C" : unit.equals("F") ? "°F" : Ui.tr("Automática", "Automatic");
             String theme = Prefs.theme();
             v[2] = theme.equals("light") ? Ui.tr("Claro", "Light") : theme.equals("dark") ? Ui.tr("Escuro", "Dark") : Ui.tr("Automático", "Automatic");
-            v[3] = onOff(Prefs.weather());
+            v[PLAYER_ROW] = playerLabel(playerNow);
+            v[CONTINUE_ROW] = continueAllowed ? Ui.tr("Escolher apps", "Choose apps") : Ui.tr("Permitir", "Allow");
+            v[WEATHER_ROW] = onOff(Prefs.weather());
             v[CITY_ROW] = !cityStatus.isEmpty() ? cityStatus : Prefs.city().isEmpty() ? "—" : Prefs.city();
-            v[5] = onOff(Prefs.quotes());
+            v[QUOTES_ROW] = onOff(Prefs.quotes());
             // No quotes widget, nowhere to show prices: the coins read as off (and stay locked) until it is back on.
             for (int i = COIN_ROWS; i < v.length; i++) v[i] = onOff(Prefs.quotes() && Prefs.coin(i - COIN_ROWS));
             return v;
+        }
+
+        /** What can open the picks: Nuvio and Stremio when installed, and always the streaming app each one is on. */
+        private List<String> players() {
+            List<String> out = new ArrayList<>();
+            PackageManager pm = getContext().getPackageManager();
+            if (HomeApps.launchIntent(pm, Recs.NUVIO) != null) out.add("nuvio");
+            if (HomeApps.launchIntent(pm, Recs.STREMIO) != null) out.add("stremio");
+            out.add("service");
+            return out;
+        }
+
+        /** The choice in effect (not chosen yet: Nuvio, else Stremio, when installed). */
+        private String currentPlayer() {
+            String pkg = Recs.get(getContext()).player();
+            return Recs.NUVIO.equals(pkg) ? "nuvio" : Recs.STREMIO.equals(pkg) ? "stremio" : "service";
+        }
+
+        private static String playerLabel(String choice) {
+            return choice.equals("nuvio") ? "Nuvio" : choice.equals("stremio") ? "Stremio"
+                    : Ui.tr("App de streaming", "Streaming app", "App de streaming");
+        }
+
+        /**
+         * Continue Watching: every TV app, the ones sharing "continue watching" entries first, each on or off. The TV
+         * asks once to let Free My TV read those entries.
+         */
+        private void openContinueEditor() {
+            if (!WatchNext.allowed(getContext())) activity.requestPermissions(new String[] {WatchNext.PERMISSION}, 1);
+            loadApps();
+            continueRows.clear();
+            for (int i = 1; i < appPkgs.size(); i++) {   // after "Nothing"; an app without a name shows its package
+                String label = appLabels.get(i).trim();
+                continueRows.add(new String[] {appPkgs.get(i), label.isEmpty() ? appPkgs.get(i) : label});
+            }
+            continueCounts.clear();
+            pickScroll = 0;
+            focus = 0;
+            screen = CONTINUE_EDIT;
+            loadContinueCounts();
+        }
+
+        /** How many entries each app shares (read in the background); the apps that share come first. */
+        void loadContinueCounts() {
+            Context c = getContext();
+            continueAllowed = WatchNext.allowed(c);
+            new Thread(() -> {
+                Map<String, Integer> counts = WatchNext.counts(c);
+                handler.post(() -> {
+                    continueCounts.clear();
+                    continueCounts.putAll(counts);
+                    // A stable sort: the names stay in order among the ones with the same count.
+                    Collections.sort(continueRows, (a, b) -> Integer.compare(shared(b[0]), shared(a[0])));
+                    pickScroll = 0;
+                    if (screen == CONTINUE_EDIT) focus = 0;
+                    invalidate();
+                    spoken.focusMoved();
+                });
+            }).start();
+        }
+
+        /** The TV answered about reading the entries. */
+        void continueAllowedChanged() {
+            loadContinueCounts();
+            Recs.get(getContext()).continueChanged();
+        }
+
+        private int shared(String pkg) {
+            Integer n = continueCounts.get(pkg);
+            return n == null ? 0 : n;
+        }
+
+        private String continueValue(String pkg) {
+            if (!Prefs.continueFrom(pkg)) return Ui.tr("Desligado", "Off");
+            int n = shared(pkg);
+            return n > 0 ? Ui.tr("Ligado", "On") + " · " + n : Ui.tr("Ligado", "On");
+        }
+
+        private void toggleContinueApp() {
+            if (continueRows.isEmpty()) return;
+            String pkg = continueRows.get(pickScroll + focus)[0];
+            Prefs.setContinueFrom(pkg, !Prefs.continueFrom(pkg));
+            Recs.get(getContext()).continueChanged();
+        }
+
+        private void drawContinueEditor(Canvas c) {
+            Paint heading = Ui.text(Ui.displaySemibold, 34 * k, 0xFFFFFFFF);
+            c.drawText(Ui.tr("Continuar assistindo", "Continue watching"), LIST_X * k + 30 * k, (LIST_TOP - 24) * k, heading);
+            int rows = rowCount();
+            for (int i = 0; i < rows; i++) {
+                String[] app = continueRows.get(pickScroll + i);
+                boolean on = Prefs.continueFrom(app[0]);
+                float y = (LIST_TOP + 20 + i * (LIST_ROW_H + LIST_ROW_GAP)) * k;
+                rowRect.set(LIST_X * k, y, LIST_R * k, y + LIST_ROW_H * k);
+                float f = drawRowBackground(c, i);
+                rowLabel.setColor(blend(on ? 0xF2FFFFFF : 0x80FFFFFF, on ? INK : 0x801C1C1E, f));
+                rowValue.setColor(blend(0xB3FFFFFF, 0xB31C1C1E, f));
+                float base = rowRect.centerY() + Ui.halfCap(rowLabel);
+                c.drawText(TextUtils.ellipsize(app[1], new TextPaint(rowLabel), 520 * k, TextUtils.TruncateAt.END).toString(), rowRect.left + 30 * k, base, rowLabel);
+                c.drawText(continueValue(app[0]), rowRect.right - 30 * k, base, rowValue);
+            }
+            Paint hint = Ui.text(Ui.regular, 23 * k, 0x8CFFFFFF);
+            float hy = (LIST_TOP + 20 + rows * (LIST_ROW_H + LIST_ROW_GAP) + 36) * k;
+            c.drawText(continueAllowed ? Ui.tr("OK liga ou desliga. O número: quantos títulos o app mostra agora.",
+                    "OK turns an app on or off. The number: how many titles it shares now.")
+                    : Ui.tr("Falta permitir: Ajustes da TV > Apps > Free My TV > Permissões.",
+                    "Not allowed yet: TV Settings > Apps > Free My TV > Permissions."), LIST_X * k + 30 * k, hy, hint);
         }
 
         private static String onOff(boolean on) {
@@ -731,9 +873,18 @@ public class SettingsActivity extends Activity {
                     Prefs.setTheme(THEMES[(at + dir + THEMES.length) % THEMES.length]);
                     break;
                 }
-                case 3: Prefs.setWeather(!Prefs.weather()); break;
+                case PLAYER_ROW: {
+                    List<String> options = players();
+                    int at = options.indexOf(playerNow);
+                    String next = options.get(((at < 0 ? 0 : at) + dir + options.size()) % options.size());
+                    Prefs.setPlayer(next);
+                    playerNow = currentPlayer();
+                    return;
+                }
+                case CONTINUE_ROW: return;
+                case WEATHER_ROW: Prefs.setWeather(!Prefs.weather()); break;
                 case CITY_ROW: return;
-                case 5: Prefs.setQuotes(!Prefs.quotes()); break;
+                case QUOTES_ROW: Prefs.setQuotes(!Prefs.quotes()); break;
                 default:
                     if (!Prefs.quotes()) return;
                     Prefs.setCoin(focus - COIN_ROWS, !Prefs.coin(focus - COIN_ROWS));
@@ -794,11 +945,11 @@ public class SettingsActivity extends Activity {
         }
 
         private boolean scrolling() {
-            return screen == PICKER || screen == SHELF_EDIT;
+            return screen == PICKER || screen == SHELF_EDIT || screen == CONTINUE_EDIT;
         }
 
         private int listSize() {
-            return screen == SHELF_EDIT ? shelfRows.size() : pickLabels.size();
+            return screen == SHELF_EDIT ? shelfRows.size() : screen == CONTINUE_EDIT ? continueRows.size() : pickLabels.size();
         }
 
         // MARK: - Shelf editor
@@ -927,8 +1078,8 @@ public class SettingsActivity extends Activity {
             c.drawText(keys ? Ui.tr("Botões do Controle", "Remote Buttons") : Ui.tr("Ajustes do Início", "Home Settings"),
                     LIST_X * k + 30 * k, (LIST_TOP - 24) * k, heading);
             for (int i = 0; i < labels.length; i++) {
-                float y = (LIST_TOP + 20 + i * (LIST_ROW_H + LIST_ROW_GAP)) * k;
-                rowRect.set(LIST_X * k, y, LIST_R * k, y + LIST_ROW_H * k);
+                float y = (LIST_TOP + 20 + i * listStep()) * k;
+                rowRect.set(LIST_X * k, y, LIST_R * k, y + (listStep() - LIST_ROW_GAP) * k);
                 float f = drawRowBackground(c, i);
                 rowLabel.setColor(blend(0xF2FFFFFF, INK, f));
                 boolean locked = !keys && i >= COIN_ROWS && !Prefs.quotes();
@@ -939,7 +1090,7 @@ public class SettingsActivity extends Activity {
                 c.drawText(values[i], rowRect.right - 30 * k, base, rowValue);
             }
             Paint hint = Ui.text(Ui.regular, 23 * k, 0x8CFFFFFF);
-            float hy = (LIST_TOP + 20 + labels.length * (LIST_ROW_H + LIST_ROW_GAP) + 36) * k;
+            float hy = (LIST_TOP + 20 + labels.length * listStep() + 36) * k;
             c.drawText(Ui.tr("OK ou as setas mudam o valor.", "OK or the arrows change the value."), LIST_X * k + 30 * k, hy, hint);
             if (keys) {
                 c.drawText(RemoteKeys.VESTEL ? Ui.tr("YouTube, Prime Video e Google Play: a própria TV controla esses botões.",
@@ -977,11 +1128,18 @@ public class SettingsActivity extends Activity {
                 toggleShelfApp();
                 invalidate();
                 return;
+            } else if (screen == CONTINUE_EDIT) {
+                toggleContinueApp();
+                invalidate();
+                spoken.focusMoved();
+                return;
             } else if (screen == REMOTE_KEYS) {
                 openPicker(focus + 1);
             } else if (screen == HOME_SETTINGS && focus == CITY_ROW) {
                 askCity();
                 return;
+            } else if (screen == HOME_SETTINGS && focus == CONTINUE_ROW) {
+                openContinueEditor();
             } else if (screen == HOME_SETTINGS) {
                 adjust(1);
                 invalidate();

@@ -102,6 +102,15 @@ final class Russian {
             case " Sunrise ": return " Восход ";
             case " Sunset ": return " Закат ";
             case "City": return "Город";
+            case "Continue": return "Продолжить";
+            case "Streaming app": return "Стриминговое приложение";
+            case "Open picks in": return "Открывать подборку в";
+            case "The screensaver didn't open on this TV; it now runs the way this TV needs.": return "Заставка не открывалась на этом телевизоре; теперь она работает так, как ему нужно.";
+            case "Continue watching": return "Продолжить просмотр";
+            case "Choose apps": return "Выбрать приложения";
+            case "Allow": return "Разрешить";
+            case "OK turns an app on or off. The number: how many titles it shares now.": return "OK включает или выключает приложение. Число — сколько названий оно сейчас передаёт.";
+            case "Not allowed yet: TV Settings > Apps > Free My TV > Permissions.": return "Пока не разрешено: Настройки ТВ > Приложения > Free My TV > Разрешения.";
             case "Searching…": return "Поиск…";
             case "Type the city's name": return "Введите название города";
             case "Search": return "Найти";

@@ -95,6 +95,13 @@ final class Spanish {
             case " Sunrise ": return " Amanecer ";
             case " Sunset ": return " Atardecer ";
             case "City": return "Ciudad";
+            case "Open picks in": return "Abrir recomendaciones en";
+            case "The screensaver didn't open on this TV; it now runs the way this TV needs.": return "El protector de pantalla no abría en este TV; ahora funciona como este TV lo necesita.";
+            case "Continue watching": return "Seguir viendo";
+            case "Choose apps": return "Elegir apps";
+            case "Allow": return "Permitir";
+            case "OK turns an app on or off. The number: how many titles it shares now.": return "OK activa o desactiva una app. El número: cuántos títulos comparte ahora.";
+            case "Not allowed yet: TV Settings > Apps > Free My TV > Permissions.": return "Aún sin permiso: Ajustes del TV > Apps > Free My TV > Permisos.";
             case "Searching…": return "Buscando…";
             case "Type the city's name": return "Escribe el nombre de la ciudad";
             case "Search": return "Buscar";

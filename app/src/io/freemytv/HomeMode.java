@@ -1,6 +1,8 @@
 package io.freemytv;
 
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.SystemClock;
 
@@ -36,8 +38,41 @@ final class HomeMode {
     static final String PKG = "io.freemytv";
     static final String HOME_ACTIVITY = PKG + "/" + PKG + ".HomeActivity";
     static final String SETTINGS_ACTIVITY = PKG + "/" + PKG + ".SettingsActivity";
-    /** Our screensaver: on Android 11 the copy that runs in the main process (ScreensaverAlone, #10). */
-    static final String DREAM = PKG + "/" + PKG + (Build.VERSION.SDK_INT == 30 ? ".ScreensaverAlone" : ".Screensaver");
+    /**
+     * Our screensaver: on Android 11 the copy that runs in the main process (ScreensaverAlone, #10), and on TVs whose
+     * Android 12 does the same as 11 there (TCL: see useDreamAlone).
+     */
+    static String dream(Context c) {
+        boolean alone = Build.VERSION.SDK_INT == 30 || dreamAloneFile(c).exists();
+        return PKG + "/" + PKG + (alone ? ".ScreensaverAlone" : ".Screensaver");
+    }
+
+    private static File dreamAloneFile(Context c) {
+        return new File(c.getFilesDir(), "dream-alone");
+    }
+
+    /**
+     * The system's DreamActivity crashed in the main process with our screensaver in :home: this TV runs it only with
+     * the dream in that same process, as Android 11 does (a TCL on Android 12). From now on the main-process copy; the
+     * screensaver setting moves to it in VERIFY (through our ADB). Called from the crash handler (App).
+     */
+    static void useDreamAlone(Context c) {
+        try {
+            //noinspection ResultOfMethodCallIgnored
+            dreamAloneFile(c).createNewFile();
+        } catch (IOException ignored) {
+        }
+        PackageManager pm = c.getPackageManager();
+        pm.setComponentEnabledSetting(new ComponentName(c, ScreensaverAlone.class),
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
+        pm.setComponentEnabledSetting(new ComponentName(c, Screensaver.class),
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
+        ModeJob.schedule(c, ModeJob.VERIFY, null, 3_000);
+    }
+
+    static boolean dreamAlone(Context c) {
+        return dreamAloneFile(c).exists();
+    }
     static final String FREE = "free", ORIGINAL = "original";
 
     /** Classic Android TV's home screen; its recommendations service crashes on the screensaver while it's off (#11). */
@@ -235,7 +270,7 @@ final class HomeMode {
             Watchdog.clear(c);
             check(adb.shell("cmd package set-home-activity " + HOME_ACTIVITY), "Success",
                     Ui.tr("o Android não aceitou o novo Início", "Android didn't accept the new home screen"));
-            adb.shell("settings put secure screensaver_components " + DREAM);
+            adb.shell("settings put secure screensaver_components " + dream(c));
             JSONObject started = state(c);
             started.put("mode", FREE).put("homeReverted", false).put("setupHome", setupHome);
             save(c, started);
@@ -391,6 +426,7 @@ final class HomeMode {
             } catch (JSONException ignored) {}
             if (!FREE.equals(s.optString("mode"))) return;
             List<String> fixed = new ArrayList<>();
+            boolean moved = false;      // the screensaver moved to the main process (useDreamAlone)
             try (Adb adb = Adb.connect(app, 10_000, null)) {
                 Set<String> present = packages(adb, "");
                 Set<String> disabledNow = packages(adb, "-d");
@@ -421,9 +457,14 @@ final class HomeMode {
                     fixed.add(Ui.tr("o Início", "the home screen"));
                 }
                 // Whole component names: ".ScreensaverAlone" (Android 11) contains ".Screensaver" (12 and newer).
-                if (!reverted && !Arrays.asList(adb.shell("settings get secure screensaver_components").trim().split(",")).contains(DREAM)) {
-                    adb.shell("settings put secure screensaver_components " + DREAM);
-                    fixed.add(Ui.tr("a tela de descanso", "the screensaver"));
+                String saver = adb.shell("settings get secure screensaver_components").trim();
+                if (!reverted && !Arrays.asList(saver.split(",")).contains(dream(app))) {
+                    adb.shell("settings put secure screensaver_components " + dream(app));
+                    if (dreamAlone(app) && Arrays.asList(saver.split(",")).contains(PKG + "/" + PKG + ".Screensaver")) {
+                        moved = true;   // useDreamAlone: not something the TV turned back on
+                    } else {
+                        fixed.add(Ui.tr("a tela de descanso", "the screensaver"));
+                    }
                 }
                 JSONObject latest = state(app);
                 latest.put("disabled", new JSONArray(sorted(disabled)));
@@ -431,6 +472,10 @@ final class HomeMode {
             } catch (Exception e) {
                 notice(app, Ui.tr("Não consegui conferir o Free My TV: ", "Couldn't check Free My TV: ") + (Ui.ru ? Russian.text(e.getMessage() == null ? "" : e.getMessage()) : e.getMessage()));
                 return;
+            }
+            if (moved) {
+                notice(app, Ui.tr("A tela de descanso não abria nesta TV; agora roda do jeito que ela pede.",
+                        "The screensaver didn't open on this TV; it now runs the way this TV needs."));
             }
             if (!fixed.isEmpty()) {
                 notice(app, (updated ? Ui.tr("A atualização da TV religou ", "The TV update turned back on ")
