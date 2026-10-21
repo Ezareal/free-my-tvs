@@ -19,21 +19,45 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # Samsung packages must be signed locally with `python3 tizen/build.py
-      # --generic --sign-default` before they are attached to a release. GitHub
-      # runners have no Tizen SDK, so publishing their unsigned WGT causes TV
-      # installation error 118.
-      - name: Build generic LG package
+      - name: Install Samsung Tizen signing tools
+        timeout-minutes: 30
+        env:
+          TIZEN_SKILLS_REVISION: 06f07eca4ce44985be1c2944d58466a82eb15692
         run: |
+          skills_dir="$RUNNER_TEMP/tizen-agent-skills"
+          sdk_dir="$RUNNER_TEMP/tizen-sdk"
+          git init "$skills_dir"
+          git -C "$skills_dir" remote add origin https://github.com/Samsung/tizen-agent-skills.git
+          git -C "$skills_dir" fetch --depth 1 origin "$TIZEN_SKILLS_REVISION"
+          git -C "$skills_dir" checkout --detach FETCH_HEAD
+          bash "$skills_dir/tizen-sdk-skills/common/scripts/tizen-sdk-install/tizen-sdk-install.sh" \
+            --path "$sdk_dir"
+
+      - name: Build signed generic Samsung and LG packages
+        env:
+          TIZEN_STUDIO: ${{ runner.temp }}/tizen-sdk
+        run: |
+          python3 tizen/build.py --generic --sign-default
           python3 webos/build.py --generic
+          unzip -t FreeMyTV-tizen.wgt >/dev/null
+          unzip -Z1 FreeMyTV-tizen.wgt | grep -qx author-signature.xml
+          unzip -Z1 FreeMyTV-tizen.wgt | grep -qx signature1.xml
 
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
-          gh release create "$RELEASE_TAG" \
-            FreeMyTV-webos.ipk \
-            --target "$GITHUB_SHA" \
-            --title "Free My TV ${RELEASE_TAG#v} – Samsung logo fix" \
-            --notes "First fork release with Samsung installed-app permission, resilient icon loading, shelf recovery, and localized API error reporting. The LG package is generic and contains no personal configuration or API keys. Upload the locally signed Samsung WGT separately; unsigned WGT files are intentionally never published."
+          title="Free My TV ${RELEASE_TAG#v} – Samsung logo fix"
+          notes="Fork release with Samsung installed-app permission, resilient icon loading, shelf recovery, localized API error reporting, and a signed Tizen package. Both packages are generic and contain no personal configuration or API keys."
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" FreeMyTV-tizen.wgt FreeMyTV-webos.ipk --clobber
+            gh release edit "$RELEASE_TAG" --title "$title" --notes "$notes"
+          else
+            gh release create "$RELEASE_TAG" \
+              FreeMyTV-tizen.wgt \
+              FreeMyTV-webos.ipk \
+              --target "$GITHUB_SHA" \
+              --title "$title" \
+              --notes "$notes"
+          fi
