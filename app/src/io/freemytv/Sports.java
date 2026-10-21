@@ -262,7 +262,7 @@ final class Sports {
             e.logoAway = away.optString("crest");
             String[] info = code.equals("SA") ? leagueInfo(4332, "serie a") : leagueInfo(4480, "champions");
             e.logoComp = info[0].isEmpty() ? comp.optString("emblem") : info[0];
-            e.art = code.equals("CL") && !Config.CHAMPIONS_ART.trim().isEmpty() ? Config.CHAMPIONS_ART.trim() : info[1];
+            e.art = code.equals("CL") ? art(Config.CHAMPIONS_ART, "asset:sports/champions.webp") : info[1];
             e.italian = italian.contains(home.optString("id")) || italian.contains(away.optString("id")) ? 3 : 0;
             out.add(e);
         }
@@ -343,7 +343,7 @@ final class Sports {
                 e.minutes = soccer ? 115 : tennis ? 180 : 75;
                 String[] info = soccer ? europa : moto;
                 e.logoComp = !info[0].isEmpty() ? info[0] : clean(j.optString("strLeagueBadge"));
-                e.art = soccer && !Config.EUROPA_ART.trim().isEmpty() ? Config.EUROPA_ART.trim()
+                e.art = soccer ? art(Config.EUROPA_ART, "asset:sports/europa.jpg")
                         : !info[1].isEmpty() ? info[1] : clean(j.optString("strThumb"));
                 if (soccer || tennis) {
                     e.home = j.optString("strHomeTeam");
@@ -363,6 +363,11 @@ final class Sports {
         String n = names.toLowerCase(Locale.ROOT);
         for (String p : ITALIAN_CLUBS) if (n.contains(p)) return true;
         return false;
+    }
+
+    /** The artwork from config.properties if given, else the picture that comes with the app. */
+    private static String art(String configured, String bundled) {
+        return configured == null || configured.trim().isEmpty() ? bundled : configured.trim();
     }
 
     private static boolean italianPlayer(String names) {
@@ -468,8 +473,26 @@ final class Sports {
         return null;
     }
 
+    /** A picture inside the app (assets), reduced to at most 1280 px wide. */
+    private android.graphics.Bitmap decodeAsset(String path) throws IOException {
+        android.graphics.BitmapFactory.Options bounds = new android.graphics.BitmapFactory.Options();
+        bounds.inJustDecodeBounds = true;
+        try (InputStream in = context.getAssets().open(path)) {
+            android.graphics.BitmapFactory.decodeStream(in, null, bounds);
+        }
+        android.graphics.BitmapFactory.Options opts = new android.graphics.BitmapFactory.Options();
+        opts.inSampleSize = 1;
+        while (bounds.outWidth / (opts.inSampleSize * 2) >= 1280) opts.inSampleSize *= 2;
+        try (InputStream in = context.getAssets().open(path)) {
+            android.graphics.Bitmap b = android.graphics.BitmapFactory.decodeStream(in, null, opts);
+            if (b == null) throw new IOException("unreadable " + path);
+            return b;
+        }
+    }
+
     /** Downloads (SVG crests go through an image proxy that returns a PNG) and decodes, keeping the file for later. */
     private android.graphics.Bitmap loadLogo(String url) throws IOException {
+        if (url.startsWith("asset:")) return decodeAsset(url.substring(6));
         java.io.File dir = new java.io.File(context.getCacheDir(), "sports");
         //noinspection ResultOfMethodCallIgnored
         dir.mkdirs();
