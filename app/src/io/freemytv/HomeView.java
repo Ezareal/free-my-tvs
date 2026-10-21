@@ -103,7 +103,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private static final String[] TAB_KIND = {null, "movie", "tv"};
     private static final String[] APP_TABS = {"Explorar", "Filmes", "Séries", "Continuar assistindo"};
     private static final String[] APP_TABS_RU = {"Обзор", "Фильмы", "Сериалы", "Продолжить просмотр"};
-    private static final String[] APP_TABS_EN = {"Explore", "Movies", "TV Shows", "Continue Watching"};
+    private static final String[] APP_TABS_EN = {"Explore", "Movies", "Shows", "Continue Watching"};
     private static final String[] APP_TABS_ES = {"Explorar", "Películas", "Series", "Seguir viendo"};
     private static final String[] APP_TABS_DE = {"Entdecken", "Filme", "Serien", "Weiterschauen"};
     private static final String[] APP_TAB_KIND = {null, "movie", "tv", "continue"};

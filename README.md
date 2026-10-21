@@ -124,7 +124,7 @@ Changed something? Run `./build.sh` and install again. Keep `freemytv.keystore`:
 
 ### The TMDB key
 
-Android TV defaults to **From your apps**, with no TMDB key needed. Allow TV-listing access when prompted. Only shelf apps that publish Android TV preview or Watch Next entries can contribute; apps without entries show no picks. Cards open the publishing app's content link, and use its logo if artwork is unavailable. Explore, Movies, TV Shows and Continue Watching have their own tabs. Movie and show categories follow the publishing app’s media type; music and general video clips stay in Explore. Choose **Off** for the clock instead.
+Android TV defaults to **From your apps**, with no TMDB key needed. Allow TV-listing access when prompted. Only shelf apps that publish Android TV preview or Watch Next entries can contribute; apps without entries show no picks. Cards open the publishing app's content link, and use its logo if artwork is unavailable. Explore, Movies, Shows and Continue Watching have their own tabs. Movie and show categories follow the publishing app’s media type; music and general video clips stay in Explore. Choose **Off** for the clock instead.
 
 To use **Discover (TMDB)**, add a key below, rebuild, then select it in Home Settings. It keeps the existing Explore, Movies and Shows tabs and three picks per hour, matched to installed streaming services in your country. Existing Android installations also start with From your apps until you select another source; their TMDB configuration is kept. LG and Samsung continue to use TMDB for their picks.
 

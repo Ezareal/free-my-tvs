@@ -136,7 +136,7 @@ public final class RecommendationsTest extends Instrumentation {
         if (Recs.canRead(c)) {
             check(nativeRecs.now().size() == 4, "only shelf apps contribute");
             check(nativeRecs.now("movie").equals(Collections.singletonList(video)), "Movies filter excludes clips and music");
-            check(nativeRecs.now("tv").equals(Collections.singletonList(series)), "TV Shows filter");
+            check(nativeRecs.now("tv").equals(Collections.singletonList(series)), "Shows filter");
             check(nativeRecs.now("continue").equals(Collections.singletonList(music)), "Watch Next filter");
             Prefs.setShelf(Collections.emptyList());
             check(nativeRecs.now().isEmpty() && nativeRecs.showcase().isEmpty(), "shelf removal hides cached picks");
