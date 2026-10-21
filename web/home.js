@@ -72,8 +72,15 @@
     ['paramount', /paramount|cbs/, /paramount/i, ['#0064FF', '#002A86']],
     ['peacock', /peacock/, /peacock/i, ['#1C1C1E', '#000000']],
     ['globoplay', /globoplay/, /globoplay/i, ['#FF8A1F', '#FF2D5A']],
-    ['spotify', /spotify/, /spotify/i, ['#1DB954', '#0F7A36']]
+    ['spotify', /spotify/, /spotify/i, ['#1DB954', '#0F7A36']],
+    ['clouddy', /clouddy/, /clouddy/i, ['#338BE4', '#244C9A']]
   ];
+  // Samsung exposes an absolute path for installed-app icons, but some TV models do not let another Web app read
+  // that path. Keep small packaged brand marks as the final attempt; unknown apps still fall back to their name.
+  var BRAND_ICONS = {
+    netflix: true, youtube: true, prime: true, disney: true, max: true, appletv: true,
+    hulu: true, paramount: true, peacock: true, globoplay: true, spotify: true, clouddy: true
+  };
   var MAX_SHELF = 8;
 
   function shelfKey(app) {
@@ -103,6 +110,7 @@
     var word = el('div', 'word', box, app.title);
     if (wordSize) word.style.fontSize = wordSize + 'px';
     var icons = app.icons && app.icons.length ? app.icons.slice() : app.icon ? [app.icon] : [];
+    if (k && BRAND_ICONS[k[0]]) icons.push('brands/' + k[0] + '.svg');
     if (icons.length) {
       var img = el('img', '', box);
       var at = 0;
