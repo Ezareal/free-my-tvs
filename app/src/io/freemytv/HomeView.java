@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.WeakHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -754,7 +755,11 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
 
     private static boolean samePicks(List<Recs.Pick> a, List<Recs.Pick> b) {
         if (a.size() != b.size()) return false;
-        for (int i = 0; i < a.size(); i++) if (!Recs.key(a.get(i)).equals(Recs.key(b.get(i)))) return false;
+        for (int i = 0; i < a.size(); i++) {
+            Recs.Pick p = a.get(i), q = b.get(i);
+            // Title and meta too: after a language change the same picks come back in the new language.
+            if (!Recs.key(p).equals(Recs.key(q)) || !Objects.equals(p.title, q.title) || !Objects.equals(p.meta, q.meta)) return false;
+        }
         return true;
     }
 
