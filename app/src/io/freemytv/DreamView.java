@@ -22,8 +22,11 @@ import android.view.Choreographer;
 import android.view.View;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,6 +40,8 @@ import java.util.concurrent.Executors;
  *    through the digits, bent at the edges; Shaders.GLASS_TEXT) and the compact prices;
  *  - bottom left, the photo's caption: the time-of-day label ("TONIGHT"), the title, and genre · runtime · service.
  * Dark scrims only where there is text, stronger where the photo is bright. Any key exits (as on Apple TV).
+ * Your own photos, when there are any in the app's photos folder on the TV (Android/data/io.freemytv/files/photos,
+ * copied with adb push), take the place of the recommendations, without a caption.
  * Without photos (no TMDB key, or before the first fetch): the big clock over the night aurora.
  */
 final class DreamView extends View implements Choreographer.FrameCallback, HomeData.Listener, Recs.Listener {
@@ -111,6 +116,7 @@ final class DreamView extends View implements Choreographer.FrameCallback, HomeD
     private final Paint black = new Paint();
     private final Paint shadowPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
     private final Paint glassPaint = new Paint();
+    private List<Recs.Pick> own = new ArrayList<>();     // your own photos (kind "photo", backdrop = the file)
     private final Set<String> failed = new HashSet<>();     // Recs.key: a movie and a series can have the same ID
     private RuntimeShader glassShader;
     private boolean running, dirty = true, chromeDirty = true;
@@ -168,7 +174,8 @@ final class DreamView extends View implements Choreographer.FrameCallback, HomeD
         startedAt = clock();
         lastFrame = 0;
         failed.clear();
-        fallback = recs.showcase().isEmpty();
+        own = ownPhotos(getContext());
+        fallback = showcase().isEmpty();
         data.addListener(this);
         recs.addListener(this);
         data.refreshIfStale();
@@ -258,10 +265,38 @@ final class DreamView extends View implements Choreographer.FrameCallback, HomeD
 
     // MARK: - Photos
 
+    /** Your own photos, sorted by file name (the order you numbered them in). */
+    static List<Recs.Pick> ownPhotos(Context c) {
+        List<Recs.Pick> out = new ArrayList<>();
+        File dir = c.getExternalFilesDir("photos");
+        File[] files = dir == null ? null : dir.listFiles();
+        if (files == null) return out;
+        Arrays.sort(files);
+        for (File f : files) {
+            String name = f.getName().toLowerCase(Locale.ROOT);
+            if (!f.isFile() || !(name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png") || name.endsWith(".webp"))) continue;
+            Recs.Pick p = new Recs.Pick();
+            p.kind = "photo";
+            p.id = out.size();
+            p.title = "";
+            p.backdrop = f.getPath();
+            out.add(p);
+        }
+        return out;
+    }
+
+    private static boolean isOwn(Recs.Pick p) {
+        return "photo".equals(p.kind);
+    }
+
+    private List<Recs.Pick> showcase() {
+        return own.isEmpty() ? recs.showcase() : own;
+    }
+
     /** Loads the next photo in the background (one at a time); once ready, it comes in at the right moment. */
     private void prepareNext() {
         if (!running || decoding || prepared != null) return;
-        List<Recs.Pick> list = recs.showcase();
+        List<Recs.Pick> list = showcase();
         if (list.isEmpty()) return;
         Slide last = incoming != null ? incoming : current;
         int start = 0;
@@ -287,7 +322,8 @@ final class DreamView extends View implements Choreographer.FrameCallback, HomeD
             prepared = newSlide(pick, last.image, last.frost, last.lightCaption, last.lightClock);
             return;
         }
-        File file = recs.readyImage(pick);
+        File found = isOwn(pick) ? new File(pick.backdrop) : recs.readyImage(pick);
+        final File file = found != null && found.isFile() ? found : null;
         if (file == null) {
             failed.add(Recs.key(pick));   // the image is gone from disk: try the next one
             prepareNext();
@@ -301,7 +337,7 @@ final class DreamView extends View implements Choreographer.FrameCallback, HomeD
             float[] light = new float[2];
             try {
                 images = Backdrop.photo(file, PW, PH, light);
-                images[0] = Backdrop.gpu(withScrims(images[0], light[0], light[1]));
+                images[0] = Backdrop.gpu(withScrims(images[0], light[0], light[1], !isOwn(chosen)));
             } catch (Exception | OutOfMemoryError e) {
                 AppLog.w("screensaver: photo for “" + chosen.title + "”: " + e.getMessage());
             }
@@ -457,24 +493,27 @@ final class DreamView extends View implements Choreographer.FrameCallback, HomeD
      * Black scrims where there is text, stronger where the photo is bright, painted once onto the photo itself (in the
      * background): each frame draws only the photo (the TV's GPU feels every full-screen layer). With the slow zoom,
      * they move a little along with the photo, which makes no difference to the text.
+     * withCaption false (your own photos): no caption, so no scrims at the bottom.
      */
-    private static Bitmap withScrims(Bitmap photo, float lightCaption, float lightClock) {
+    private static Bitmap withScrims(Bitmap photo, float lightCaption, float lightClock, boolean withCaption) {
         int w = photo.getWidth(), h = photo.getHeight();
         Canvas c = new Canvas(photo);
         Paint p = new Paint(Paint.DITHER_FLAG);
         float caption = scrimStrength(lightCaption, 0.5f), corner = scrimStrength(lightClock, 0.42f);
-        p.setShader(new LinearGradient(0, h, 0, h * 0.42f,
-                new int[] {black(0.55f * caption), black(0.33f * caption), black(0.11f * caption), 0},
-                new float[] {0, 0.35f, 0.7f, 1}, Shader.TileMode.CLAMP));
-        c.drawRect(0, h * 0.42f, w, h, p);
-        RadialGradient around = new RadialGradient(0, h, w * 0.7f,
-                new int[] {black(caption), black(0.55f * caption), black(0.15f * caption), 0},
-                new float[] {0, 0.4f, 0.72f, 1}, Shader.TileMode.CLAMP);
-        Matrix m = new Matrix();
-        m.setScale(1, 0.62f, 0, h);
-        around.setLocalMatrix(m);
-        p.setShader(around);
-        c.drawRect(0, h - w * 0.7f * 0.62f, w * 0.7f, h, p);
+        if (withCaption) {
+            p.setShader(new LinearGradient(0, h, 0, h * 0.42f,
+                    new int[] {black(0.55f * caption), black(0.33f * caption), black(0.11f * caption), 0},
+                    new float[] {0, 0.35f, 0.7f, 1}, Shader.TileMode.CLAMP));
+            c.drawRect(0, h * 0.42f, w, h, p);
+            RadialGradient around = new RadialGradient(0, h, w * 0.7f,
+                    new int[] {black(caption), black(0.55f * caption), black(0.15f * caption), 0},
+                    new float[] {0, 0.4f, 0.72f, 1}, Shader.TileMode.CLAMP);
+            Matrix m = new Matrix();
+            m.setScale(1, 0.62f, 0, h);
+            around.setLocalMatrix(m);
+            p.setShader(around);
+            c.drawRect(0, h - w * 0.7f * 0.62f, w * 0.7f, h, p);
+        }
         p.setShader(new LinearGradient(0, 0, 0, h * 0.3f, new int[] {black(0.3f), black(0.075f), 0},
                 new float[] {0, 0.45f, 1}, Shader.TileMode.CLAMP));
         c.drawRect(0, 0, w, h * 0.3f, p);
@@ -677,6 +716,7 @@ final class DreamView extends View implements Choreographer.FrameCallback, HomeD
     private void recordCaption(Slide s) {
         Canvas c = s.caption.beginRecording(w, h);
         try {
+            if (isOwn(s.pick)) return;     // your own photos: no caption
             float x = MARGIN * k, metaBase = META_BASE * k, titleBase = metaBase - 58 * k;
             String title = s.pick.title == null ? "" : s.pick.title;
             StaticLayout t = StaticLayout.Builder.obtain(title, 0, title.length(), titlePaint, Math.round(TITLE_W * k))

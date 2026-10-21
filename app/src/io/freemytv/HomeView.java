@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
 import android.graphics.BlurMaskFilter;
 import android.graphics.Canvas;
@@ -39,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.io.File;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -194,6 +196,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private final Spring heroFocus = new Spring(0.28f, 0.85f, 0);
     private final RectF heroButton = new RectF();
     private Backdrop bgFrom, bgTo;     // null = gradient (no photo)
+    private Backdrop own;              // your own background (ownBackground), main thread only
+    private long ownStamp;             // the loaded file's date and size, loader thread only
     private final int[] frostMix = new int[Backdrop.FW * Backdrop.FH];
 
     // Bottom drawer
@@ -408,6 +412,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         handler.postDelayed(tick, 15_000);
         checkNotices();
         reload();
+        loadOwnBackground();
         updatePalette();
         updatePicks();
         if (sheetOpen) closeSheet();
@@ -848,6 +853,13 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
 
     /** No photo: the glass reads the background's own gray (not Scene's default aurora, which isn't on screen). */
     private void neutralGlass() {
+        Backdrop mine = ownBg();
+        if (mine != null) {
+            scene.setFrost(mine.frost);
+            scene.setGlassImage(mine.glass);
+            nightPair = false;
+            return;
+        }
         int color = blend(0xFFEBEBF0, 0xFF141416, night);
         java.util.Arrays.fill(neutralFrostPx, color);
         java.util.Arrays.fill(neutralGlassPx, color);
@@ -919,6 +931,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
 
     /** How dark it is: 0 = day, 1 = night (in between during the transition). */
     private float dark() {
+        if (ownBg() != null) return 1;     // white text over your own photo, by day too
         return night;
     }
 
@@ -2647,6 +2660,13 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
      * same photo almost black (or a dark gradient), drawn on top during the transition.
      */
     private void drawLightSky(Canvas c) {
+        Backdrop mine = ownBg();
+        if (mine != null) {
+            imagePaint.setColorFilter(veil(0.42f * Ui.clamp(drawer.value), 0xFF000000));
+            drawImage(c, mine.image, 1);
+            imagePaint.setColorFilter(null);
+            return;
+        }
         long up = SystemClock.uptimeMillis();
         float e = bgFadeAt == 0 ? 1 : fadeEase(bgFadeAt, up);
         boolean fading = bgFadeAt != 0;
@@ -2674,6 +2694,62 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         if (fading && bgFrom != null) drawLightImage(c, bgFrom, bgTo == null ? 1 - e : 1);
         if (bgTo != null) drawLightImage(c, bgTo, fading ? e : 1);
         imagePaint.setColorFilter(null);
+    }
+
+    // MARK: - Your own background
+
+    /**
+     * Your own photo (the first image in the app's background folder on the TV, Android/data/io.freemytv/files/background,
+     * copied with adb push), shown sharp with the scrims of Backdrop.make. Only without picks: the picks bring their own.
+     */
+    private Backdrop ownBg() {
+        return own != null && !picksOn() ? own : null;
+    }
+
+    /** Reads the photo again only when the file changed (on every resume: a new one shows up when you come back). */
+    private void loadOwnBackground() {
+        final Context app = getContext().getApplicationContext();
+        LOADER.execute(() -> {
+            File f = ownBackgroundFile(app);
+            long stamp = f == null ? 0 : f.lastModified() * 31 + f.length();
+            if (stamp == ownStamp) return;
+            ownStamp = stamp;
+            Backdrop b = null;
+            if (f != null) {
+                try {
+                    BitmapFactory.Options bounds = new BitmapFactory.Options();
+                    bounds.inJustDecodeBounds = true;
+                    BitmapFactory.decodeFile(f.getPath(), bounds);
+                    BitmapFactory.Options opts = new BitmapFactory.Options();
+                    opts.inSampleSize = 1;
+                    while (bounds.outWidth / (opts.inSampleSize * 2) >= Backdrop.W
+                            && bounds.outHeight / (opts.inSampleSize * 2) >= Backdrop.H) opts.inSampleSize *= 2;
+                    Bitmap src = BitmapFactory.decodeFile(f.getPath(), opts);
+                    if (src != null) b = Backdrop.make(src, false);
+                } catch (Exception | OutOfMemoryError e) {
+                    AppLog.w("own background: " + e.getMessage());
+                }
+            }
+            final Backdrop ready = b;
+            handler.post(() -> {
+                own = ready;
+                if (bgTo == null && bgFadeAt == 0) neutralGlass();
+                heroDirty = statusDirty = tilesDirty = drawerDirty = true;
+                invalidateAll();
+            });
+        });
+    }
+
+    private static File ownBackgroundFile(Context c) {
+        File dir = c.getExternalFilesDir("background");
+        File[] files = dir == null ? null : dir.listFiles();
+        if (files == null) return null;
+        java.util.Arrays.sort(files);
+        for (File f : files) {
+            String name = f.getName().toLowerCase(java.util.Locale.ROOT);
+            if (f.isFile() && (name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png") || name.endsWith(".webp"))) return f;
+        }
+        return null;
     }
 
     private void drawLightImage(Canvas c, Backdrop b, float alpha) {
