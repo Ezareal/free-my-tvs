@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free My TV · anteprima</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#1d1d1f; --dim:#6e6e73; --faint:#8e8e93; --glass:rgba(255,255,255,.55); }
+  .night { --ink:#fff; --dim:#8e8e93; --faint:rgba(255,255,255,.7); --glass:rgba(40,40,44,.55); }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; background: #111; overflow: hidden; font-family: Inter, -apple-system, "Segoe UI", system-ui, sans-serif; }
+  #stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; overflow: hidden;
+           background: linear-gradient(#f5f5f7, #e2e2e7); color: var(--ink); transition: background .6s; }
+  #stage.night { background: linear-gradient(#1c1c1e, #0b0b0d); }
+  #bg { position: absolute; inset: 0; opacity: .5; transition: background .8s; filter: blur(80px); }
+  .abs { position: absolute; }
+  #title { left: 80px; top: 62px; font-size: 76px; font-weight: 600; letter-spacing: .004em; line-height: 90px; }
+  #clock { left: 0; width: 1920px; top: 62px; text-align: center; font-size: 64px; font-weight: 600; letter-spacing: .004em; line-height: 90px; pointer-events: none; }
+  .tab { top: 158px; height: 68px; padding: 0 26px; border-radius: 34px; font-size: 30px; font-weight: 500; line-height: 68px;
+         color: var(--dim); cursor: pointer; transition: transform .25s; }
+  .tab.on { color: var(--ink); font-weight: 600; }
+  .btn { top: 69px; width: 68px; height: 68px; border-radius: 34px; background: var(--glass); backdrop-filter: blur(20px);
+         box-shadow: 0 6px 26px rgba(0,0,0,.12), inset 0 0 0 1px rgba(255,255,255,.35); display: grid; place-items: center; font-size: 27px; }
+  .btn svg { width: 30px; height: 30px; fill: none; stroke: var(--ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  #avatar { background: #4285f4; color: #fff; font-weight: 600; font-size: 34px; }
+  #caption { right: 80px; top: 158px; height: 68px; line-height: 68px; font-size: 30px; font-weight: 500; color: var(--dim); }
+  .card { position: absolute; top: 262px; height: 442px; border-radius: 18px; overflow: hidden;
+          box-shadow: 0 24px 50px rgba(0,0,0,.28); transition: left .5s cubic-bezier(.3,.8,.3,1), width .5s cubic-bezier(.3,.8,.3,1), transform .25s, box-shadow .25s; }
+  .card.focus { transform: translateY(-6px) scale(1.04); box-shadow: 0 34px 70px rgba(0,0,0,.4), 0 0 0 3px rgba(255,255,255,.85) inset; }
+  .cap { position: absolute; top: 718px; font-size: 31px; font-weight: 600; white-space: nowrap; transition: left .5s cubic-bezier(.3,.8,.3,1), opacity .3s; }
+  .cap small { display: block; font-size: 25px; font-weight: 500; color: var(--dim); margin-top: 6px; }
+  .poster { position: absolute; inset: 0; transition: opacity .4s; }
+  .logo { position: absolute; color: #fff; font-weight: 600; text-shadow: 0 2px 14px rgba(0,0,0,.55); letter-spacing: .02em; }
+  .rank { position: absolute; left: 20px; top: 6px; font-size: 84px; font-weight: 600; color: #fff; text-shadow: 0 3px 9px rgba(0,0,0,.8); line-height: 1.1; }
+  .scrim { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.6), rgba(0,0,0,0) 55%); }
+  /* sports card */
+  .sport { color: #fff; text-align: center; }
+  .sport .art { position: absolute; inset: 0; background-size: cover; background-position: center; }
+  .sport .tint { position: absolute; inset: 0; }
+  .sport .comp { position: absolute; left: 0; right: 0; top: 30px; font-size: 34px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+  .sport .side { position: absolute; top: 118px; width: 190px; text-align: center; }
+  .sport .crest { width: 190px; height: 190px; border-radius: 50%; display: grid; place-items: center; font-size: 84px; font-weight: 600; box-shadow: 0 8px 26px rgba(0,0,0,.35); }
+  .sport .nm { position: absolute; top: 340px; width: 440px; font-size: 27px; font-weight: 600; }
+  .sport .when { position: absolute; left: 0; right: 0; top: 190px; font-size: 36px; font-weight: 500; }
+  /* shelf */
+  #platter { left: 80px; top: 814px; width: 1760px; height: 168px; border-radius: 44px; background: var(--glass); backdrop-filter: blur(30px);
+             box-shadow: 0 20px 60px rgba(0,0,0,.14), inset 0 0 0 1px rgba(255,255,255,.4); }
+  .tile { position: absolute; top: 21px; width: 224px; height: 126px; border-radius: 22px; display: grid; place-items: center; color: #fff;
+          font-size: 30px; font-weight: 600; box-shadow: 0 10px 26px rgba(0,0,0,.25); }
+  #quote { right: 100px; top: 740px; font-size: 21px; color: var(--faint); }
+  #note { position: fixed; left: 12px; bottom: 10px; color: #bbb; font: 12px/1.4 system-ui, sans-serif; background: rgba(0,0,0,.55); padding: 6px 10px; border-radius: 8px; z-index: 9; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg" class="abs"></div>
+  <div id="title" class="abs">Per te</div>
+  <div id="clock" class="abs">20:12</div>
+  <div id="tabs"></div>
+  <div id="caption" class="abs"></div>
+  <div id="btns"></div>
+  <div id="cards"></div>
+  <div id="platter" class="abs"></div>
+  <div id="quote" class="abs">Caleppio di Settala · 14° · Nuvoloso &nbsp;&nbsp; BTC €96.420 +1,2%</div>
+</div>
+<div id="note">Anteprima approssimativa: poster, stemmi e loghi sono segnaposto; gli sfondi Champions/Europa sono quelli veri dell'app.
+  &nbsp;·&nbsp; ← → muovi &nbsp;·&nbsp; 1 2 3 schede &nbsp;·&nbsp; S cambia evento sport &nbsp;·&nbsp; N giorno/notte</div>
+<script>
+(function () {
+  var stage = document.getElementById('stage');
+  function fit() { var s = Math.min(innerWidth / 1920, innerHeight / 1080); stage.style.transform = 'scale(' + s + ')';
+    stage.style.left = (innerWidth - 1920 * s) / 2 + 'px'; stage.style.top = (innerHeight - 1080 * s) / 2 + 'px'; }
+  addEventListener('resize', fit); fit();
+
+  var TABS = ['Esplora', 'Film', 'Serie TV'];
+  var FILMS = [
+    ['Il Gladiatore II', '#c0392b', '#2c0b0b', 'Azione · 2 h 28 min · Prime Video'],
+    ['Dune: Parte Due', '#d9a441', '#3b2a0c', 'Fantascienza · 2 h 46 min · Netflix'],
+    ['Inside Out 2', '#6c5ce7', '#1b1240', 'Animazione · 1 h 36 min · Disney+'],
+    ['Oppenheimer', '#e67e22', '#1c0d02', 'Dramma · 3 h · Prime Video'],
+    ['Gran Turismo', '#16a085', '#05211c', 'Azione · 2 h 15 min · Netflix'],
+    ['Barbie', '#ff4fa3', '#4a0b2c', 'Commedia · 1 h 54 min · Netflix'],
+    ['Interstellar', '#2d6cdf', '#06142e', 'Fantascienza · 2 h 49 min · Netflix'],
+    ['Joker', '#27ae60', '#07200f', 'Thriller · 2 h 2 min · Prime Video'],
+    ['Avatar', '#00b8d9', '#021f27', 'Fantascienza · 2 h 42 min · Disney+'],
+    ['Top Gun: Maverick', '#95a5a6', '#1b2224', 'Azione · 2 h 11 min · Prime Video']
+  ];
+  var SHOWS = [
+    ['The Boys', '#e74c3c', '#2a0707', 'Serie · Azione · 4 stagioni · Prime Video'],
+    ['Stranger Things', '#d63031', '#1a0505', 'Serie · Fantascienza · 5 stagioni · Netflix'],
+    ['Il Trono di Spade', '#8395a7', '#10161c', 'Serie · Fantasy · 8 stagioni · Prime Video'],
+    ['Breaking Bad', '#27ae60', '#06200d', 'Serie · Drammatico · 5 stagioni · Netflix'],
+    ['Succession', '#5f6c7b', '#0d1117', 'Serie · Dramma · 4 stagioni · Prime Video'],
+    ['The Bear', '#f39c12', '#2a1a02', 'Serie · Commedia · 3 stagioni · Disney+'],
+    ['Squid Game', '#ff2e93', '#2b0418', 'Serie · Thriller · 2 stagioni · Netflix'],
+    ['Black Mirror', '#34495e', '#06090d', 'Serie · Fantascienza · 6 stagioni · Netflix'],
+    ['Shogun', '#b33939', '#1d0707', 'Serie · Storico · 1 stagione · Disney+'],
+    ['Gomorra', '#7f8c8d', '#121516', 'Serie · Crimine · 5 stagioni · Prime Video']
+  ];
+  var EXPLORE = [FILMS[1], FILMS[2]];
+  var SPORTS = [
+    { comp: 'UEFA Champions League', art: '../app/assets/sports/champions.webp', c1: '#1b2a8a', c2: '#0b1250', home: ['Inter', '#0a3d91', '#fff'], away: ['Barcellona', '#a50044', '#ffd23f'], when: 'Oggi 20:45', app: 'DAZN' },
+    { comp: 'UEFA Europa League', art: '../app/assets/sports/europa.jpg', c1: '#e8650a', c2: '#2a0f02', home: ['Roma', '#8e1f2f', '#f5c518'], away: ['Ajax', '#fff', '#c8102e'], when: 'In diretta', app: 'Prime Video' },
+    { comp: 'Serie A', art: '', c1: '#0b5fa5', c2: '#052a4a', home: ['Milan', '#fff', '#c8102e'], away: ['Napoli', '#12a0d7', '#fff'], when: 'Domani 18:00', app: 'DAZN' },
+    { comp: 'Formula 1', art: '', c1: '#e10600', c2: '#2a0201', single: 'Gran Premio d\'Italia · Gara', when: 'Dom 15:00', app: 'Sky' },
+    { comp: 'MotoGP', art: '', c1: '#b5470b', c2: '#2a1203', single: 'Gran Premio d\'Italia · Gara', when: 'Dom 14:00', app: 'Sky' }
+  ];
+  var APPS = [['Netflix', '#e50914'], ['YouTube', '#ff0033'], ['Prime Video', '#1a98ff'], ['Nuvio TV', '#8b5cf6'], ['Mono Player', '#22a7f0'],
+              ['Disney+', '#1838c8'], ['Apple TV', '#8a8d96'], ['Spotify', '#1db954']];
+  var ICONS = ['<path d="M3 6h18v12H3zM8 21h8"/>', '<path d="M4 6h16v12H4zM8 10h2M14 10h2"/>', '<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2 2M16.4 16.4l2 2M18.4 5.6l-2 2M7.6 16.4l-2 2"/>'];
+
+  var tab = 0, idx = 0, sportIdx = 0, night = false;
+  var tabsEl = document.getElementById('tabs'), cardsEl = document.getElementById('cards'),
+      captionEl = document.getElementById('caption'), bgEl = document.getElementById('bg');
+
+  // tabs
+  TABS.forEach(function (t, i) {
+    var d = document.createElement('div'); d.className = 'tab abs'; d.textContent = t; d.onclick = function () { setTab(i); };
+    d.dataset.i = i; tabsEl.appendChild(d);
+  });
+  function layoutTabs() {
+    var x = 54;
+    [].forEach.call(tabsEl.children, function (d) { d.style.left = x + 'px'; x += d.offsetWidth + 4; d.classList.toggle('on', +d.dataset.i === tab); });
+  }
+  // buttons
+  var btns = document.getElementById('btns'), right = 1840;
+  for (var b = 3; b >= 0; b--) {
+    var e = document.createElement('div'); e.className = 'btn abs'; e.style.left = (right - 68) + 'px'; right -= 88;
+    if (b === 3) { e.id = 'avatar'; e.textContent = 'R'; } else e.innerHTML = '<svg viewBox="0 0 24 24">' + ICONS[b] + '</svg>';
+    btns.appendChild(e);
+  }
+  // shelf
+  var platter = document.getElementById('platter');
+  APPS.forEach(function (a, i) {
+    var t = document.createElement('div'); t.className = 'tile'; t.textContent = a[0]; t.style.left = (24 + i * 218) + 'px';
+    t.style.background = 'linear-gradient(145deg,' + a[1] + ',#000 160%)'; t.style.width = '204px'; t.style.fontSize = a[0].length > 9 ? '25px' : '30px';
+    platter.appendChild(t);
+  });
+
+  function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+  function posterCard(f, w, wide, rank) {
+    var el = document.createElement('div');
+    el.innerHTML = '<div class="poster" style="background:linear-gradient(160deg,' + f[1] + ',' + f[2] + ')"></div><div class="scrim"></div>'
+      + (rank ? '<div class="rank">' + rank + '</div>' : '')
+      + '<div class="logo" style="' + (wide ? 'right:40px;bottom:30px;font-size:44px;text-align:right' : 'left:0;right:0;bottom:34px;font-size:36px;text-align:center') + '">' + esc(f[0]) + '</div>';
+    return el;
+  }
+  function sportCard(s) {
+    var el = document.createElement('div'); el.className = 'sport';
+    var h = '<div class="tint" style="background:linear-gradient(135deg,' + s.c2 + ',' + s.c1 + ')"></div>';
+    if (s.art) h = '<div class="art" style="background-image:url(' + s.art + ')"></div><div class="tint" style="background:' + s.c2 + ';opacity:.42"></div>';
+    h += '<div class="comp">' + esc(s.comp) + '</div>';
+    if (s.single) {
+      h += '<div style="position:absolute;left:44px;right:44px;top:170px;font-size:60px;font-weight:600;text-align:left">' + esc(s.single) + '</div>'
+         + '<div style="position:absolute;left:44px;bottom:44px;font-size:36px;font-weight:500">' + esc(s.when) + '</div>';
+    } else {
+      [['home', 190], ['away', 850]].forEach(function (p) {
+        var t = s[p[0]];
+        h += '<div class="side" style="left:' + (p[0] === 'home' ? 170 : 680) + 'px"><div class="crest" style="background:' + t[1] + ';color:' + t[2] + '">' + t[0][0] + '</div></div>'
+           + '<div class="nm" style="left:' + (p[0] === 'home' ? -50 : 460) + 'px;top:340px;width:440px;left:' + (p[0] === 'home' ? 45 : 555) + 'px">' + esc(t[0]) + '</div>';
+      });
+      h += '<div class="when">' + esc(s.when) + '</div>';
+    }
+    el.innerHTML = h; return el;
+  }
+
+  function addCard(el, left, w, focus) {
+    el.classList.add('card'); if (focus) el.classList.add('focus'); el.style.left = left + 'px'; el.style.width = w + 'px'; cardsEl.appendChild(el);
+  }
+  function addCap(t, m, left, show) {
+    var c = document.createElement('div'); c.className = 'cap'; c.style.left = left + 'px'; c.style.opacity = show ? 1 : 0;
+    c.innerHTML = esc(t) + (m ? '<small>' + esc(m) + '</small>' : ''); cardsEl.appendChild(c);
+  }
+
+  var carCards = [];   // kept between renders so widths animate
+  function render() {
+    layoutTabs();
+    var list = tab === 1 ? FILMS : SHOWS;
+    if (tab === 0) {
+      cardsEl.innerHTML = ''; carCards = [];
+      var s = SPORTS[sportIdx];
+      addCard(sportCard(s), 80, 1040, idx === 0);
+      addCap(s.single ? s.single : s.home[0] + ' – ' + s.away[0], s.when + ' · ' + s.app, 80, true);
+      EXPLORE.forEach(function (f, i) { addCard(posterCard(f, 320, false), 1160 + i * 360, 320, idx === i + 1); });
+      captionEl.textContent = '';
+      bgEl.style.background = 'radial-gradient(circle at 30% 30%,' + EXPLORE[0][1] + ',transparent 70%)';
+    } else {
+      captionEl.textContent = 'Top 10 in Italia';
+      var offset = 0, x;
+      for (var j = 0; j < idx; j++) offset += 360;
+      x = 80 - offset;
+      if (!carCards.length || carCards.length !== list.length || carCards.tab !== tab) {
+        cardsEl.innerHTML = ''; carCards = []; carCards.tab = tab;
+        list.forEach(function (f) { var c = { f: f, el: document.createElement('div') }; carCards.push(c); });
+      }
+      var xx = x;
+      carCards.forEach(function (c, i) {
+        var sel = i === idx, w = sel ? 800 : 320;
+        c.el.innerHTML = ''; var inner = posterCard(c.f, w, sel, i + 1); c.el.innerHTML = inner.innerHTML;
+        if (!c.el.parentNode) cardsEl.appendChild(c.el);
+        c.el.className = 'card' + (sel ? ' focus' : ''); c.el.style.left = xx + 'px'; c.el.style.width = w + 'px';
+        xx += w + 40;
+      });
+      [].slice.call(cardsEl.querySelectorAll('.cap')).forEach(function (n) { n.remove(); });
+      var sx = x; for (var k = 0; k < idx; k++) sx += 360;
+      addCap(list[idx][0], list[idx][3], sx, true);
+      bgEl.style.background = 'radial-gradient(circle at 30% 30%,' + list[idx][1] + ',transparent 70%)';
+    }
+  }
+  function setTab(i) { tab = i; idx = 0; carCards = []; cardsEl.innerHTML = ''; render(); }
+  function clock() { var d = new Date(); document.getElementById('clock').textContent = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  clock(); setInterval(clock, 15000);
+
+  addEventListener('keydown', function (e) {
+    var max = tab === 0 ? 2 : 9;
+    if (e.key === 'ArrowRight') idx = Math.min(max, idx + 1);
+    else if (e.key === 'ArrowLeft') idx = Math.max(0, idx - 1);
+    else if (e.key === '1' || e.key === '2' || e.key === '3') return setTab(+e.key - 1);
+    else if (e.key === 's' || e.key === 'S') { sportIdx = (sportIdx + 1) % SPORTS.length; if (tab !== 0) setTab(0); }
+    else if (e.key === 'n' || e.key === 'N') { night = !night; stage.classList.toggle('night', night); document.getElementById('stage').className = night ? 'night' : ''; return; }
+    else return;
+    render();
+  });
+  render();
+})();
+</script>
+</body>
+</html>
