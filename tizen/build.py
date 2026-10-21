@@ -3,6 +3,7 @@
 
     python3 tizen/build.py                 # → FreeMyTV-tizen.wgt, not signed yet
     python3 tizen/build.py --sign PROFILE  # signed with a certificate profile of Samsung's Tizen tools
+    python3 tizen/build.py --sign-default  # signed with the SDK's generic development certificates
     python3 tizen/build.py --preview       # also leaves the files in out/tizen/ to open index.html in a browser
     python3 tizen/build.py --config other.properties
     python3 tizen/build.py --generic       # without config.properties: the TV's time zone picks the city (releases)
@@ -39,6 +40,18 @@ def tizen_cli():
     return shutil.which('tizen')
 
 
+def tizen_core_cli():
+    """Samsung's newer `tz` command, which can sign without an interactive password prompt."""
+    name = 'tz.exe' if os.name == 'nt' else 'tz'
+    home = os.path.expanduser('~')
+    for base in (os.environ.get('TIZEN_STUDIO', ''), os.path.join(home, 'tizen-studio'),
+                 os.path.join(home, 'tizen-sdk'), 'C:\\tizen-studio'):
+        path = os.path.join(base, 'tools', 'tizen-core', name)
+        if base and os.path.exists(path):
+            return path
+    return shutil.which('tz')
+
+
 def sign(profile):
     cli = tizen_cli()
     if not cli:
@@ -60,7 +73,32 @@ def sign(profile):
         sys.exit('The package came back without its signatures.')
 
 
-def build(preview, config, profile):
+def sign_default():
+    """Sign a generic release with the SDK certificates, independent of the user's active profile."""
+    cli = tizen_core_cli()
+    if not cli:
+        sys.exit('Default signing needs Samsung\'s newer `tz` tool. Not found: set TIZEN_STUDIO to where the '
+                 'Tizen SDK is installed.')
+    out = tempfile.mkdtemp()
+    try:
+        profiles = os.path.join(out, 'profiles.xml')
+        with open(profiles, 'w', encoding='utf-8') as f:
+            f.write('<?xml version="1.0" encoding="UTF-8"?>\n<profiles version="2.2">\n</profiles>\n')
+        signed = os.path.join(out, os.path.basename(WGT))
+        run = subprocess.run([cli, 'pack', '-t', 'wgt', '-p', profiles, '-b', WGT, '-o', signed],
+                             capture_output=True, text=True)
+        if run.returncode != 0 or not os.path.exists(signed):
+            sys.exit('`tz pack` didn\'t sign it:\n' + (run.stdout + run.stderr).strip())
+        shutil.move(signed, WGT)
+    finally:
+        shutil.rmtree(out, ignore_errors=True)
+    with zipfile.ZipFile(WGT) as z:
+        names = z.namelist()
+    if 'author-signature.xml' not in names or 'signature1.xml' not in names:
+        sys.exit('The package came back without its signatures.')
+
+
+def build(preview, config, profile, default_sign=False):
     with open(os.path.join(ROOT, 'tizen', 'config.xml'), encoding='utf-8') as f:
         manifest = f.read()
     app_id = re.search(r'<tizen:application id="([^"]+)"', manifest).group(1)
@@ -75,12 +113,16 @@ def build(preview, config, profile):
             z.writestr(path, app[path])
     if profile:
         sign(profile)
+    elif default_sign:
+        sign_default()
 
     if preview:
         webapp.preview(app, OUT)
         print('Preview: open out/tizen/index.html (or serve out/tizen) in a browser.')
-    print('Built %s (%s %s, %d KB, %s)' % (os.path.basename(WGT), app_id, version, os.path.getsize(WGT) // 1024,
-                                           'signed with "%s"' % profile if profile else 'not signed'))
+    signing = ('signed with "%s"' % profile if profile else
+               'signed with SDK development certificates' if default_sign else 'not signed')
+    print('Built %s (%s %s, %d KB, %s)' %
+          (os.path.basename(WGT), app_id, version, os.path.getsize(WGT) // 1024, signing))
     if not config['tmdbKey']:
         print('No TMDB key: the picks stay off (everything else works).')
 
@@ -88,4 +130,7 @@ def build(preview, config, profile):
 if __name__ == '__main__':
     args = sys.argv[1:]
     profile = args[args.index('--sign') + 1] if '--sign' in args else None
-    build('--preview' in args, webapp.config_from_args(args), profile)
+    default_sign = '--sign-default' in args
+    if profile and default_sign:
+        sys.exit('Use either --sign PROFILE or --sign-default, not both.')
+    build('--preview' in args, webapp.config_from_args(args), profile, default_sign)

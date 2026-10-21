@@ -1,0 +1,2 @@
+Fallback brand marks are included only to identify installed applications when a TV blocks access to its own icon files.
+Netflix, YouTube, Prime Video, Disney+, Max, Apple TV, Hulu, Paramount+, Peacock, Globoplay, Spotify and ClouDDy are trademarks of their respective owners. This project is not affiliated with or endorsed by them.
