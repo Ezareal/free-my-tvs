@@ -126,7 +126,7 @@ final class Sports {
         // The competition's own picture is chosen here, not saved with the event, so a new picture applies at once.
         p.art = best.sport == CHAMPIONS ? art(Config.CHAMPIONS_ART, "asset:sports/champions.webp")
                 : best.sport == EUROPA ? art(Config.EUROPA_ART, "asset:sports/europa.jpg")
-                : best.sport == F1 ? "asset:sports/f1.png" : best.sport == MOTO ? motoArt() : best.sport == SERIE_A ? art(Config.SERIEA_ART, SERIEA_BACKGROUND) : best.art;
+                : best.sport == F1 ? "asset:sports/f1.png" : best.sport == MOTO ? motoArt() : best.sport == SERIE_A ? art(Config.SERIEA_ART, "asset:sports/seriea.webp") : best.art;
         p.title = best.title;
         p.accent = ACCENT[best.sport];
         p.flat = best.sport == F1 || best.sport == MOTO;     // Formula 1 and MotoGP: a flat color with their artwork over it
@@ -395,7 +395,6 @@ final class Sports {
         return false;
     }
 
-    private static final String SERIEA_BACKGROUND = "https://images.legaseriea.it/image/private/t_ratio16_9-size60-f_webp-c_fill/prd/assets/backgrounds/fallback-logo.png";
     private static final String MOTOGP_BAR = "https://www.motogp.com/resources/v8.28.8/i/svg-files/elements/slim-bar-background.svg";
 
     /** MotoGP's background: the converted picture in the app if tools/sport_assets.py made it, else the SVG online. */

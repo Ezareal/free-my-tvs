@@ -2477,16 +2477,9 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             String title = TextUtils.ellipsize(p.face != 0 ? p.title.toUpperCase(Ui.locale()) : p.title, tp, width, TextUtils.TruncateAt.END).toString();
             c.drawText(title, area.left + pad, area.centerY() + Ui.halfCap(face) + 20 * k, face);
             c.drawText(when, area.left + pad, area.bottom - pad, lSportWhen);
-            // Bottom right: where they race, the circuit's place and its country's flag.
+            // Bottom right: the flag of the country where they race, in a circle.
             Bitmap flag = sports.bitmap(p.flag, null);
-            float right = area.right - pad;
-            if (flag != null) {
-                drawLogo(c, flag, right - 42 * k, area.bottom - pad - 18 * k, 84 * k, 56 * k, false);
-                right -= 84 * k + 20 * k;
-            }
-            if (!p.place.isEmpty()) {
-                c.drawText(p.place, right - lSportWhen.measureText(p.place), area.bottom - pad, lSportWhen);
-            }
+            if (flag != null) drawFlagCircle(c, flag, area.right - pad - 32 * k, area.bottom - pad - 14 * k, 64 * k);
             return;
         }
         float size = 190 * k;
@@ -2499,6 +2492,24 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         float maxName = area.width() * 0.42f, nameBase = area.bottom - pad * 0.7f;
         c.drawText(TextUtils.ellipsize(p.home, np, maxName, TextUtils.TruncateAt.END).toString(), leftX, nameBase, lSportName);
         c.drawText(TextUtils.ellipsize(p.away, np, maxName, TextUtils.TruncateAt.END).toString(), rightX, nameBase, lSportName);
+    }
+
+    /** A flag in a circle (its middle, as a square), with a thin light ring. */
+    private void drawFlagCircle(Canvas c, Bitmap flag, float cx, float cy, float d) {
+        float r = d / 2;
+        int side = Math.min(flag.getWidth(), flag.getHeight());
+        fitSrc.set((flag.getWidth() - side) / 2, (flag.getHeight() - side) / 2, (flag.getWidth() + side) / 2, (flag.getHeight() + side) / 2);
+        tmp.set(cx - r, cy - r, cx + r, cy + r);
+        clip.reset();
+        clip.addCircle(cx, cy, r, Path.Direction.CW);
+        c.save();
+        c.clipPath(clip);
+        c.drawBitmap(flag, fitSrc, tmp, bitmapPaint);
+        c.restore();
+        ballStroke.setStyle(Paint.Style.STROKE);
+        ballStroke.setStrokeWidth(2.5f * k);
+        ballStroke.setColor(0xB3FFFFFF);
+        c.drawCircle(cx, cy, r, ballStroke);
     }
 
     /** One side's logo as it is; while it loads (or has none) its first letter in a faint disc. */

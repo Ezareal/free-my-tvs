@@ -11,7 +11,7 @@
     src: url('fonts/Formula1-Black.woff2') format('woff2'), url('https://www.formula1.com/s/fonts/formula1/Formula1-Black.woff2') format('woff2'); }
   @font-face { font-family: MGP; font-display: swap;
     src: url('fonts/MGPDisplay-Bold.woff2') format('woff2'), url('https://www.motogp.com/resources/v8.28.8/fonts/MGPDisplay-Bold.woff2') format('woff2'); }
-  .flag { position: absolute; bottom: 44px; height: 56px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+  .flag { position: absolute; bottom: 44px; width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2.5px solid rgba(255,255,255,.7); box-shadow: 0 2px 8px rgba(0,0,0,.4); }
   .place { position: absolute; bottom: 44px; font-size: 36px; font-weight: 500; line-height: 56px; }
   #agenda { position: absolute; inset: 0; background: linear-gradient(#16161C, #07070A); display: none; z-index: 30; color: #fff; overflow: hidden; }
   #agenda h2 { position: absolute; left: 80px; top: 62px; font-size: 70px; font-weight: 600; line-height: 90px; }
@@ -168,13 +168,13 @@
     sports: [
       { sport: 1, comp: 'UEFA Champions League', start: Date.now() + 3600e3, minutes: 115, home: 'Inter', away: 'Barcellona', logoComp: '', logoHome: '', logoAway: '', art: '../app/assets/sports/champions.webp', c1: '#1b2a8a', c2: '#0b1250', italian: 3 },
       { sport: 2, comp: 'UEFA Europa League', start: Date.now() - 600e3, minutes: 115, home: 'Roma', away: 'Ajax', logoComp: '', logoHome: '', logoAway: '', art: '../app/assets/sports/europa.jpg', c1: '#e8650a', c2: '#2a0f02', italian: 3 },
-      { sport: 0, comp: 'Serie A', start: Date.now() + 20 * 3600e3, minutes: 115, home: 'Milan', away: 'Napoli', logoComp: '', logoHome: '', logoAway: '', art: 'https://images.legaseriea.it/image/private/t_ratio16_9-size60-f_webp-c_fill/prd/assets/backgrounds/fallback-logo.png', c1: '#0b5fa5', c2: '#052a4a', italian: 3 },
+      { sport: 0, comp: 'Serie A', start: Date.now() + 20 * 3600e3, minutes: 115, home: 'Milan', away: 'Napoli', logoComp: '', logoHome: '', logoAway: '', art: '../app/assets/sports/seriea.webp', c1: '#0b5fa5', c2: '#052a4a', italian: 3 },
       { sport: 3, comp: 'Formula 1', start: Date.now() + 26 * 3600e3, minutes: 120, title: "Gran Premio d'Italia · Gara", logoComp: '', art: '../app/assets/sports/f1.png', country: 'it', place: 'Monza', c1: '#14141C', c2: '#14141C', italian: 3 },
       { sport: 4, comp: 'MotoGP', start: Date.now() + 27 * 3600e3, minutes: 75, title: "Gran Premio d'Italia · Gara", logoComp: '', art: '', country: 'it', place: 'Mugello', c1: '#0E0E12', c2: '#0E0E12', italian: 3 }
     ]
   };
   data.sports.forEach(function (e) { e.sample = true; });
-  var SERIEA = 'https://images.legaseriea.it/image/private/t_ratio16_9-size60-f_webp-c_fill/prd/assets/backgrounds/fallback-logo.png';
+  var SERIEA = '../app/assets/sports/seriea.webp';
   var ACCENT = [['#28519F', '#38A8BC'], ['#1b2a8a', '#0b1250'], ['#e8650a', '#2a0f02'], ['#14141C', '#14141C'], ['#0E0E12', '#0E0E12'], ['#2e8b57', '#0b2a1a'], ['#37003C', '#12001a'], ['#EE8707', '#3a2000'], ['#D3010C', '#2a0003'], ['#091C3E', '#030a18']];
 
   // ---------- state & chrome ----------
@@ -417,8 +417,7 @@
       if (e.sport === 3) { s.style.cssText = "position:absolute;left:44px;right:44px;top:176px;font:400 50px/1.15 F1, 'Inter', sans-serif;text-align:left;text-transform:uppercase"; }
       var w = el('div', '', c); w.style.cssText = 'position:absolute;left:44px;bottom:44px;font-size:36px;font-weight:500'; w.textContent = when(e);
       var rt = 44;
-      if (e.country) { var fl = el('img', 'flag', c); fl.src = 'https://flagcdn.com/w160/' + e.country + '.png'; fl.style.right = rt + 'px'; fl.onerror = function () { var em = el('div', 'place', c); em.textContent = e.country.toUpperCase().replace(/./g, function (ch) { return String.fromCodePoint(127397 + ch.charCodeAt(0)); }); em.style.right = '44px'; em.style.fontSize = '48px'; fl.remove(); }; rt += 104; }
-      if (e.place) { var pl = el('div', 'place', c); pl.textContent = e.place; pl.style.right = rt + 'px'; }
+      if (e.country) { var fl = el('img', 'flag', c); fl.src = 'https://flagcdn.com/w160/' + e.country + '.png'; fl.style.right = rt + 'px'; fl.onerror = function () { var em = el('div', 'place', c); em.textContent = e.country.toUpperCase().replace(/./g, function (ch) { return String.fromCodePoint(127397 + ch.charCodeAt(0)); }); em.style.right = '44px'; em.style.fontSize = '48px'; fl.remove(); }; }
     }
     return c;
   }
