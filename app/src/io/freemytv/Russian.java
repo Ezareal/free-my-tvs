@@ -94,6 +94,8 @@ final class Russian {
             case "Automatic": return "Автоматически";
             case "Light": return "Светлая";
             case "Dark": return "Тёмная";
+            case "TMDB key required": return "Нужен ключ TMDB";
+            case "For You picks": return "Подборка «Для вас»";
             case "Weather widget": return "Виджет погоды";
             // What TalkBack reads on the drawer's weather card (#47)
             case ". High ": return ". Максимум ";

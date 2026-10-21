@@ -87,6 +87,8 @@ final class Spanish {
             case "Automatic": return "Automático";
             case "Light": return "Claro";
             case "Dark": return "Oscuro";
+            case "TMDB key required": return "Requiere clave TMDB";
+            case "For You picks": return "Sugerencias Para ti";
             case "Weather widget": return "Widget del clima";
             // What TalkBack reads on the drawer's weather card (#47)
             case ". High ": return ". Máxima ";

@@ -97,6 +97,10 @@ final class Prefs {
     static boolean weather() { return sp().getBoolean("weather", true); }
     static void setWeather(boolean on) { put("weather", on); }
 
+    /** For You picks at the top of the home screen; off shows the date, clock and weather (the key stays). */
+    static boolean picks() { return sp().getBoolean("picks", true); }
+    static void setPicks(boolean on) { put("picks", on); }
+
     static boolean quotes() { return sp().getBoolean("quotes", Config.SHOW_CRYPTO); }
     static void setQuotes(boolean on) { put("quotes", on); }
 
