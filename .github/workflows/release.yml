@@ -19,9 +19,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Build generic Samsung and LG packages
+      # Samsung packages must be signed locally with `python3 tizen/build.py
+      # --generic --sign-default` before they are attached to a release. GitHub
+      # runners have no Tizen SDK, so publishing their unsigned WGT causes TV
+      # installation error 118.
+      - name: Build generic LG package
         run: |
-          python3 tizen/build.py --generic
           python3 webos/build.py --generic
 
       - name: Publish release
@@ -30,8 +33,7 @@ jobs:
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
           gh release create "$RELEASE_TAG" \
-            FreeMyTV-tizen.wgt \
             FreeMyTV-webos.ipk \
             --target "$GITHUB_SHA" \
             --title "Free My TV ${RELEASE_TAG#v} – Samsung logo fix" \
-            --notes "First fork release with Samsung installed-app permission, resilient icon loading, shelf recovery, and localized API error reporting. The packages are generic and contain no personal configuration or API keys."
+            --notes "First fork release with Samsung installed-app permission, resilient icon loading, shelf recovery, and localized API error reporting. The LG package is generic and contains no personal configuration or API keys. Upload the locally signed Samsung WGT separately; unsigned WGT files are intentionally never published."
