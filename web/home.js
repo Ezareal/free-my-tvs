@@ -331,7 +331,7 @@
     drawerItems.push({label: tr('Ajustes da TV', 'TV Settings', 'Ajustes del TV'), symbol: 'tv_settings', run: tvSettings});
     var n = drawerItems.length, gap = 18, groupGap = 56, groups = drawerInputs > 0 && drawerInputs < n ? 2 : 1;
     var tw = Math.min(230, (1760 - Math.max(0, n - groups) * gap - (groups - 1) * groupGap) / Math.max(1, n));
-    var xPos = 80;
+    var xPos = 80, large = Prefs.textSize() === 'large';
     for (var k = 0; k < n; k++) {
       if (k === drawerInputs && k > 0) {
         xPos += groupGap - gap;
@@ -342,7 +342,9 @@
       key.style.left = xPos + 'px';
       key.style.width = tw + 'px';
       sym(item.symbol, key);
-      el('div', 'label', key, item.label);
+      var label = el('div', 'label', key, item.label);
+      // Text size: Large: a name that no longer fits shrinks back a little before it gets cut, as on Android.
+      if (large && label.scrollWidth > label.clientWidth) label.style.fontSize = Math.max(20, 26 * label.clientWidth / label.scrollWidth) + 'px';
       hover(key, Z.DRAWER, k);
       xPos += tw + gap;
     }
@@ -399,6 +401,11 @@
     var sun = el('div', 'sun', card);
     if (w.sunrise) { var a = el('span', '', sun); sym('sunrise', a); a.appendChild(document.createTextNode(tr('Nascer ', 'Sunrise ', 'Amanecer ') + Data.time(w.sunrise))); }
     if (w.sunset) { var b = el('span', '', sun); sym('sunset', b); b.appendChild(document.createTextNode(tr('Pôr do sol ', 'Sunset ', 'Atardecer ') + Data.time(w.sunset))); }
+    // Too long for the card with their names (German, or Text size: Large): the symbols and the times only, as on Android.
+    if (sun.scrollWidth > width + 36) {
+      if (a) a.lastChild.nodeValue = Data.time(w.sunrise);
+      if (b) b.lastChild.nodeValue = Data.time(w.sunset);
+    }
   }
 
   function renderPrices(card, coins) {
@@ -476,6 +483,10 @@
         step: function (d) { cycle('temperature', ['auto', 'C', 'F'], unit, d); renderPanels(); }},
       {label: tr('Tema', 'Theme', 'Tema'), value: theme === 'light' ? tr('Claro', 'Light', 'Claro') : theme === 'dark' ? tr('Escuro', 'Dark', 'Oscuro') : auto,
         step: function (d) { cycle('theme', ['auto', 'light', 'dark'], theme, d); checkNight(); }},
+      {label: tr('Visual', 'Look', 'Apariencia'), value: Prefs.look() === 'sharp' ? tr('Nítido', 'Sharp', 'Nítido') : tr('Vidro', 'Glass', 'Cristal'),
+        step: function () { Prefs.set('look', Prefs.look() === 'sharp' ? 'glass' : 'sharp'); applyLook(); }},
+      {label: tr('Tamanho do texto', 'Text size', 'Tamaño del texto'), value: Prefs.textSize() === 'large' ? tr('Grande', 'Large', 'Grande') : tr('Normal', 'Normal', 'Normal'),
+        step: function () { Prefs.set('textSize', Prefs.textSize() === 'large' ? 'normal' : 'large'); applyLook(); renderDrawer(); }},
       {label: tr('Widget do clima', 'Weather widget', 'Widget del clima'), toggle: Prefs.weather(),
         step: function () { Prefs.set('weather', !Prefs.weather()); renderPanels(); }},
       {label: tr('Widget de cotações', 'Quotes widget', 'Widget de cotizaciones'), toggle: Prefs.quotes(),
@@ -745,6 +756,12 @@
 
   // MARK: - Night, clock, screensaver
 
+  /** Look and Text size (Home Settings): classes on the body; home.css has the rest. */
+  function applyLook() {
+    setClass(body, 'sharp', Prefs.look() === 'sharp');
+    setClass(body, 'large', Prefs.textSize() === 'large');
+  }
+
   function checkNight() {
     setClass(body, 'night', Data.isNight(Date.now()));
   }
@@ -879,6 +896,7 @@
   });
 
   I18N.set(Prefs.language());
+  applyLook();
   fit();
   renderTop();
   loadApps(function () {

@@ -524,3 +524,57 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 
 /* The Magic Remote's pointer: no text selection, no outlines. */
 * { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+
+/* MARK: - Look: Sharp (Home Settings), the body's "sharp" class: flat panels with a 1 px hairline in place of the
+   glass, tighter shadows and more contrast in the text, as on Android. Night rules come after day ones, and focus
+   after both. */
+.sharp #platter, .sharp .glass, .sharp .round { background: rgba(242, 242, 245, 0.92); box-shadow: 0 9px 12px rgba(0, 0, 0, 0.12), inset 0 0 0 1px rgba(0, 0, 0, 0.12); }
+.sharp .glass, .sharp .round { box-shadow: 0 5px 12px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.12); }
+.sharp.night #platter, .sharp.night .glass, .sharp.night .round { background: rgba(28, 28, 30, 0.92); box-shadow: 0 9px 12px rgba(0, 0, 0, 0.32), inset 0 0 0 1px rgba(255, 255, 255, 0.18); }
+.sharp .key.focus, .sharp.night .key.focus { background: #F5F5F7; box-shadow: 0 8px 14px rgba(0, 0, 0, 0.42); }
+.sharp .round.focus, .sharp.night .round.focus { background: #FFF; box-shadow: 0 7px 14px rgba(0, 0, 0, 0.24); }
+.sharp .tile { box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14); }
+.sharp.night .tile { box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); }
+.sharp .tile.focus { box-shadow: 0 9px 14px rgba(0, 0, 0, 0.34); }
+.sharp.night .tile.focus { box-shadow: 0 9px 14px rgba(0, 0, 0, 0.6); }
+.sharp .tile::after { display: none; }
+.sharp .tab.focus { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22); }
+.sharp.night .tab.focus { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); }
+.sharp .card .img { box-shadow: 0 5px 14px rgba(0, 0, 0, 0.14); }
+.sharp.night .card .img { box-shadow: 0 5px 14px rgba(0, 0, 0, 0.32); }
+.sharp .card.focus .img, .sharp.night .card.focus .img { box-shadow: 0 12px 16px rgba(0, 0, 0, 0.34); }
+.sharp .card .img::after { background: none; box-shadow: inset 0 0 0 2px #FFF; }
+.sharp #toast { background: rgba(28, 28, 30, 0.95); box-shadow: 0 8px 16px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.18); }
+.sharp #title, .sharp .tab.on, .sharp .card .name, .sharp .panel, .sharp .key, .sharp .round, .sharp #clock { color: #111; }
+.sharp .tab, .sharp .card .meta, .sharp .row-title, .sharp .panel .head, .sharp #weather .range, .sharp #weather .hour .t,
+.sharp #weather .sun, .sharp #clock .date { color: #505055; }
+.sharp #quotes, .sharp .panel .side, .sharp .key.off { color: #6E6E73; }
+.sharp.night #title, .sharp.night .tab.on, .sharp.night .card .name, .sharp.night .panel, .sharp.night .key, .sharp.night .round,
+.sharp.night #clock { color: #FFF; }
+.sharp.night .tab, .sharp.night #quotes, .sharp.night .card .meta, .sharp.night .row-title, .sharp.night .panel .head,
+.sharp.night #weather .range, .sharp.night #weather .hour .t, .sharp.night #weather .sun, .sharp.night #clock .date { color: rgba(255, 255, 255, 0.78); }
+.sharp.night .panel .side, .sharp.night .key.off { color: rgba(255, 255, 255, 0.6); }
+.sharp .tab.focus, .sharp.night .tab.focus, .sharp .key.focus, .sharp.night .key.focus, .sharp .round.focus,
+.sharp.night .round.focus { color: #111; }
+.sharp.night .round.focus .tip { color: #FFF; }
+
+/* MARK: - Text size: Large (Home Settings), the body's "large" class: the smaller text 13% bigger and one weight
+   heavier; the title, the clock, the temperatures and the cards' main lines stay. */
+.large .tab { font-size: 34px; font-weight: 600; }
+.large .tab.on { font-weight: 700; }
+.large #quotes { font-size: 24px; font-weight: 500; }
+.large .round .tip { font-size: 26px; font-weight: 700; }
+.large .card .name { font-size: 35px; font-weight: 700; }
+.large .card .meta { top: 510px; font-size: 28px; font-weight: 600; }
+.large .row-title { font-size: 28px; font-weight: 700; }
+.large .key .label { font-size: 26px; font-weight: 600; }
+.large .panel .head { font-size: 28px; font-weight: 700; }
+.large .panel .side { font-size: 24px; font-weight: 600; }
+.large #weather .range, .large #weather .sun { font-size: 26px; font-weight: 600; }
+.large #weather .hour .t { font-size: 25px; font-weight: 600; }
+.large #weather .hour .d { font-size: 29px; font-weight: 600; }
+.large #prices .coin .p { font-size: 29px; font-weight: 600; }
+.large #prices .coin .c { font-size: 24px; font-weight: 700; }
+.large .cell .label { font-size: 27px; font-weight: 600; }
+.large #toast { font-size: 29px; font-weight: 600; }
+.large .box .hint { font-size: 25px; font-weight: 600; }
