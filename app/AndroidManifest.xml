@@ -27,6 +27,7 @@
         <package android:name="com.globo.globotv" />
         <package android:name="com.spotify.tv.android" />
         <package android:name="com.nuvio.tv" />
+        <package android:name="com.dazn" />
         <package android:name="com.monoplayer.app" />
         <package android:name="com.tcl.tv" />
         <package android:name="com.google.android.tv" />

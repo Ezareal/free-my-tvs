@@ -45,6 +45,8 @@ final class Recs {
         String kind;            // "movie" or "tv"
         String title, backdrop, cover = "", poster = "", logo = "", meta = "", app, pkg;   // backdrop: wide card; poster: tall cards (TMDB)
         boolean detailed;
+        int accent;             // sport cards: the competition's color
+        String label = "";      // sport cards: the competition's name
         boolean posterClean, coverClean;   // textless images (BetterPoster style): the title's logo goes on top
         boolean top;            // in the country's Top 10 (Movies and Shows tabs): cover and poster, whatever app plays it
         boolean taste;          // picked from the TMDB profile (Explore)
@@ -405,6 +407,11 @@ final class Recs {
     /** Movies and shows are numbered separately on TMDB: a pick is identified by type + number. */
     static String key(Pick p) {
         return p.kind + ":" + p.id;
+    }
+
+    /** Something outside Recs (the sports card) changed what Explore shows. */
+    void changed() {
+        notifyListeners();
     }
 
     private void notifyListeners() {

@@ -147,7 +147,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private final Rect fitSrc = new Rect();
     private static final String[] RANKS = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"};
     private final List<HomeApps.Item> lightButtons = new ArrayList<>();
-    private Paint lRank, lCaption, lAvatar, lClock, lTitle, lTab, lTabOn, lCardTitle, lCardMeta, lQuote, lTip;
+    private Paint lSportLabel, lSportTitle, lSportWhen, lRank, lCaption, lAvatar, lClock, lTitle, lTab, lTabOn, lCardTitle, lCardMeta, lQuote, lTip;
     private Shader lightGradient;
 
     // Shelf
@@ -302,6 +302,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             if (!running) return;
             data.refreshIfStale();
             recs.refreshIfStale();
+            Sports.get(getContext()).refreshIfStale();
             checkNotices();
             updatePalette();
             checkNight(true);
@@ -371,6 +372,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         recs.addListener(this);
         data.refreshIfStale();
         recs.refreshIfStale();
+        Sports.get(getContext()).refreshIfStale();
         if (tvInputs != null) tvInputs.registerCallback(inputCallback, handler);
         handler.postDelayed(tick, 15_000);
         checkNotices();
@@ -542,6 +544,10 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         lCardTitle.setLetterSpacing(0.012f);
         lCardMeta = Ui.text(Ui.medium, 25 * k, L_DIM);
         lQuote = Ui.numbers(Ui.regular, 21 * k, L_FAINT);
+        lSportLabel = Ui.text(Ui.semibold, 27 * k, 0xCCFFFFFF);
+        lSportLabel.setLetterSpacing(0.12f);
+        lSportTitle = Ui.text(Ui.displaySemibold, 76 * k, 0xFFFFFFFF);
+        lSportWhen = Ui.text(Ui.displayMedium, 44 * k, 0xE6FFFFFF);
         lCaption = Ui.text(Ui.medium, 30 * k, L_DIM);
         lCaption.setTextAlign(Paint.Align.RIGHT);
         lRank = Ui.text(Ui.displaySemibold, 84 * k, 0xFFFFFFFF);
@@ -2242,7 +2248,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     /** The three cards of the current tab (Explore, Movies, Shows) and the background taken from the first one. */
     private void updateCards() {
         // Movies and Shows: the country's Top 10 (a carousel); Explore: this hour's 3 picks.
-        List<Recs.Pick> list = tab == 0 ? recs.now(null) : recs.top(TAB_KIND[tab]);
+        List<Recs.Pick> list = tab == 0 ? explore() : recs.top(TAB_KIND[tab]);
         if (tab == 0) layoutExploreCards();
         if (!samePicks(list, cards)) {
             cards = list;
@@ -2256,10 +2262,28 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         for (Recs.Pick p : recs.wantedAll()) recs.backdrop(p);   // all three tabs preloaded: switching tabs is instant
         topCaption = tab == 0 ? "" : Ui.tr("Top 10 em ", "Top 10 in ")
                 + new java.util.Locale("", Config.TMDB_REGION.trim().toUpperCase(java.util.Locale.ROOT)).getDisplayCountry(Ui.locale());
-        Backdrop b = cards.isEmpty() ? null : recs.backdrop(cards.get(tab == 0 ? 0 : Math.min(cardIndex, cards.size() - 1)));
-        if (cards.isEmpty() || b != null) showBackdrop(b);
+        Recs.Pick backgroundPick = null;     // the sports card has no photo: the background comes from the next card
+        for (int i = tab == 0 ? 0 : Math.min(cardIndex, cards.size() - 1); i < cards.size() && backgroundPick == null; i++) {
+            if (!cards.get(i).kind.equals("sport")) backgroundPick = cards.get(i);
+        }
+        Backdrop b = backgroundPick == null ? null : recs.backdrop(backgroundPick);
+        if (cards.isEmpty() || backgroundPick == null || b != null) showBackdrop(b);
         heroDirty = true;
         spoken.focusMoved();    // new picks under the focused card
+    }
+
+    /**
+     * Explore: this hour's films and shows; when a match or race is on or about to start, it takes the large card and
+     * the other two cards keep the first two titles.
+     */
+    private List<Recs.Pick> explore() {
+        List<Recs.Pick> films = recs.now(null);
+        Recs.Pick sport = Sports.get(getContext()).pick();
+        if (sport == null) return films;
+        List<Recs.Pick> out = new ArrayList<>();
+        out.add(sport);
+        for (int i = 0; i < films.size() && out.size() < 3; i++) out.add(films.get(i));
+        return out;
     }
 
     private void selectTab(int index) {
@@ -2374,7 +2398,9 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         c.restore();
         Backdrop b = p == null ? null : recs.backdrop(p);
         Bitmap img = b == null ? null : (i == 0 ? b.wide : b.tall);
-        if (img != null) {
+        if (p != null && p.kind.equals("sport")) {
+            drawSportCard(c, p, cell, r);
+        } else if (img != null) {
             roundImage(c, img, cell, r);
         } else {
             fill.setShader(null);
@@ -2398,6 +2424,23 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             TextPaint mp = new TextPaint(lCardMeta);
             c.drawText(TextUtils.ellipsize(p.meta, mp, bw, TextUtils.TruncateAt.END).toString(), base.left, base.bottom + 80 * k, lCardMeta);
         }
+    }
+
+    /** A match or race: the competition's color, its name, the teams or the session, and when. */
+    private void drawSportCard(Canvas c, Recs.Pick p, RectF area, float r) {
+        fill.setShader(new LinearGradient(area.left, area.top, area.right, area.bottom,
+                blend(p.accent, 0xFF000000, 0.45f), p.accent, Shader.TileMode.CLAMP));
+        c.drawRoundRect(area, r, r, fill);
+        fill.setShader(null);
+        float pad = 44 * k, width = area.width() - 2 * pad;
+        String label = p.label.toUpperCase(Ui.locale());
+        c.drawText(label, area.left + pad, area.top + pad + Ui.cap(lSportLabel), lSportLabel);
+        TextPaint tp = new TextPaint(lSportTitle);
+        String title = TextUtils.ellipsize(p.title, tp, width, TextUtils.TruncateAt.END).toString();
+        c.drawText(title, area.left + pad, area.centerY() + Ui.halfCap(lSportTitle), lSportTitle);
+        int slash = p.meta.indexOf(" · ");
+        String when = slash < 0 ? p.meta : p.meta.substring(0, slash);
+        c.drawText(when, area.left + pad, area.bottom - pad, lSportWhen);
     }
 
     /** The Top 10: posters, with the selected title opened up into its horizontal cover. */
