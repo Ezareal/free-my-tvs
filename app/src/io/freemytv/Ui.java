@@ -147,7 +147,20 @@ final class Ui {
     }
 
     static Locale locale() {
-        return ru ? RU : es ? spanish() : de ? german() : en ? Locale.US : PT;
+        return ru ? RU : es ? spanish() : de ? german() : en ? english() : PT;
+    }
+
+    /** The TV's own English (en-GB, en-AU…) when it is in English, the US's otherwise. */
+    private static Locale english() {
+        Locale tv = Locale.getDefault();
+        return "en".equals(tv.getLanguage()) ? tv : Locale.US;
+    }
+
+    /** English as in the US: a 12-hour clock and "October 21". Other English (en-GB…) has 24 hours and "21 October". */
+    static boolean usClock() {
+        if (!en) return false;
+        String country = english().getCountry();
+        return country.isEmpty() || "US".equals(country);
     }
 
     /** The TV's own Spanish (es-MX, es-AR…) when it is in Spanish, Spain's otherwise. */
@@ -162,16 +175,16 @@ final class Ui {
         return "de".equals(tv.getLanguage()) ? tv : Locale.GERMANY;
     }
 
-    /** "21:47" (in English, "9:47", like the iPhone in the US). */
+    /** "21:47" (in US English, "9:47", like the iPhone in the US). */
     static String clock(long now) {
-        return en ? new SimpleDateFormat("h:mm", Locale.US).format(new Date(now))
+        return usClock() ? new SimpleDateFormat("h:mm", Locale.US).format(new Date(now))
                 : new SimpleDateFormat("HH:mm", locale()).format(new Date(now));
     }
 
-    /** "5:21" (sunrise and sunset; in English, "5:21 AM"). */
+    /** "5:21" (sunrise and sunset; in US English, "5:21 AM"; in other English, "05:21"). */
     static String time(long at) {
-        return once("time", at, () -> en ? new SimpleDateFormat("h:mm a", Locale.US).format(new Date(at))
-                : new SimpleDateFormat("H:mm", locale()).format(new Date(at)));
+        return once("time", at, () -> usClock() ? new SimpleDateFormat("h:mm a", Locale.US).format(new Date(at))
+                : new SimpleDateFormat(en ? "HH:mm" : "H:mm", locale()).format(new Date(at)));
     }
 
     private static final HashMap<String, String> FORMATTED = new HashMap<>();
@@ -193,10 +206,14 @@ final class Ui {
         }
     }
 
-    /** "domingo, 18 de outubro" (lowercase, like the iPhone in Portuguese); "Sunday, October 18" in English; "Sonntag, 18. Oktober". */
+    /**
+     * "domingo, 18 de outubro" (lowercase, like the iPhone in Portuguese); "Sunday, October 18" in US English,
+     * "Sunday 18 October" in other English; "Sonntag, 18. Oktober".
+     */
     static String date(long now) {
         return ru ? new SimpleDateFormat("EEEE, d MMMM", locale()).format(new Date(now))
-                : en ? new SimpleDateFormat("EEEE, MMMM d", Locale.US).format(new Date(now))
+                : usClock() ? new SimpleDateFormat("EEEE, MMMM d", Locale.US).format(new Date(now))
+                : en ? new SimpleDateFormat("EEEE d MMMM", locale()).format(new Date(now))
                 : new SimpleDateFormat(de ? "EEEE, d. MMMM" : "EEEE, d 'de' MMMM", locale()).format(new Date(now));
     }
 

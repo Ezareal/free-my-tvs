@@ -25,7 +25,10 @@ public class HomeActivity extends Activity {
             // Don't try to draw again: only show a notice while the main process restores the original home screen.
             HomeMode.requestRevertHome(this);
             TextView t = new TextView(this);
-            t.setText(Ui.tr("O Início do Free My TV teve um problema.\nVoltando para o Início original da TV…",
+            // Fire TV: nothing to give back (HomeMode.AMAZON), Amazon's home screen is one press away.
+            t.setText(HomeMode.AMAZON ? Ui.tr("O Início do Free My TV teve um problema.\nAperte Início para voltar ao Início da Amazon.",
+                    "Free My TV's home screen ran into a problem.\nPress Home for Amazon's home screen.")
+                    : Ui.tr("O Início do Free My TV teve um problema.\nVoltando para o Início original da TV…",
                     "Free My TV's home screen ran into a problem.\nGoing back to the TV's original home screen…"));
             t.setTextColor(Color.WHITE);
             t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);

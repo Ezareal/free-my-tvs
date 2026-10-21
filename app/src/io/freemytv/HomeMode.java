@@ -40,6 +40,12 @@ final class HomeMode {
     static final String DREAM = PKG + "/" + PKG + (Build.VERSION.SDK_INT == 30 ? ".ScreensaverAlone" : ".Screensaver");
     static final String FREE = "free", ORIGINAL = "original";
 
+    /**
+     * Fire TV (Fire OS): Amazon's launcher keeps the Home button, and Amazon's apps run the TV itself (live TV, inputs,
+     * settings). There the switch changes nothing: no home activity, no screensaver, no app turned off, no ADB.
+     */
+    static final boolean AMAZON = "Amazon".equalsIgnoreCase(Build.MANUFACTURER) || "Amazon".equalsIgnoreCase(Build.BRAND);
+
     /** Classic Android TV's home screen; its recommendations service crashes on the screensaver while it's off (#11). */
     static final String TV_LAUNCHER = "com.google.android.tvlauncher";
     static final String TV_RECOMMENDATIONS = "com.google.android.tvrecommendations";
@@ -106,7 +112,22 @@ final class HomeMode {
         "mitv.service", "com.mi.bluetooth", "com.mitv.livetv.ci_mediatek", "com.xiaomi.tvqs.overseas",
         "com.mitv.tvlock", "com.xiaomi.mitv.updateservice", "com.xiaomi.android.tvsetup.partnercustomizer",
         "com.mitv.overseaservice", "com.xiaomi.mitv.tvmanager", "com.xiaomi.wfdsinkhelperservice",
-        "com.mitv.milinkservice", "com.xiaomi.mitv.smartshare", "android.autoinstalls.config.xiaomi.amelie"));
+        "com.mitv.milinkservice", "com.xiaomi.mitv.smartshare", "android.autoinstalls.config.xiaomi.amelie",
+        // Fire TV Edition (JVC/Vestel, MediaTek): launcher, settings, live TV and channel scan, inputs and HDMI-CEC
+        // (every com.amazon.* is protected anyway, see mayTurnOff)
+        "com.amazon.tv.launcher", "com.amazon.firehomestarter", "com.amazon.tv.settings.v2", "com.amazon.tv.settings.core",
+        "com.amazon.tv.settings.mediatek", "com.amazon.tv.settingsprovider.configuration", "com.amazon.tv.quicksettings",
+        "com.amazon.tv.quicksettings.ui", "com.amazon.tv.livetv", "com.amazon.mediatek.livetv", "com.amazon.tv.channelscan",
+        "com.amazon.tv.conditionalaccess", "com.amazon.franktvinput", "com.amazon.fireinputdevices",
+        "com.amazon.tv.inputpreference.service", "com.amazon.tv.devicecontrol", "com.amazon.tv.routing",
+        "com.amazon.tv.ime", "com.amazon.tv.keypolicymanager", "com.amazon.tv.oobe", "com.amazon.ftv.screensaver",
+        "com.mediatek.tv.agent", "com.mediatek.tvinputservice.arbitratorservice", "com.vewd.core.tis",
+        "com.vestel.tv.backlight"));
+
+    /** Whether a package may ever be turned off: not protected, and never one of Amazon's. */
+    private static boolean mayTurnOff(String pkg) {
+        return !PROTECTED.contains(pkg) && !pkg.startsWith("com.amazon.");
+    }
 
     /** One switch at a time (jobs can overlap: a boot check and a button press). */
     private static final Object RUN = new Object();
@@ -116,6 +137,16 @@ final class HomeMode {
 
     /** Asks the main process to switch (the settings screen calls this). */
     static void request(Context c, String mode) {
+        if (AMAZON) {
+            done(c, Ui.tr("Na Fire TV o botão Início é da tela inicial da Amazon, então esta troca não muda nada aqui. "
+                    + "Abra o Free My TV em Seus apps, ou aponte o botão Início para ele com um app que remapeia botões.",
+                    "On Fire TV the Home button belongs to Amazon's home screen, so this switch changes nothing here. "
+                    + "Open Free My TV from Your Apps, or point the Home button at it with a button remapper app.",
+                    "En Fire TV el botón de inicio pertenece a la pantalla de inicio de Amazon, así que este cambio no hace "
+                    + "nada aquí. Abre Free My TV desde Tus apps, o haz que el botón de inicio lo abra con una app que "
+                    + "reasigna botones."));
+            return;
+        }
         ModeJob.schedule(c, ModeJob.APPLY, mode, 0);
     }
 
@@ -189,6 +220,7 @@ final class HomeMode {
     // MARK: - Switches (main process, from ModeJob)
 
     static void applyNow(Context c, String mode) {
+        if (AMAZON) return;
         synchronized (RUN) {
             if (FREE.equals(mode)) applyFree(c); else applyOriginal(c);
         }
@@ -246,7 +278,7 @@ final class HomeMode {
             for (String pkg : targets) {
                 done++;
                 busy(c, Ui.tr("Desligando apps (", "Turning off apps (") + done + "/" + targets.size() + ")…");
-                if (PROTECTED.contains(pkg) || !present.contains(pkg) || owners.contains(pkg)) continue;
+                if (!mayTurnOff(pkg) || !present.contains(pkg) || owners.contains(pkg)) continue;
                 String out = adb.shell("pm disable-user --user 0 " + pkg);
                 if (out.contains("disabled-user")) {
                     disabled.add(pkg);
@@ -344,6 +376,7 @@ final class HomeMode {
 
     /** Safety net: our home screen crashed 3 times in a row. The home screen and the screensaver go back; the rest stays. */
     static void revertHomeNow(Context app) {
+        if (AMAZON) return;
         synchronized (RUN) {
             JSONObject s = state(app);
             try (Adb adb = Adb.connect(app, 10_000, null)) {
@@ -380,6 +413,7 @@ final class HomeMode {
      * things back on) and after an update of this app.
      */
     static void verifyNow(Context app) {
+        if (AMAZON) return;
         synchronized (RUN) {
             JSONObject s = state(app);
             String fingerprint = Build.FINGERPRINT;
@@ -406,7 +440,7 @@ final class HomeMode {
                 }
                 Set<String> disabled = new HashSet<>(stringList(s, "disabled"));
                 for (String pkg : sorted(wanted)) {
-                    if (PROTECTED.contains(pkg) || !present.contains(pkg) || owners.contains(pkg)) continue;
+                    if (!mayTurnOff(pkg) || !present.contains(pkg) || owners.contains(pkg)) continue;
                     if (disabledNow.contains(pkg)) {
                         disabled.add(pkg);
                         continue;

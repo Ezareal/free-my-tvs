@@ -44,6 +44,7 @@ public class ModeJob extends JobService {
 
     /** Schedules a job (one pending per action: a new request replaces the old one). */
     static void schedule(Context c, String action, String mode, long delayMs) {
+        if (HomeMode.AMAZON) return;   // Fire TV: nothing to switch, check or measure (HomeMode.AMAZON)
         JobScheduler scheduler = c.getSystemService(JobScheduler.class);
         if (scheduler == null) return;
         PersistableBundle extras = new PersistableBundle();

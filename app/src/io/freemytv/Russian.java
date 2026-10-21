@@ -156,6 +156,7 @@ final class Russian {
             case "Talk": return "Ток-шоу";
             case "": return "";
             case "Free My TV's home screen ran into a problem.\nGoing back to the TV's original home screen…": return "Ошибка главного экрана Free My TV.\nВозвращаемся к заводскому главному экрану…";
+            case "Free My TV's home screen ran into a problem.\nPress Home for Amazon's home screen.": return "Ошибка главного экрана Free My TV.\nНажмите «Домой», чтобы открыть главный экран Amazon.";
             case "debugging is off on the TV (port 5555 closed)": return "отладка на телевизоре выключена (порт 5555 закрыт)";
             case "debugging permission wasn't accepted on the TV": return "на телевизоре не разрешена отладка";
             case "the TV's ADB didn't respond": return "ADB телевизора не ответил";
@@ -171,6 +172,11 @@ final class Russian {
                 return "Сети Wi-Fi сохранены приложением первоначальной настройки телевизора. Его отключение удалит эти сети. "
                         + "В разделе «Настройки → Сеть и Интернет» забудьте сеть и подключитесь заново, затем повторите попытку. "
                         + "Недоступные сети там не отображаются: Claude Code может удалить их с компьютера.";
+            case "On Fire TV the Home button belongs to Amazon's home screen, so this switch changes nothing here. "
+                    + "Open Free My TV from Your Apps, or point the Home button at it with a button remapper app.":
+                return "На Fire TV кнопка «Домой» принадлежит главному экрану Amazon, поэтому здесь этот переключатель ничего не меняет. "
+                        + "Откройте Free My TV из раздела «Ваши приложения» или назначьте на него кнопку «Домой» с помощью приложения "
+                        + "для переназначения кнопок.";
             default:
                 // Notices are saved in the language in use when they were generated.
                 String[] prefixes = {"Couldn't check Free My TV: ", "Couldn't turn on Free My TV: ",
