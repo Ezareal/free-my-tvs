@@ -116,8 +116,25 @@ final class Prefs {
     static boolean weather() { return sp().getBoolean("weather", true); }
     static void setWeather(boolean on) { put("weather", on); }
 
-    static boolean quotes() { return sp().getBoolean("quotes", Config.SHOW_CRYPTO); }
-    static void setQuotes(boolean on) { put("quotes", on); }
+    /**
+     * What the quotes space (top right of the home screen and the card in the drawer) shows: an id from
+     * HomeData.SPACES ("off", "crypto", "ipl", "aqi"...). Older versions stored an on/off flag and an IPL flag.
+     */
+    static String space() {
+        String v = sp().getString("space", null);
+        if (v != null) return v;
+        if (!sp().getBoolean("quotes", Config.SHOW_CRYPTO)) return "off";
+        return sp().getBoolean("ipl", false) ? "ipl" : "crypto";
+    }
+
+    /** The big heading at the top left of the home screen: what the person wrote, or "For You". */
+    static String homeTitle() { return sp().getString("homeTitle", "").trim(); }
+    static void setHomeTitle(String text) { put("homeTitle", text.trim()); }
+
+    static void setSpace(String id) { put("space", id); }
+
+    static boolean quotes() { return !space().equals("off"); }
+    static boolean ipl() { return space().equals("ipl"); }
 
     static boolean coin(int i) { return sp().getBoolean("coin" + i, true); }
     static void setCoin(int i, boolean on) { put("coin" + i, on); }

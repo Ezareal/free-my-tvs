@@ -6,6 +6,10 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Uninstall (the system asks you to confirm) from an app's menu. -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+    <!-- Voice search in Browse: only while you press the mic. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- After the TV boots (and after a TV update), checks that Free My TV mode is still as you left it. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
@@ -31,6 +35,9 @@
         <package android:name="com.mediatek.wwtv.tvcenter" />
         <package android:name="com.sony.dtv.tvx" />
         <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+        <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
         </intent>
@@ -54,6 +61,15 @@
         android:banner="@drawable/banner"
         android:allowBackup="false"
         android:usesCleartextTraffic="false">
+
+        <!-- Browse: every title on the TV's streaming apps by genre (the home screen's tabs open it). -->
+        <activity
+            android:name=".BrowseActivity"
+            android:process=":home"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection"
+            android:theme="@style/FreeMyTV.Home" />
 
         <!-- The app's icon opens the settings (switch between Free My TV and the original home screen). -->
         <activity

@@ -75,13 +75,14 @@ final class Glyphs {
         return Bitmap.createBitmap(b, left, 0, right - left + 1, h);
     }
 
-    private static final int[] IDS = {R.drawable.coin_btc, R.drawable.coin_eth, R.drawable.coin_sol, R.drawable.coin_usdt};
+    private static final int[] IDS = {R.drawable.coin_btc, R.drawable.coin_eth, R.drawable.coin_sol, R.drawable.coin_usdt, R.drawable.coin_usdc};
 
     private static int slot(String coin) {
         switch (coin) {
             case "BTC": return 0;
             case "ETH": return 1;
             case "SOL": return 2;
+            case "USDC": return 4;
             default: return 3;
         }
     }

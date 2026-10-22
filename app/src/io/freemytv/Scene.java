@@ -37,6 +37,18 @@ final class Scene {
     private Bitmap frostImage, glassA, glassB;
     private BitmapShader glassShaderA;
     private final boolean withGlass;
+    /** On TVs without AGSL: true = frosted glass drawn with plain Canvas calls; false = the original flat look. */
+    static final boolean SOFT_GLASS = false;
+    private float mixB;
+    // Glass without AGSL: the blurred photo seen through the shape, a tint, a top highlight and a bright rim.
+    private final Paint softImage = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+    private final Paint softTint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint softSpec = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint softRim = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final android.graphics.Matrix softMatrix = new android.graphics.Matrix();
+    private LinearGradient specUnit, rimUnit;
+    private BitmapShader softA, softB;
+    private Bitmap softABitmap, softBBitmap;
 
     Scene() {
         this(true);
@@ -128,6 +140,7 @@ final class Scene {
         imageGlass = true;
         glassA = fill(glassA, from);
         if (to != null) glassB = fill(glassB, to);
+        mixB = 0;
         if (liquid == null) return;
         glassShaderA = linear(glassA);
         liquid.setInputShader("imageA", glassShaderA);
@@ -137,6 +150,7 @@ final class Scene {
     }
 
     void setGlassMix(float t) {
+        mixB = Math.max(0, Math.min(1, t));
         if (liquid != null) liquid.setFloatUniform("mixB", Math.max(0, Math.min(1, t)));
     }
 
@@ -167,7 +181,8 @@ final class Scene {
                 float specular, float alpha) {
         if (alpha <= 0.004f) return;
         if (liquid == null) {
-            glass(c, r, radius, tint, Math.max(0.5f, tintAlpha), 0, 0, lift, 1, alpha);
+            if (SOFT_GLASS) softGlass(c, r, radius, tint, tintAlpha, specular, 1, alpha);
+            else glass(c, r, radius, tint, Math.max(0.5f, tintAlpha), 0, 0, lift, 1, alpha);
             return;
         }
         liquid.setFloatUniform("center", r.centerX(), r.centerY());
@@ -181,6 +196,67 @@ final class Scene {
         liquidPaint.setAlpha(Math.round(255 * Math.min(1, alpha)));
         c.drawRect(r.left - 1, r.top - 1, r.right + 1, r.bottom + 1, liquidPaint);
         liquidPaint.setAlpha(255);
+    }
+
+    /**
+     * Frosted glass for TVs that can't run the AGSL shaders. body = 0 draws only the light rim (on something already
+     * drawn); specular = how bright the top highlight and rim are.
+     */
+    private void softGlass(Canvas c, RectF r, float radius, int tint, float tintAlpha, float specular, float body, float alpha) {
+        float rad = Math.min(radius, Math.min(r.width(), r.height()) / 2);
+        if (specUnit == null) {
+            specUnit = new LinearGradient(0, 0, 0, 1, new int[] {0xFFFFFFFF, 0x66FFFFFF, 0x00FFFFFF}, new float[] {0, 0.28f, 0.62f}, Shader.TileMode.CLAMP);
+            rimUnit = new LinearGradient(0, 0, 0, 1, new int[] {0xFFFFFFFF, 0x66FFFFFF, 0x33FFFFFF, 0x99FFFFFF}, new float[] {0, 0.3f, 0.7f, 1}, Shader.TileMode.CLAMP);
+        }
+        float a = Math.min(1, alpha);
+        if (body > 0) {
+            Bitmap img = imageGlass ? glassA : imageFrost ? frostImage : null;
+            if (img != null) {
+                if (softA == null || softABitmap != img) {
+                    softA = new BitmapShader(img, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+                    softABitmap = img;
+                }
+                softMatrix.setScale((float) w / img.getWidth(), (float) h / img.getHeight());
+                softA.setLocalMatrix(softMatrix);
+                softImage.setShader(softA);
+                softImage.setAlpha(Math.round(255 * a));
+                c.drawRoundRect(r, rad, rad, softImage);
+                if (imageGlass && mixB > 0.01f && glassB != null) {
+                    if (softB == null || softBBitmap != glassB) {
+                        softB = new BitmapShader(glassB, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+                        softBBitmap = glassB;
+                    }
+                    softB.setLocalMatrix(softMatrix);
+                    softImage.setShader(softB);
+                    softImage.setAlpha(Math.round(255 * a * mixB));
+                    c.drawRoundRect(r, rad, rad, softImage);
+                }
+                softImage.setShader(null);
+            }
+            // The wash of color on top (a lot more when there is no photo to show through).
+            softTint.setColor(Ui.alpha(tint | 0xFF000000, (img != null ? Math.min(0.85f, tintAlpha * 0.8f) : Math.max(0.5f, tintAlpha)) * a));
+            c.drawRoundRect(r, rad, rad, softTint);
+            // The light catching the top of the glass.
+            softMatrix.setScale(1, r.height());
+            softMatrix.postTranslate(0, r.top);
+            specUnit.setLocalMatrix(softMatrix);
+            softSpec.setShader(specUnit);
+            softSpec.setAlpha(Math.round(255 * 0.30f * Math.min(1, specular + 0.15f) * a));
+            c.drawRoundRect(r, rad, rad, softSpec);
+            softSpec.setShader(null);
+        }
+        // The rim: bright at the top, a glint at the bottom.
+        float stroke = Math.max(1.5f, Math.min(r.width(), r.height()) * 0.025f);
+        softRim.setStyle(Paint.Style.STROKE);
+        softRim.setStrokeWidth(stroke);
+        softMatrix.setScale(1, r.height());
+        softMatrix.postTranslate(0, r.top);
+        rimUnit.setLocalMatrix(softMatrix);
+        softRim.setShader(rimUnit);
+        softRim.setAlpha(Math.round(255 * Math.min(1, 0.35f + 0.6f * specular) * a * (body > 0 ? 0.8f : 1)));
+        float half = stroke / 2;
+        c.drawRoundRect(r.left + half, r.top + half, r.right - half, r.bottom - half, Math.max(0, rad - half), Math.max(0, rad - half), softRim);
+        softRim.setShader(null);
     }
 
     /** The glass now reads the blurred background image (Backdrop.FW × FH, ARGB). */
@@ -253,6 +329,10 @@ final class Scene {
     void glass(Canvas c, RectF r, float radius, int tint, float tintAlpha, int glow, float glowAlpha, float lift, float body, float alpha) {
         if (alpha <= 0.004f) return;
         if (glass == null) {
+            if (SOFT_GLASS) {
+                softGlass(c, r, radius, tint, tintAlpha, 0.6f, body, alpha);
+                return;
+            }
             if (body > 0) {
                 flatFill.setColor(Ui.alpha(tint | 0xFF000000, Math.max(0.35f, tintAlpha)));
                 c.drawRoundRect(r, radius, radius, flatFill);
