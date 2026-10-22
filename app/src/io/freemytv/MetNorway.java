@@ -4,6 +4,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -20,6 +21,23 @@ final class MetNorway {
     private MetNorway() {}
 
     static final String USER_AGENT = "FreeMyTV github.com/simbasjungles/free-my-tv";
+
+    /** Open-Meteo didn't answer and MET Norway didn't either: HomeData waits for the next forecast before asking again. */
+    static final class Failed extends IOException {
+        Failed(Exception cause) {
+            super("MET Norway: " + cause.getMessage(), cause);
+        }
+    }
+
+    /**
+     * The city's time zone, for "today" (the high and low, the sunrise): the TV's own when the city's longitude fits it,
+     * which is nearly always, else the sun's (GMT+9 for Tokyo). Open-Meteo would have told us, but it isn't answering.
+     */
+    static TimeZone zone(double lon, TimeZone tv, long now) {
+        int sun = (int) Math.round(lon / 15);
+        if (Math.abs(Math.round(tv.getOffset(now) / 3_600_000f) - sun) <= 2) return tv;
+        return TimeZone.getTimeZone(String.format(Locale.US, "GMT%+03d:00", sun));
+    }
 
     static String url(String latitude, String longitude) {
         return "https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=" + fourDecimals(latitude)

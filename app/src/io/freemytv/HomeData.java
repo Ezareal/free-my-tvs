@@ -196,7 +196,7 @@ final class HomeData {
                 }
             });
         }
-        if (!fetchingWeather && (now - weatherAt > WEATHER_EVERY || now < weatherAt) && !failedRecently(weatherFailedAt, now)) {
+        if (!fetchingWeather && (now - weatherAt > WEATHER_EVERY || now < weatherAt) && !failedRecently(weatherFailedAt, now, weatherWait)) {
             fetchingWeather = true;
             io.execute(() -> {
                 try {
@@ -207,6 +207,8 @@ final class HomeData {
                     notifyListeners();
                 } catch (Exception e) {
                     weatherFailedAt = System.currentTimeMillis();
+                    // MET asks clients to back off when it fails too: try again with the next forecast, not in 2 minutes.
+                    weatherWait = e instanceof MetNorway.Failed ? WEATHER_EVERY : FAILED_WAIT;
                     AppLog.w("weather: " + e.getMessage());
                 } finally {
                     fetchingWeather = false;
@@ -215,21 +217,39 @@ final class HomeData {
         }
     }
 
-    /** Open-Meteo's forecast, or with weather_backup=true and Open-Meteo out of reach, MET Norway's in its shape. */
+    /**
+     * Open-Meteo's forecast, or with weather_backup=true and no usable answer from Open-Meteo (no connection, an error,
+     * or a page that isn't its JSON, like a proxy's or a captive portal's), MET Norway's in its shape.
+     */
     private static String getWeather() throws Exception {
         try {
-            return get(weatherUrl());
-        } catch (IOException e) {
+            String body = get(weatherUrl());
+            parseWeather(body);
+            return body;
+        } catch (Exception e) {
             if (!Config.WEATHER_BACKUP) throw e;
             AppLog.w("weather: Open-Meteo " + e.getMessage() + ", asking MET Norway");
-            String lat = Prefs.latitude(), lon = Prefs.longitude();
-            return MetNorway.asOpenMeteo(get(MetNorway.url(lat, lon), MetNorway.USER_AGENT), Double.parseDouble(lat),
-                    Double.parseDouble(lon), TimeZone.getDefault(), System.currentTimeMillis());
+            try {
+                String lat = Prefs.latitude(), lon = Prefs.longitude();
+                long now = System.currentTimeMillis();
+                double longitude = Double.parseDouble(lon);
+                return MetNorway.asOpenMeteo(get(MetNorway.url(lat, lon), MetNorway.USER_AGENT), Double.parseDouble(lat),
+                        longitude, MetNorway.zone(longitude, TimeZone.getDefault(), now), now);
+            } catch (Exception met) {
+                throw new MetNorway.Failed(met);
+            }
         }
     }
 
+    private static final long FAILED_WAIT = 2 * 60_000L;
+    private volatile long weatherWait = FAILED_WAIT;
+
     private static boolean failedRecently(long at, long now) {
-        return at != 0 && now >= at && now - at < 2 * 60_000L;
+        return failedRecently(at, now, FAILED_WAIT);
+    }
+
+    private static boolean failedRecently(long at, long now, long wait) {
+        return at != 0 && now >= at && now - at < wait;
     }
 
     private void notifyListeners() {

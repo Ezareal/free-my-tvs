@@ -116,7 +116,7 @@ The first values come from `config.properties`, created by the first build (Goog
 | `show_crypto` | Show Binance crypto prices on home and screensaver | `true` |
 | `currency` | Crypto prices in `USD`, `EUR`, `BRL`… | `USD` |
 | `temperature` | `C`, `F` or `auto` | `auto` |
-| `weather_backup` | When Open-Meteo doesn't answer (some internet providers block it), get the weather from [MET Norway](https://api.met.no/) instead. Google TV only | `false` |
+| `weather_backup` | When Open-Meteo doesn't answer (some internet providers block it), get the weather from [MET Norway](https://api.met.no/) instead. The city search in Home Settings still needs Open-Meteo, so where it's blocked, set `latitude` and `longitude` here. Google TV only | `false` |
 | `disable_assistant` | Also turn off Google Assistant | `false` |
 | `hide_services` | Streaming services to leave out of the picks even when their app is on the TV (`netflix`, `prime`, `disney`…), comma separated; for apps the TV ships that you don't subscribe to. Google TV only | empty |
 
