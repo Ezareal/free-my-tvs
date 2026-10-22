@@ -7,7 +7,7 @@ del launcher son de sus autores originales; esta rama lo porta a Android 7.1 y a
 
 [English](#english) · [Español](#español)
 
-![Dock](docs/fireos6/dock.jpg)
+![Home](docs/fireos6/home.jpg)
 
 ---
 
@@ -122,9 +122,10 @@ del launcher son de sus autores originales; esta rama lo porta a Android 7.1 y a
 ## Screenshots · Capturas
 | | |
 |---|---|
-| ![Scrolled dock](docs/fireos6/dock-scrolled.jpg) | ![Day with photo](docs/fireos6/day-photo.jpg) |
-| ![Drawer](docs/fireos6/youtube-drawer.jpg) | ![More apps](docs/fireos6/more-apps.jpg) |
-| ![Aerial button](docs/fireos6/aerial-button.jpg) | |
+| ![Home](docs/fireos6/home.jpg) | ![Dock scrolled](docs/fireos6/dock-scrolled.jpg) |
+| ![Pinned last app](docs/fireos6/pacman-last.jpg) | ![More apps](docs/fireos6/more-apps.jpg) |
+| ![Drawer](docs/fireos6/youtube-drawer.jpg) | ![Drawer focus](docs/fireos6/youtube-drawer-focus.jpg) |
+| ![Aerial button](docs/fireos6/aerial-button.jpg) | ![Dock](docs/fireos6/dock.jpg) |
 
 Real captures from the Fire TV Stick 4K (1st gen) · Capturas reales del Fire TV Stick 4K (1.ª gen.).
 
