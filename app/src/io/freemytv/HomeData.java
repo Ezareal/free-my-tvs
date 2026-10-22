@@ -28,8 +28,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Optional crypto prices (Binance, every 5 min) and weather/sunrise/sunset (Open-Meteo, every 30 min), cached
- * so the screen opens with numbers. Only fetched while the home screen or the screensaver is visible (the screen asks).
+ * Optional crypto prices (Binance, every 5 min) and weather/sunrise/sunset (Open-Meteo, every 30 min; MET Norway when
+ * Open-Meteo doesn't answer, with weather_backup=true), cached so the screen opens with numbers. Only fetched while the home screen or the screensaver is visible (the screen asks).
  * Neither source needs a key. Location and currency come from config.properties.
  */
 final class HomeData {
@@ -196,17 +196,19 @@ final class HomeData {
                 }
             });
         }
-        if (!fetchingWeather && (now - weatherAt > WEATHER_EVERY || now < weatherAt) && !failedRecently(weatherFailedAt, now)) {
+        if (!fetchingWeather && (now - weatherAt > WEATHER_EVERY || now < weatherAt) && !failedRecently(weatherFailedAt, now, weatherWait)) {
             fetchingWeather = true;
             io.execute(() -> {
                 try {
-                    String body = get(weatherUrl());
+                    String body = getWeather();
                     weather = parseWeather(body);
                     weatherAt = System.currentTimeMillis();
                     cache.edit().putString("weather", body).putLong("weatherAt", weatherAt).putString("weatherPlace", weatherPlace()).apply();
                     notifyListeners();
                 } catch (Exception e) {
                     weatherFailedAt = System.currentTimeMillis();
+                    // MET asks clients to back off when it fails too: try again with the next forecast, not in 2 minutes.
+                    weatherWait = e instanceof MetNorway.Failed ? WEATHER_EVERY : FAILED_WAIT;
                     AppLog.w("weather: " + e.getMessage());
                 } finally {
                     fetchingWeather = false;
@@ -215,8 +217,39 @@ final class HomeData {
         }
     }
 
+    /**
+     * Open-Meteo's forecast, or with weather_backup=true and no usable answer from Open-Meteo (no connection, an error,
+     * or a page that isn't its JSON, like a proxy's or a captive portal's), MET Norway's in its shape.
+     */
+    private static String getWeather() throws Exception {
+        try {
+            String body = get(weatherUrl());
+            parseWeather(body);
+            return body;
+        } catch (Exception e) {
+            if (!Config.WEATHER_BACKUP) throw e;
+            AppLog.w("weather: Open-Meteo " + e.getMessage() + ", asking MET Norway");
+            try {
+                String lat = Prefs.latitude(), lon = Prefs.longitude();
+                long now = System.currentTimeMillis();
+                double longitude = Double.parseDouble(lon);
+                return MetNorway.asOpenMeteo(get(MetNorway.url(lat, lon), MetNorway.USER_AGENT), Double.parseDouble(lat),
+                        longitude, MetNorway.zone(longitude, TimeZone.getDefault(), now), now);
+            } catch (Exception met) {
+                throw new MetNorway.Failed(met);
+            }
+        }
+    }
+
+    private static final long FAILED_WAIT = 2 * 60_000L;
+    private volatile long weatherWait = FAILED_WAIT;
+
     private static boolean failedRecently(long at, long now) {
-        return at != 0 && now >= at && now - at < 2 * 60_000L;
+        return failedRecently(at, now, FAILED_WAIT);
+    }
+
+    private static boolean failedRecently(long at, long now, long wait) {
+        return at != 0 && now >= at && now - at < wait;
     }
 
     private void notifyListeners() {
@@ -303,10 +336,14 @@ final class HomeData {
     }
 
     private static String get(String url) throws IOException {
+        return get(url, "FreeMyTV");
+    }
+
+    private static String get(String url, String userAgent) throws IOException {
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
         c.setConnectTimeout(6000);
         c.setReadTimeout(6000);
-        c.setRequestProperty("User-Agent", "FreeMyTV");
+        c.setRequestProperty("User-Agent", userAgent);
         try {
             if (c.getResponseCode() != 200) throw new IOException("HTTP " + c.getResponseCode());
             try (InputStream in = c.getInputStream()) {
