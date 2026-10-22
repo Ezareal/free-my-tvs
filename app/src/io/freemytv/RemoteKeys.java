@@ -17,8 +17,9 @@ import android.view.KeyEvent;
  * On KTC TVs (NextStar) only the Tabii button is ours, a global key too: the TV's hot-key receiver opens Tabii with it.
  * On Sony TVs, the app buttons (and the Google Play button of older remotes) are global keys for Sony's own receiver;
  * the filter sees them first, the same way.
- * On Xiaomi TVs only the YouTube button is ours: BUTTON_3, a global key for the stock home screen (launcherx), which
- * Free My TV turns off. Netflix goes to Xiaomi's own key receiver, which stays on.
+ * On Xiaomi TVs the YouTube button is ours: BUTTON_3, a global key for the stock home screen (launcherx), which
+ * Free My TV turns off. So is the PatchWall button (BUTTON_5, which Xiaomi's key receiver would open PatchWall with);
+ * Netflix goes to that receiver, which stays on.
  */
 final class RemoteKeys {
     private RemoteKeys() {}

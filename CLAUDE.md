@@ -204,8 +204,10 @@ HDMI (Chromecast with Google TV, Google TV Streamer, onn 4K, NVIDIA Shield). Set
   Xiaomi projectors made by Formovie (Fengmi; L1, MediaTek, Google TV 14 tested) send the same `KEYCODE_STEM_1` for
   Netflix (`RemoteKeys.STEM_NETFLIX`); their YouTube button goes to MediaTek's `GlobalKeyReceiver` and stays with the system.
   Xiaomi TVs (MiTV-MOOR0, Android TV 11 tested) send `KEYCODE_BUTTON_3` for YouTube, a global key for the stock home
-  screen (`launcherx`) that Free My TV turns off, so only that button is ours; Netflix (`BUTTON_6`) goes to Xiaomi's
-  `partnercustomizer` and stays with the system. One press arrives as a burst of presses: `RemoteKeys` opens the app once.
+  screen (`launcherx`) that Free My TV turns off. Their PatchWall button sends `KEYCODE_BUTTON_5`, a global key for
+  Xiaomi's `partnercustomizer` (it opens PatchWall): ours too, left to the TV until an app is picked. Netflix
+  (`BUTTON_6`) goes to the same receiver and stays with the system. One press arrives as a burst of presses:
+  `RemoteKeys` opens the app once.
 - After any change, `./build.sh` must end with `Built FreeMyTV.apk`.
 - LG and Samsung (`web/`): plain ES5 JavaScript and CSS without variables, grid or backdrop-filter, since older TVs
   (webOS 3 and 4, Tizen 3) run a Chromium from 2015 to 2017; only transform and opacity animate. `web/tv.js` is the
