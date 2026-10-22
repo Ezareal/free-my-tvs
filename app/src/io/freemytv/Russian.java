@@ -111,6 +111,8 @@ final class Russian {
             case "No city with that name.": return "Город с таким названием не найден.";
             case "Couldn't search now: ": return "Не удалось выполнить поиск: ";
             case "Quotes widget": return "Виджет котировок";
+            case "Picks": return "Подборки";
+            case "Streaming apps": return "Стриминг-сервисы";
             case "On": return "Вкл.";
             case "Off": return "Выкл.";
             case "Shelf": return "Избранные приложения";

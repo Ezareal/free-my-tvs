@@ -37,7 +37,8 @@ import java.util.concurrent.Executors;
  * Home screen picks ("This morning / afternoon / tonight"): what's trending this week plus recent releases, only from
  * the streaming apps installed on the TV (Netflix, Prime Video, Disney+, Max, Apple TV, Okko, Hulu, Paramount+, Peacock,
  * Globoplay...), via TMDB (an open movie database that knows what streams where in each country). Three per hour.
- * "Watch" opens the service's app.
+ * "Watch" opens the service's app. With Lampa picked as the source in Home Settings (off by default) and installed,
+ * anything that streams on none of them goes to Lampa, which opens a TMDB link on the title's own card.
  *
  * Each person uses their own free TMDB key (config.properties "tmdb_key", built into the app). It never goes to the log.
  */
@@ -99,7 +100,9 @@ final class Recs {
         SERVICE_NAME.put("okko", "Okko");
         SERVICE_NAME.put("crunchyroll", "Crunchyroll");
         SERVICE_NAME.put("oneplay", "Oneplay");
+        SERVICE_NAME.put("lampa", "Lampa");
     }
+    private static final String LAMPA = "top.rootu.lampa";
     /** Country for "what streams where" (config.properties "tmdb_region", e.g. US, GB, BR). */
     private static final String REGION = Config.TMDB_REGION.trim().toUpperCase(Locale.ROOT);
 
@@ -396,11 +399,14 @@ final class Recs {
             String[] s = service(o.optString("provider_name"));
             if (s != null && installed(s[2])) services.put(o.getInt("provider_id"), s);
         }
-        if (services.isEmpty()) throw new IOException("none of the TV's streaming services are on TMDB");
+        boolean lampa = lampa();
+        if (services.isEmpty() && !lampa) throw new IOException("none of the TV's streaming services are on TMDB");
         StringBuilder ids = new StringBuilder();
         for (int id : services.keySet()) ids.append(ids.length() == 0 ? "" : "|").append(id);
-        String common = "&language=" + lang() + "&watch_region=" + REGION + "&with_watch_monetization_types=flatrate&include_adult=false"
-                + "&sort_by=popularity.desc&with_watch_providers=" + URLEncoder.encode(ids.toString(), "UTF-8")
+        // Lampa plays anything: then the new releases aren't limited to the TV's services.
+        String common = "&language=" + lang() + "&include_adult=false&sort_by=popularity.desc" + (lampa ? ""
+                : "&watch_region=" + REGION + "&with_watch_monetization_types=flatrate&with_watch_providers="
+                + URLEncoder.encode(ids.toString(), "UTF-8"))
                 + (Config.HIDE_ANIMATION ? "&without_genres=" + ANIMATION : "");
         // 1. Trending this week (TMDB goes by what people are watching and searching for right now), only what is
         //    on one of the TV's services: the details say where (and are then ready).
@@ -515,6 +521,11 @@ final class Recs {
                 p.pkg = s[2];
             }
         }
+        if (p.app == null && lampa()) {
+            p.app = "lampa";
+            p.pkg = LAMPA;
+            p.link = "https://www.themoviedb.org/" + p.kind + "/" + p.id;   // Lampa opens it on the title's card
+        }
         if (p.app != null) parts.add(SERVICE_NAME.get(p.app));
         p.meta = String.join(" · ", parts);
         p.detailed = true;
@@ -598,10 +609,20 @@ final class Recs {
         return HomeApps.launchIntent(context.getPackageManager(), pkg) != null;
     }
 
+    /** Lampa picked in Home Settings and on the TV. */
+    private boolean lampa() {
+        return "lampa".equals(Prefs.recsSource()) && installed(LAMPA);
+    }
+
+    /** Home Settings shows the Picks row only then. */
+    static boolean lampaInstalled(Context c) {
+        return HomeApps.launchIntent(c.getPackageManager(), LAMPA) != null;
+    }
+
     private long sourceStamp() {
         long stamp = (Config.TMDB_KEY.hashCode() * 31L + REGION.hashCode()) * 31L + (Config.HIDE_ANIMATION ? 1 : 0);
         for (String[] service : SERVICES) stamp = stamp * 31L + (installed(service[2]) ? service[2].hashCode() : 0);
-        return stamp;
+        return stamp * 31L + (lampa() ? LAMPA.hashCode() : 0);
     }
 
     // MARK: - Watchmode (the title's own page in its app; the free plan's web addresses are what the apps open)

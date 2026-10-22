@@ -628,8 +628,9 @@ public class SettingsActivity extends Activity {
         // MARK: - Home Settings and Remote Buttons
 
         private static final String[] LANGUAGES = {"auto", "pt", "en", "es", "de", "ru"}, UNITS = {"auto", "C", "F"}, THEMES = {"auto", "light", "dark"};
-        /** Home Settings: language, temperature, theme, sounds, weather, city, quotes, then one row per coin. */
+        /** Home Settings: language, temperature, theme, sounds, weather, city, quotes, one row per coin, then (with Lampa on the TV) the picks' source. */
         private static final int CITY_ROW = 5, COIN_ROWS = 7;
+        private boolean lampa;      // looked up when Home Settings opens
 
         private boolean dollar() {
             return "BRL".equalsIgnoreCase(Config.CURRENCY.trim());
@@ -648,7 +649,13 @@ public class SettingsActivity extends Activity {
             l.add("Ethereum");
             l.add("Solana");
             if (dollar()) l.add(Ui.tr("Dólar", "Dollar"));
+            if (lampa) l.add(Ui.tr("Recomendações", "Picks"));
             return l.toArray(new String[0]);
+        }
+
+        /** The Picks row: the last one, only with Lampa on the TV (-1 without it). */
+        private int recsRow() {
+            return lampa ? settingLabels().length - 1 : -1;
         }
 
         private String[] settingValues() {
@@ -667,6 +674,7 @@ public class SettingsActivity extends Activity {
             v[6] = onOff(Prefs.quotes());
             // No quotes widget, nowhere to show prices: the coins read as off (and stay locked) until it is back on.
             for (int i = COIN_ROWS; i < v.length; i++) v[i] = onOff(Prefs.quotes() && Prefs.coin(i - COIN_ROWS));
+            if (lampa) v[v.length - 1] = Prefs.recsSource().equals("lampa") ? "Lampa" : Ui.tr("Apps de streaming", "Streaming apps");
             return v;
         }
 
@@ -719,6 +727,10 @@ public class SettingsActivity extends Activity {
                 int at = appPkgs.indexOf(Prefs.keyApp(Prefs.KEYS[focus]));
                 int next = at < 0 ? (dir > 0 ? 0 : n - 1) : (at + dir + n) % n;
                 Prefs.setKeyApp(Prefs.KEYS[focus], appPkgs.get(next));
+                return;
+            }
+            if (focus == recsRow()) {
+                Prefs.setRecsSource(Prefs.recsSource().equals("lampa") ? "services" : "lampa");
                 return;
             }
             switch (focus) {
@@ -941,7 +953,7 @@ public class SettingsActivity extends Activity {
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + LIST_ROW_H * k);
                 float f = drawRowBackground(c, i);
                 rowLabel.setColor(blend(0xF2FFFFFF, INK, f));
-                boolean locked = !keys && i >= COIN_ROWS && !Prefs.quotes();
+                boolean locked = !keys && i >= COIN_ROWS && !(lampa && i == labels.length - 1) && !Prefs.quotes();
                 rowValue.setColor(blend(locked ? 0x59FFFFFF : 0xB3FFFFFF, locked ? 0x591C1C1E : 0xB31C1C1E, f));
                 if (locked) rowLabel.setColor(blend(0x73FFFFFF, 0x731C1C1E, f));
                 float base = rowRect.centerY() + Ui.halfCap(rowLabel);
@@ -1009,6 +1021,7 @@ public class SettingsActivity extends Activity {
                 pause();
                 activity.showPreview();
             } else if (focus == 2) {
+                lampa = Recs.lampaInstalled(c);
                 screen = HOME_SETTINGS;
                 focus = 0;
             } else if (focus == 3) {

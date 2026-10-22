@@ -104,6 +104,8 @@ final class Spanish {
             case "No city with that name.": return "Ninguna ciudad con ese nombre.";
             case "Couldn't search now: ": return "No se pudo buscar ahora: ";
             case "Quotes widget": return "Widget de cotizaciones";
+            case "Picks": return "Recomendaciones";
+            case "Streaming apps": return "Apps de streaming";
             case "On": return "Activado";
             case "Off": return "Desactivado";
             case "Shelf": return "Estante";

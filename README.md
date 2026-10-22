@@ -128,6 +128,10 @@ Free, and it takes two minutes: create an account at [themoviedb.org](https://ww
 
 With a free [Watchmode](https://api.watchmode.com/) key (`watchmode_key=` in `config.properties`), a pick opens its own page in the streaming app instead of the app's home. The free plan (2,500 credits a month) is enough: each title costs two requests the first time and is remembered after that. It works where the app takes the title's web address (tested: Prime Video and JioHotstar); where it doesn't, the pick just opens the app, as without a key.
 
+### Picks from Lampa (optional)
+
+With Lampa (`top.rootu.lampa`) on the TV, *Home Settings → Picks* gets a second choice besides *Streaming apps*, the default: *Lampa*. Then the picks also take titles that stream on none of your apps, and *Watch* opens the title's own card in Lampa (through its themoviedb.org address); if Lampa doesn't take the address, it just opens.
+
 ## Going back
 
 On the TV: *Free My TV* → *Home Screen* → *Original*. The factory home screen, screensaver and every app come back exactly as they were. If the new home screen ever crashes three times in five minutes, it switches back by itself.
