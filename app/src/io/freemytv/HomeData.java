@@ -28,8 +28,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Optional crypto prices (Binance, every 5 min) and weather/sunrise/sunset (Open-Meteo, every 30 min), cached
- * so the screen opens with numbers. Only fetched while the home screen or the screensaver is visible (the screen asks).
+ * Optional crypto prices (Binance, every 5 min) and weather/sunrise/sunset (Open-Meteo, every 30 min; MET Norway when
+ * Open-Meteo doesn't answer, with weather_backup=true), cached so the screen opens with numbers. Only fetched while the home screen or the screensaver is visible (the screen asks).
  * Neither source needs a key. Location and currency come from config.properties.
  */
 final class HomeData {
@@ -200,7 +200,7 @@ final class HomeData {
             fetchingWeather = true;
             io.execute(() -> {
                 try {
-                    String body = get(weatherUrl());
+                    String body = getWeather();
                     weather = parseWeather(body);
                     weatherAt = System.currentTimeMillis();
                     cache.edit().putString("weather", body).putLong("weatherAt", weatherAt).putString("weatherPlace", weatherPlace()).apply();
@@ -212,6 +212,19 @@ final class HomeData {
                     fetchingWeather = false;
                 }
             });
+        }
+    }
+
+    /** Open-Meteo's forecast, or with weather_backup=true and Open-Meteo out of reach, MET Norway's in its shape. */
+    private static String getWeather() throws Exception {
+        try {
+            return get(weatherUrl());
+        } catch (IOException e) {
+            if (!Config.WEATHER_BACKUP) throw e;
+            AppLog.w("weather: Open-Meteo " + e.getMessage() + ", asking MET Norway");
+            String lat = Prefs.latitude(), lon = Prefs.longitude();
+            return MetNorway.asOpenMeteo(get(MetNorway.url(lat, lon), MetNorway.USER_AGENT), Double.parseDouble(lat),
+                    Double.parseDouble(lon), TimeZone.getDefault(), System.currentTimeMillis());
         }
     }
 
@@ -303,10 +316,14 @@ final class HomeData {
     }
 
     private static String get(String url) throws IOException {
+        return get(url, "FreeMyTV");
+    }
+
+    private static String get(String url, String userAgent) throws IOException {
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
         c.setConnectTimeout(6000);
         c.setReadTimeout(6000);
-        c.setRequestProperty("User-Agent", "FreeMyTV");
+        c.setRequestProperty("User-Agent", userAgent);
         try {
             if (c.getResponseCode() != 200) throw new IOException("HTTP " + c.getResponseCode());
             try (InputStream in = c.getInputStream()) {
