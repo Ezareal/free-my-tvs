@@ -46,6 +46,8 @@ final class Backdrop {
     final Bitmap lightImage;            // by day: the background (the lightened frosted version, scaled up on screen)
     final int[] nightFrost, nightGlass; // at night: frosted (the bottom drawer's frosted glass) and glass, darkened
     final Bitmap nightImage;            // at night: the background (the darkened frosted version)
+    /** Built for the day: a photo with white scrims (the light interface reads over it), not the dark ones. */
+    boolean day;
 
     private Backdrop(Bitmap image, int[] frost, int[] glass, Bitmap wide, Bitmap tall, int[] light, int[] lightGlass,
                      int[] night, int[] nightGlass) {
@@ -63,6 +65,17 @@ final class Backdrop {
     }
 
     static Backdrop make(Bitmap src, boolean forLight) {
+        return build(src, forLight, false);
+    }
+
+    /** The photo for the day look: the same dark scrims, a little lighter (the light interface is in the other elements). */
+    static Backdrop makeDay(Bitmap src) {
+        Backdrop b = build(src, false, true);
+        b.day = true;
+        return b;
+    }
+
+    private static Backdrop build(Bitmap src, boolean forLight, boolean day) {
         Bitmap out = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(out);
         Paint photo = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.DITHER_FLAG);
@@ -83,32 +96,43 @@ final class Backdrop {
             return new Backdrop(null, frost, null, wide, tall, light, lightGlass, night, nightGlass);
         }
 
+        // The same dark scrims by day and at night (they are for the text's contrast); by day a little lighter.
+        final float k = day ? DAY_SCRIM : 1f;
         float boost = Math.max(0, Math.min(0.3f, (luminance(out, 0, 0.22f, 0.5f, 0.62f) - 0.22f) * 1.1f));
         Paint scrim = new Paint(Paint.DITHER_FLAG);
         scrim.setShader(new LinearGradient(0, 0, W * 0.68f, 0,
-                new int[] {black(0.66f + boost), black(0.52f + boost * 0.8f), black(0.26f + boost * 0.4f), black(0.07f), 0},
+                new int[] {veil(day, (0.66f + boost) * k), veil(day, (0.52f + boost * 0.8f) * k), veil(day, (0.26f + boost * 0.4f) * k), veil(day, 0.07f * k), 0},
                 new float[] {0, 0.25f, 0.55f, 0.8f, 1}, Shader.TileMode.CLAMP));
         c.drawRect(0, 0, W, H, scrim);
         // At the bottom, a faint scrim: the photo must show through the glass shelf (the glass provides the contrast).
         scrim.setShader(new LinearGradient(0, H, 0, H * 0.4f,
-                new int[] {black(0.38f), black(0.3f), black(0.18f), black(0.05f), 0},
+                new int[] {veil(day, 0.38f * k), veil(day, 0.3f * k), veil(day, 0.18f * k), veil(day, 0.05f * k), 0},
                 new float[] {0, 0.25f, 0.55f, 0.8f, 1}, Shader.TileMode.CLAMP));
         c.drawRect(0, H * 0.4f, W, H, scrim);
         // Behind the prices (above the shelf, on the right), a localized scrim for the small text.
         scrim.setShader(new android.graphics.RadialGradient(W * 0.8f, H * 0.65f, W * 0.24f,
-                new int[] {black(0.42f), black(0.18f), 0}, new float[] {0, 0.55f, 1}, Shader.TileMode.CLAMP));
+                new int[] {veil(day, 0.42f * k), veil(day, 0.18f * k), 0}, new float[] {0, 0.55f, 1}, Shader.TileMode.CLAMP));
         c.save();
         c.scale(1, 0.32f, W * 0.8f, H * 0.65f);
         c.drawCircle(W * 0.8f, H * 0.65f, W * 0.24f, scrim);
         c.restore();
-        scrim.setShader(new LinearGradient(0, 0, 0, H * 0.24f, new int[] {black(0.34f), black(0.1f), 0},
+        scrim.setShader(new LinearGradient(0, 0, 0, H * 0.24f, new int[] {veil(day, 0.34f * k), veil(day, 0.1f * k), 0},
                 new float[] {0, 0.5f, 1}, Shader.TileMode.CLAMP));
         c.drawRect(0, 0, W, H * 0.24f, scrim);
 
         int[] frost = reduce(out, FW, FH, 3, 3);
         int[] glass = reduce(out, GW, GH, 2, 2);
-        return new Backdrop(gpu(out), frost, glass, null, null, null, null, null, null);
+        // At night the home screen dims the sharp photo by NIGHT_DIM; the glass gets the same, ready.
+        return new Backdrop(gpu(out), frost, glass, null, null, null, null,
+                darken(frost.clone(), NIGHT_DIM), darken(glass.clone(), NIGHT_DIM));
     }
+
+    /** How much the sharp background (your own photo, the photo of the day) darkens at night. */
+    static final float NIGHT_DIM = 0.45f;
+    /** By day the photo keeps the same scrims, a little lighter, and a lighter dim than at night. */
+    static final float DAY_SCRIM = 0.78f, DAY_DIM = 0.12f;
+    /** The day veil is a gray (the light theme's), not black: lighter and a little desaturated. */
+    static final int DAY_VEIL = 0x5A5A62;
 
     /** How many times smaller the screensaver photo's frosted version is (the glass math uses the same number). */
     static final int PHOTO_FROST = 6;
@@ -172,6 +196,7 @@ final class Backdrop {
 
     /** Copies it to GPU memory (cheap to draw; the process doesn't keep the pixels). */
     static Bitmap gpu(Bitmap b) {
+        if (android.os.Build.VERSION.SDK_INT < 26) return b;
         Bitmap g = b.copy(Bitmap.Config.HARDWARE, false);
         if (g == null) return b;
         b.recycle();
@@ -260,6 +285,11 @@ final class Backdrop {
             }
         }
         return sum / count;
+    }
+
+    private static int veil(boolean day, float a) {
+        int alpha = Math.round(Math.max(0, Math.min(1, a)) * 255) << 24;
+        return day ? alpha | DAY_VEIL : alpha;
     }
 
     private static int black(float a) {

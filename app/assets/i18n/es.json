@@ -5,7 +5,7 @@
  "ADB message too large": "mensaje de ADB demasiado grande",
  "ADB refused the command": "ADB rechazó el comando",
  "Accept “Allow USB debugging?” on the TV (tick “Always allow”).": "Acepta “¿Permitir depuración USB?” en el TV (marca “Permitir siempre”).",
- "All Apps": "Todas las apps",
+ "All Apps": "Más aplicaciones",
  "Android didn't accept the new home screen": "Android no aceptó la nueva pantalla de inicio",
  "Automatic": "Automático",
  "BRAVIA CORE button": "Botón BRAVIA CORE",
@@ -170,6 +170,8 @@
  "the screensaver": "el protector de pantalla",
  "unexpected reply from ADB": "respuesta inesperada de ADB",
  "unit|Automatic": "Automático",
+ "{app} is now on the dock": "{app} ahora está en el dock",
+ "{app} moved to More apps": "{app} pasó a Más aplicaciones",
  "{h}h {m}m": "{h} h {m} min",
  "{i} of {n}": "{i} de {n}",
  "{m}m": "{m} min",
@@ -179,5 +181,6 @@
  "{n} h ago": "hace {n} h",
  "{n} min ago": "hace {n} min",
  "{n} ms": "{n} ms",
- "← → to move · OK to drop · Back to cancel": "← → para mover · OK para soltar · Atrás para cancelar"
+ "← → to move · OK to drop · Back to cancel": "← → para mover · OK para soltar · Atrás para cancelar",
+ "← → to move · ↓ to More apps · OK to drop · Back to cancel": "← → mover · ↓ a Más aplicaciones · OK soltar · Atrás cancelar"
 }

@@ -42,7 +42,9 @@ import java.util.concurrent.Executors;
  * Each person uses their own free TMDB key (config.properties "tmdb_key", built into the app). It never goes to the log.
  */
 final class Recs {
+    static final int PER_TAB = 3;
     static final class Pick {
+        String video;
         int id;
         String kind;            // "movie" or "tv"
         String title, backdrop, meta = "", app, pkg;
@@ -59,10 +61,11 @@ final class Recs {
     private static final int ANIMATION = 16;
     private static final long LIST_EVERY = 6 * 3600_000L;
     /** Bump when what is saved for each title changes (the saved list is discarded and fetched again). */
-    private static final int CACHE_VERSION = 3;
+    private static final int CACHE_VERSION = 4;
     private static final int MANHA = 0, TARDE = 1, NOITE = 2;
     /** Service name on TMDB (part of the name, lowercase) → TV app (HomeApps key, package). */
     private static final String[][] SERVICES = {
+        {"vix", "vix", "com.univision.prendetv"},
         {"netflix", "netflix", "com.netflix.ninja"},
         {"prime video", "prime", "com.amazon.amazonvideo.livingroom"},
         {"disney", "disney", "com.disney.disneyplus"},
@@ -72,6 +75,7 @@ final class Recs {
         {"globoplay", "globoplay", "com.globo.globotv"},
         {"max", "max", "com.wbd.stream"},
         {"max", "max", "com.hbo.hbonow"},
+        {"apple tv", "appletv", "com.apple.atve.amazon.appletv"},   // Fire TV build
         {"apple tv", "appletv", "com.apple.atve.androidtv.appletv"},
         {"apple tv", "appletv", "com.apple.atve.sony.appletv"},   // Sony's own build
         {"hotstar", "hotstar", "in.startv.hotstar"},   // TMDB: "JioHotstar" (earlier "Disney Plus Hotstar")
@@ -81,6 +85,9 @@ final class Recs {
     };
     private static final Map<String, String> SERVICE_NAME = new HashMap<>();
     static {
+        SERVICE_NAME.put("youtube", "YouTube");
+        SERVICE_NAME.put("smarttube", "SmartTube");
+        SERVICE_NAME.put("vix", "ViX");
         SERVICE_NAME.put("netflix", "Netflix");
         SERVICE_NAME.put("prime", "Prime Video");
         SERVICE_NAME.put("disney", "Disney+");
@@ -183,6 +190,10 @@ final class Recs {
 
     /** This hour's 3, movies only ("movie") or shows only ("tv"); null = both (the home screen tabs). */
     List<Pick> now(String kind) {
+        if ("yt".equals(kind)) {
+            YouTube.get(context).refreshIfStale(this::notifyListeners);
+            return YouTube.get(context).now();
+        }
         List<Pick> list = new ArrayList<>();
         if (!hasKey(context)) return list;    // no TMDB key: no recommendations
         Map<String, Boolean> have = new HashMap<>();   // one look per app, not per title (this runs every 15 s)
@@ -191,6 +202,11 @@ final class Recs {
                     && (!p.detailed || (p.pkg != null && have.computeIfAbsent(p.pkg, this::installed)))) list.add(p);   // app missing: skip
         }
         if (list.isEmpty()) return list;
+        List<Pick> weighted = new ArrayList<>(list);
+        for (Pick p : list) if ("netflix".equals(p.app)||"max".equals(p.app)||"disney".equals(p.app)||"vix".equals(p.app)) {
+            weighted.add(p); weighted.add(p);
+        }
+        list=weighted;
         long hour = System.currentTimeMillis() / 3600_000L;
         // Three per hour, never two from the same franchise ("Law & Order" and "Law & Order: Special…").
         List<Pick> out = new ArrayList<>();
@@ -388,7 +404,7 @@ final class Recs {
         JSONArray providers = get("/watch/providers/movie?language=" + lang() + "&watch_region=" + REGION).getJSONArray("results");
         for (int i = 0; i < providers.length(); i++) {
             JSONObject o = providers.getJSONObject(i);
-            String[] s = service(o.optString("provider_name"));
+            String[] s = service(o.optString("provider_name"), o.optInt("provider_id"));
             if (s != null && installed(s[2])) services.put(o.getInt("provider_id"), s);
         }
         if (services.isEmpty()) throw new IOException("none of the TV's streaming services are on TMDB");
@@ -502,14 +518,14 @@ final class Recs {
         JSONObject br = wp == null ? null : wp.optJSONObject("results") == null ? null : wp.optJSONObject("results").optJSONObject(REGION);
         JSONArray flat = br == null ? null : br.optJSONArray("flatrate");
         for (int i = 0; flat != null && i < flat.length() && p.app == null; i++) {
-            String[] s = service(flat.getJSONObject(i).optString("provider_name"));
+            String[] s = service(flat.getJSONObject(i).optString("provider_name"), flat.getJSONObject(i).optInt("provider_id"));
             if (s != null && installed(s[2])) {
                 p.app = s[1];
                 p.pkg = s[2];
             }
         }
         if (p.app != null) parts.add(SERVICE_NAME.get(p.app));
-        p.meta = String.join(" · ", parts);
+        p.meta = android.text.TextUtils.join(" · ", parts);
         p.detailed = true;
     }
 
@@ -569,10 +585,13 @@ final class Recs {
     }
 
     /** The SERVICES row for a TMDB name: the installed one first, when a service has more than one package. */
-    private String[] service(String name) {
+    private String[] service(String name, int providerId) {
         String n = name.toLowerCase(Locale.ROOT);
         String[] first = null;
+        if (n.contains(" channel")) return null;   // "HBO Max Amazon Channel": a subscription inside another app, not this one
         for (String[] s : SERVICES) {
+            // Apple TV: only the streaming catalogue (TMDB 350, "Apple TV Plus"), never the Apple TV Store (rent or buy, 2).
+            if (s[1].equals("appletv") && providerId != 350) continue;
             if (!(s[0].equals("max") ? n.matches(".*\\bmax\\b.*") : n.contains(s[0]))) continue;
             if (installed(s[2])) return s;
             if (first == null) first = s;
@@ -701,7 +720,7 @@ final class Recs {
         //noinspection ResultOfMethodCallIgnored
         f.getParentFile().mkdirs();
         File part = new File(f.getPath() + ".part");
-        HttpURLConnection c = (HttpURLConnection) new URL(IMAGES + p.backdrop).openConnection();
+        HttpURLConnection c = (HttpURLConnection) new URL(p.backdrop.startsWith("https://") ? p.backdrop : IMAGES + p.backdrop).openConnection();
         c.setConnectTimeout(8000);
         c.setReadTimeout(20000);
         try (InputStream in = c.getInputStream(); FileOutputStream out = new FileOutputStream(part)) {

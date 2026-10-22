@@ -624,7 +624,7 @@ public class SettingsActivity extends Activity {
 
         // MARK: - Home Settings and Remote Buttons
 
-        private static final String[] UNITS = {"auto", "C", "F"}, THEMES = {"auto", "light", "dark"};
+        private static final String[] UNITS = {"auto", "C", "F"}, THEMES = {"auto", "light", "dark", "photo"};
         /** Home Settings: language, temperature, theme, sounds, weather, city, quotes, then one row per coin. */
         private static final int CITY_ROW = 5, COIN_ROWS = 7;
 
@@ -645,6 +645,8 @@ public class SettingsActivity extends Activity {
             l.add("Ethereum");
             l.add("Solana");
             if (dollar()) l.add(Ui.tr("Dollar"));
+            l.add("Fondos");
+            l.add("Orden del dock");
             return l.toArray(new String[0]);
         }
 
@@ -656,13 +658,16 @@ public class SettingsActivity extends Activity {
             String unit = Prefs.temperature();
             v[1] = unit.equals("C") ? "°C" : unit.equals("F") ? "°F" : Ui.tr("unit|Automatic");
             String theme = Prefs.theme();
-            v[2] = theme.equals("light") ? Ui.tr("Light") : theme.equals("dark") ? Ui.tr("Dark") : Ui.tr("Automatic");
+            v[2] = theme.equals("light") ? Ui.tr("Light") : theme.equals("dark") ? Ui.tr("Dark")
+                    : theme.equals("photo") && !Recs.hasKey(getContext()) ? Ui.tr("Photo of the day") : Ui.tr("Automatic");
             v[3] = onOff(Prefs.sounds());
             v[4] = onOff(Prefs.weather());
             v[CITY_ROW] = !cityStatus.isEmpty() ? cityStatus : Prefs.city().isEmpty() ? "—" : Prefs.city();
             v[6] = onOff(Prefs.quotes());
             // No quotes widget, nowhere to show prices: the coins read as off (and stay locked) until it is back on.
             for (int i = COIN_ROWS; i < v.length; i++) v[i] = onOff(Prefs.quotes() && Prefs.coin(i - COIN_ROWS));
+            v[v.length-2] = new String[]{"Original", "Paisajes rotativos", "Mixto"}[Prefs.backgroundMode()];
+            v[v.length-1] = Prefs.dockAuto() ? "Automático" : "Manual";
             return v;
         }
 
@@ -726,6 +731,8 @@ public class SettingsActivity extends Activity {
                 Prefs.setKeyApp(Prefs.KEYS[focus], appPkgs.get(next));
                 return;
             }
+            if (focus == settingLabels().length-2) { Prefs.cycleBackgroundMode(); return; }
+            if (focus == settingLabels().length-1) { Prefs.setDockAuto(!Prefs.dockAuto()); return; }
             switch (focus) {
                 case 0: break;   // OK opens the language picker.
                 case 1: {
@@ -734,8 +741,11 @@ public class SettingsActivity extends Activity {
                     break;
                 }
                 case 2: {
+                    // The photo of the day shows only without picks (with them, the first card's photo is the background).
+                    int n = Recs.hasKey(getContext()) ? THEMES.length - 1 : THEMES.length;
                     int at = java.util.Arrays.asList(THEMES).indexOf(Prefs.theme());
-                    Prefs.setTheme(THEMES[(at + dir + THEMES.length) % THEMES.length]);
+                    if (at >= n) at = 0;
+                    Prefs.setTheme(THEMES[(at + dir + n) % n]);
                     break;
                 }
                 case 3: Prefs.setSounds(!Prefs.sounds()); break;
@@ -947,7 +957,7 @@ public class SettingsActivity extends Activity {
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + LIST_ROW_H * k);
                 float f = drawRowBackground(c, i);
                 rowLabel.setColor(blend(0xF2FFFFFF, INK, f));
-                boolean locked = !keys && i >= COIN_ROWS && !Prefs.quotes();
+                boolean locked = !keys && i >= COIN_ROWS && i < settingLabels().length - 2 && !Prefs.quotes();
                 rowValue.setColor(blend(locked ? 0x59FFFFFF : 0xB3FFFFFF, locked ? 0x591C1C1E : 0xB31C1C1E, f));
                 if (locked) rowLabel.setColor(blend(0x73FFFFFF, 0x731C1C1E, f));
                 float base = rowRect.centerY() + Ui.halfCap(rowLabel);

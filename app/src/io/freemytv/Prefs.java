@@ -46,6 +46,7 @@ final class Prefs {
 
     static void init(Context c) {
         app = c.getApplicationContext();
+        DockAuto.updateIfDue(app);
         migrateKeys();   // before anything reads the button choices
         Ui.applyLanguage();   // the language picked on the TV, now that it can be read
     }
@@ -88,10 +89,10 @@ final class Prefs {
 
     static void setTemperature(String v) { put("temperature", v); }
 
-    /** "auto" (dark from sunset to sunrise), "light" or "dark". */
+    /** "auto" (dark from sunset to sunrise), "light", "dark" or "photo" (Bing's photo of the day, dark look). */
     static String theme() {
         String v = sp().getString("theme", "auto");
-        return v.equals("light") || v.equals("dark") ? v : "auto";
+        return v.equals("light") || v.equals("dark") || v.equals("photo") ? v : "auto";
     }
 
     static void setTheme(String v) { put("theme", v); }
@@ -122,6 +123,41 @@ final class Prefs {
     static boolean coin(int i) { return sp().getBoolean("coin" + i, true); }
     static void setCoin(int i, boolean on) { put("coin" + i, on); }
 
+    static java.util.List<String> youtubeCategories() { return java.util.Arrays.asList("science"); }
+    static boolean youtubeHideAi() { return false; }
+    static int backgroundMode() { return sp().getInt("backgroundMode", 2); }
+    static void cycleBackgroundMode() { sp().edit().putInt("backgroundMode", (backgroundMode()+1)%3).apply(); version++; }
+    static int appOrder() { return sp().getInt("appOrder", 0); }
+    static void cycleAppOrder() { sp().edit().putInt("appOrder", (appOrder() + 1) % 3).apply(); }
+    static long opens(String pkg) { return sp().getLong("opens:" + pkg, 0); }
+    static long lastOpen(String pkg) { return sp().getLong("lastOpen:" + pkg, 0); }
+    static void recordOpen(String pkg) {
+        if (pkg == null) return;
+        long now = System.currentTimeMillis();
+        sp().edit().putLong("opens:" + pkg, opens(pkg) + 1)
+                .putLong("lastOpen:" + pkg, now)
+                .putFloat("openScore:" + pkg, (float) (openScore(pkg, now) + 1))
+                .putLong("openScoreAt:" + pkg, now).apply();
+    }
+
+    /** Opens from the launcher, each fading with a 14-day half-life (what the dock's daily update reads). */
+    static double openScore(String pkg, long now) {
+        double s = sp().getFloat("openScore:" + pkg, 0);
+        long at = sp().getLong("openScoreAt:" + pkg, now);
+        return s * Math.pow(0.5, Math.max(0, now - at) / (14 * 86_400_000.0));
+    }
+
+    // MARK: - Dock order: automatic (by use, one swap a day) or manual
+
+    static boolean dockAuto() { return sp().getBoolean("dockAuto", true); }
+    static void setDockAuto(boolean on) { sp().edit().putBoolean("dockAuto", on).apply(); version++; }
+    static java.util.Set<String> dockPinned() { return new java.util.HashSet<>(sp().getStringSet("dockPinned", new java.util.HashSet<String>())); }
+    static void setDockPinned(java.util.Set<String> set) { sp().edit().putStringSet("dockPinned", set).apply(); version++; }
+    static java.util.Set<String> dockUnpinned() { return new java.util.HashSet<>(sp().getStringSet("dockUnpinned", new java.util.HashSet<String>())); }
+    static void setDockUnpinned(java.util.Set<String> set) { sp().edit().putStringSet("dockUnpinned", set).apply(); version++; }
+    static String dockDay() { return sp().getString("dockDay", ""); }
+    static void setDockDay(String day) { sp().edit().putString("dockDay", day).apply(); }
+
     // MARK: - Shelf
 
     /** Packages on the home shelf, in order; null until the user edits it (then the built-in list applies). */
@@ -133,7 +169,13 @@ final class Prefs {
         return out;
     }
 
+    /** The person moved or picked the dock's apps: from now on the order is theirs (manual mode). */
     static void setShelf(List<String> packages) {
+        sp().edit().putBoolean("dockAuto", false).apply();
+        setShelfAuto(packages);
+    }
+
+    static void setShelfAuto(List<String> packages) {
         StringBuilder sb = new StringBuilder();
         for (String p : packages) sb.append(sb.length() == 0 ? "" : ",").append(p);
         put("shelf", sb.toString());

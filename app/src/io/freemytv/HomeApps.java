@@ -54,9 +54,43 @@ import java.util.regex.Pattern;
 final class HomeApps {
     private HomeApps() {}
 
-    static final int APP = 0, LIVE_TV = 1, INPUT = 2, ALL_APPS = 3, SETTINGS = 4, ANDROID_SETTINGS = 5;
+    static final int APP = 0, LIVE_TV = 1, INPUT = 2, ALL_APPS = 3, SETTINGS = 4, ANDROID_SETTINGS = 5, AERIAL = 99;
     /** The "HDMI Inputs" button: opens the bottom drawer on the inputs (the home screen handles it). */
-    static final int INPUTS = 7;
+    static final int INPUTS = 7, TOOLS = 8, APP_ORDER = 9;
+    static boolean toolsView;
+    private static final Set<String> TOOLS_PACKAGES = new HashSet<>(java.util.Arrays.asList(
+        "com.mercadolibre.android.mplay_tv", "com.markus.firetools", "visnkmr.apps.filexplorer", "com.wolf.lm", "com.wolf.pm",
+        "com.wolf.updwp", "com.adguard.android", "com.yablio.sendfilestotv", "com.esaba.downloader",
+        "com.wolf.firelauncher", "news.androidtv.launchonboot", "cm.aptoide.pt", "com.ghisler.android.TotalCommander"));
+
+    /** Streaming and video apps, in the order they get in "More apps" (several packages of one service stay together). */
+    static final String[] STREAMING_ORDER = {
+        "com.netflix.ninja", "com.amazon.firetv.youtube", "com.google.android.youtube.tv", "com.hbo.hbonow", "com.wbd.stream",
+        "com.disney.disneyplus", "com.univision.prendetv", "com.apple.atve.amazon.appletv", "com.apple.atve.androidtv.appletv",
+        "com.apple.atve.sony.appletv", "tv.pluto.android", "com.amazon.amazonvideo.livingroom", "org.smarttube.stable",
+        "org.smarttube.beta", "com.teamsmart.videomanager.tv", "com.mercadolibre.android.mplay_25"};
+    /** Other entertainment (after streaming): more video, music, social video. */
+    private static final Set<String> ENTERTAINMENT = new HashSet<>(java.util.Arrays.asList(
+        "com.crunchyroll.crunchyroid", "com.cbs.ca", "com.cbs.ott", "tv.twitch.android.viewer", "com.spotify.tv.android",
+        "com.amazon.bueller.music", "com.imdb.livingroom.firetv", "com.amazon.minitv.android.app", "com.tiktok.tv",
+        "com.hulu.livingroomplus", "com.peacocktv.peacockandroid", "com.globo.globotv", "com.google.android.youtube.tvmusic",
+        "com.amazon.imdb.tv.android.app", "com.amazon.bueller.photos", "com.amazon.cloud9"));
+
+    /** Hidden from the lists or kept in Tools: never taken for a streaming app. */
+    static boolean isHiddenOrTool(String pkg) {
+        return HIDDEN.contains(pkg) || TOOLS_PACKAGES.contains(pkg);
+    }
+
+    private static int appGroup(PackageManager pm, String pkg) {
+        if (java.util.Arrays.asList(STREAMING_ORDER).contains(pkg) || Prefs.dockPinned().contains(pkg)) return 0;
+        if (ENTERTAINMENT.contains(pkg)) return 1;
+        try {
+            ApplicationInfo ai = pm.getApplicationInfo(pkg, 0);
+            if ((ai.flags & ApplicationInfo.FLAG_IS_GAME) != 0 || (android.os.Build.VERSION.SDK_INT >= 26 && ai.category == ApplicationInfo.CATEGORY_GAME)) return 2;
+        } catch (PackageManager.NameNotFoundException ignored) {
+        }
+        return pkg.startsWith("eu.bandainamcoent.") || pkg.startsWith("com.rovio.") || pkg.startsWith("com.dotgears.") || pkg.startsWith("com.fgol.") ? 2 : 3;
+    }
     /** Image size of each card (16:9; on screen it shows up to ~330 px wide). */
     static final int TILE_W = 384, TILE_H = 216;
 
@@ -82,6 +116,8 @@ final class HomeApps {
     private static final String[][] SHELF = {
         {"netflix", "Netflix", "com.netflix.ninja", "E50914", "", "1"},
         {"youtube", "YouTube", "com.google.android.youtube.tv", "FF0033", "play", "1"},
+        {"youtube", "YouTube", "com.amazon.firetv.youtube", "FF0033", "play", "1"},
+        {"smarttube", "SmartTube", "org.smarttube.stable", "FF0033", "", "1"},
         {"prime", "Prime Video", "com.amazon.amazonvideo.livingroom", "1A98FF", "tint", "0.96"},
         {"disney", "Disney+", "com.disney.disneyplus", "1838C8", "", "1"},
         {"max", "Max", "com.wbd.stream", "6C3BE0", "", "1.32"},
@@ -94,7 +130,7 @@ final class HomeApps {
         {"globoplay", "Globoplay", "com.globo.globotv", "FF5A1F", "tint", "1"},
         {"spotify", "Spotify", "com.spotify.tv.android", "1DB954", "", "1"},
     };
-    static final int MAX_SHELF = 8;
+    static final int MAX_SHELF = 24;   // apps on the dock: six show, the rest scroll; "More apps" is fixed and not counted
     /** Live TV apps of some brands (the antenna's channels open through the standard Android request first). */
     static final String[] LIVE_TV_APPS = {"com.tcl.tv", "com.google.android.tv", "com.mediatek.wwtv.tvcenter", "com.sony.dtv.tvx",
             "com.smartdevice.livetv", "com.mediatek.tv.oneworld.tvcenter"};
@@ -114,7 +150,10 @@ final class HomeApps {
             "com.Smartdevice.emanual",              // Skyworth: user manual
             "com.google.android.videos",            // Google Play Movies (discontinued)
             "com.disney.starplus",                  // Star+ (merged into Disney+)
-            "com.tcl.exhibit"));                    // TCL: T-Exhibition
+            "com.tcl.exhibit",                      // TCL: T-Exhibition
+            "com.neilturner.aerialviews",           // Aerial Views: it has its own button in the corner
+            "com.amazon.firebat",                   // Fire OS's own Prime Video (the installed APK is the one in use)
+            "com.amazon.shoptv.client", "com.amazon.shoptv.firetv.client"));   // Amazon Live Shopping
 
     private static final Map<String, Bitmap> TILES = new HashMap<>();   // key → ready card
     private static final Map<String, Bitmap> LOGOS = new HashMap<>();   // key → colored logo with no background
@@ -127,7 +166,7 @@ final class HomeApps {
         List<Item> items = new ArrayList<>();
         PackageManager pm = c.getPackageManager();
         for (String pkg : shelfPackages(c)) {
-            if (items.size() >= MAX_SHELF) break;
+            if (items.size() >= MAX_SHELF + 1) break;   // the dock's apps and the app pinned at the end
             Intent launch = launchIntent(pm, pkg);
             if (launch == null) continue;
             ResolveInfo ri = pm.resolveActivity(launch, 0);
@@ -135,7 +174,13 @@ final class HomeApps {
             Item it = new Item();
             it.kind = APP;
             it.pkg = pkg;
-            if (d == null) {
+            Bitmap card = tileOverride(c, pkg);
+            if (card != null) {
+                // A card of its own (logos/tiles/<package>.png in the app's files): shown whole, no logo lifting.
+                it.key = d == null ? pkg : d[0];
+                it.label = d == null ? (ri != null ? String.valueOf(ri.loadLabel(pm)) : pkg) : d[1];
+                it.tile = card;
+            } else if (d == null) {
                 // An app picked in Settings > Shelf that isn't in SHELF: its own name and TV art.
                 it.key = pkg;
                 it.label = ri != null ? String.valueOf(ri.loadLabel(pm)) : pkg;
@@ -151,6 +196,9 @@ final class HomeApps {
             }
             items.add(it);
         }
+        Item more = shortcut(ALL_APPS, "all", Ui.tr("All Apps"), "apps");
+        more.tile = symbolTile(c, "all-dock", "apps");
+        items.add(more);
         return items;
     }
 
@@ -162,12 +210,22 @@ final class HomeApps {
     /** The shelf's packages in order: the user's list (Settings > Shelf), or the built-in one. */
     static List<String> shelfPackages(Context c) {
         List<String> custom = Prefs.shelf();
-        if (custom != null) return custom;
         List<String> out = new ArrayList<>();
         PackageManager pm = c.getPackageManager();
-        for (String[] d : SHELF) if (out.size() < MAX_SHELF && launchIntent(pm, d[2]) != null) out.add(d[2]);
+        if (custom != null) {
+            out.addAll(custom);
+        } else {
+            for (String[] d : SHELF) if (out.size() < 6 && launchIntent(pm, d[2]) != null) out.add(d[2]);
+        }
+        while (out.remove(PIN_LAST)) { /* it goes last, below */ }
+        while (out.size() > MAX_SHELF) out.remove(out.size() - 1);
+        // Pac-Man is always the last app of the dock, whatever the use order says (the dock scrolls to it).
+        if (launchIntent(pm, PIN_LAST) != null) out.add(PIN_LAST);
         return out;
     }
+
+    /** The app that always closes the dock. */
+    static final String PIN_LAST = "eu.bandainamcoent.pacman256";
 
     /** Every app the shelf could hold, as {package, name}: the ones from SHELF first, then the other TV apps by name. */
     static List<String[]> shelfCandidates(Context c) {
@@ -218,7 +276,6 @@ final class HomeApps {
     /** Shortcuts in the bottom drawer. */
     static List<Item> drawerShortcuts() {
         List<Item> items = new ArrayList<>();
-        items.add(shortcut(ALL_APPS, "all", Ui.tr("All Apps"), "apps"));
         items.add(shortcut(SETTINGS, "settings", Ui.tr("Home Settings"), "settings"));
         items.add(shortcut(ANDROID_SETTINGS, "tv-settings", Ui.tr("TV Settings"), "tv_settings"));
         return items;
@@ -333,9 +390,8 @@ final class HomeApps {
     static List<Item> others(Context c) {
         PackageManager pm = c.getPackageManager();
         Set<String> skip = new HashSet<>();
-        // A built-in app is skipped only while it is on the shelf: one the person took off must still be listed here.
-        List<String> onShelf = shelfPackages(c);
-        for (String[] d : SHELF) if (onShelf.contains(d[2])) skip.add(d[2]);
+        // The apps on the dock are not repeated here; one the dock lets go of (by use, or by hand) shows up here.
+        skip.addAll(shelfPackages(c));
         skip.addAll(java.util.Arrays.asList(LIVE_TV_APPS));
         skip.add(c.getPackageName());
         skip.addAll(HIDDEN);
@@ -344,19 +400,34 @@ final class HomeApps {
         for (String[] app : launchable(c)) {
             String pkg = app[0];
             if (skip.contains(pkg) || !seen.add(pkg)) continue;
+            if (TOOLS_PACKAGES.contains(pkg) != toolsView) continue;
             Item it = new Item();
             it.kind = APP;
             it.pkg = pkg;
             it.key = pkg;
-            it.label = app[1];
-            it.tile = appTile(c, null, pkg, 0);
+            it.label = pkg.equals("com.mercadolibre.android.mplay_25") ? "Mercado Play" : app[1];
+            it.tile = dockLookTile(c, pkg);
+            if (it.tile == null) it.tile = appTile(c, null, pkg, 0);
             items.add(it);
         }
-        Collections.sort(items, (a, b) -> a.label.toLowerCase(Locale.ROOT).compareTo(b.label.toLowerCase(Locale.ROOT)));
+        final int order = Prefs.appOrder();
+        final List<String> streaming = java.util.Arrays.asList(STREAMING_ORDER);
+        final Map<String, Integer> groups = new HashMap<>();
+        for (Item it : items) groups.put(it.pkg, appGroup(pm, it.pkg));
+        Collections.sort(items, (a, b) -> {
+            int ga = groups.get(a.pkg), gb = groups.get(b.pkg);
+            if (ga != gb) return Integer.compare(ga, gb);
+            if (ga == 0 && order == 0) return Integer.compare(streaming.indexOf(a.pkg), streaming.indexOf(b.pkg));
+            int value = order == 1 ? Long.compare(Prefs.opens(b.pkg), Prefs.opens(a.pkg))
+                    : order == 2 ? Long.compare(Prefs.lastOpen(b.pkg), Prefs.lastOpen(a.pkg)) : 0;
+            return value != 0 ? value : a.label.toLowerCase(Locale.ROOT).compareTo(b.label.toLowerCase(Locale.ROOT));
+        });
         synchronized (HomeApps.class) {
             TILES.keySet().removeIf(k -> k.contains(".") && !seen.contains(k));
         }
-        items.add(special(c, SETTINGS, "freemytv-settings", "Free My TV", "sparkles"));
+        if (!toolsView) items.add(special(c, APP_ORDER, "app-order", "Orden: " + new String[]{"Nombre", "Frecuencia", "Recientes"}[Prefs.appOrder()], "apps"));
+        items.add(special(c, TOOLS, "tools", toolsView ? "Volver a aplicaciones" : "Herramientas", "apps"));
+        if (!toolsView) items.add(special(c, SETTINGS, "freemytv-settings", "Free My TV", "sparkles"));
         return items;
     }
 
@@ -387,8 +458,14 @@ final class HomeApps {
             case SETTINGS:
                 intent = new Intent().setComponent(new ComponentName(a, SettingsActivity.class));
                 break;
+            case AERIAL:
+                intent = new Intent().setComponent(new ComponentName("com.neilturner.aerialviews", "com.neilturner.aerialviews.ui.screensaver.TestActivity"));
+                break;
             case ANDROID_SETTINGS:
-                intent = new Intent(Settings.ACTION_SETTINGS);
+                // Fire OS: ACTION_SETTINGS lands on a CTS dummy handler that does nothing; the real Settings is the
+                // Amazon launcher's MainSettingsActivity.
+                intent = new Intent().setComponent(new ComponentName("com.amazon.tv.launcher", "com.amazon.tv.launcher.ui.MainSettingsActivity"));
+                if (a.getPackageManager().resolveActivity(intent, 0) == null) intent = new Intent(Settings.ACTION_SETTINGS);
                 break;
             default:
                 return false;
@@ -397,6 +474,7 @@ final class HomeApps {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try {
             a.startActivity(intent, ActivityOptions.makeScaleUpAnimation(from, x, y, Math.max(w, 1), Math.max(h, 1)).toBundle());
+            if (it.kind == APP) Prefs.recordOpen(it.pkg);
             return true;
         } catch (ActivityNotFoundException | SecurityException e) {
             AppLog.w("couldn't open " + it.label + ": " + e.getMessage());
@@ -404,6 +482,7 @@ final class HomeApps {
             plain.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             try {
                 a.startActivity(plain);
+                if (it.kind == APP) Prefs.recordOpen(it.pkg);
                 return true;
             } catch (ActivityNotFoundException | SecurityException e2) {
                 return false;
@@ -491,10 +570,12 @@ final class HomeApps {
     private static final int LOGO_VERSION = 2;
 
     private static Bitmap shelfLogo(Context c, String key, String pkg, String mode, boolean extract) {
+        File custom = new File(c.getExternalFilesDir(null), "logos/" + key + ".png");
+        String memoryKey = logoFile(c,key,pkg).getName() + ":" + custom.lastModified();
         synchronized (LOGOS) {
-            if (LOGOS.containsKey(key)) return LOGOS.get(key);
+            if (LOGOS.containsKey(memoryKey)) return LOGOS.get(memoryKey);
         }
-        Bitmap logo = ownLogo(c, key);
+        Bitmap logo = customLogo(c, key);
         File file = logoFile(c, key, pkg), none = new File(file.getPath() + ".none");
         if (logo == null && file.exists()) logo = BitmapFactory.decodeFile(file.getPath());
         if (logo == null) {
@@ -509,7 +590,7 @@ final class HomeApps {
         }
         if (logo != null) logo.setHasMipMap(true);
         synchronized (LOGOS) {
-            LOGOS.put(key, logo);
+            LOGOS.put(memoryKey, logo);
         }
         return logo;
     }
@@ -770,8 +851,60 @@ final class HomeApps {
 
     // MARK: - Cards
 
+    /**
+     * For the apps the dock knows (SHELF), the same card the dock draws: brand colors and its logo, so the app looks the
+     * same on the dock and in "More apps". Null when the app has a card of its own (appTile uses it) or no known logo.
+     */
+    private static synchronized Bitmap dockLookTile(Context c, String pkg) {
+        String[] d = known(pkg);
+        if (d == null || tileOverride(c, pkg) != null) return null;
+        Bitmap logo = shelfLogo(c, d[0], d[2], d[4], true);
+        if (logo == null) return null;
+        File f = logoFile(c, d[0], pkg);
+        String cacheKey = "dock:" + pkg + ":" + f.getName() + ":" + new File(c.getExternalFilesDir(null), "logos/" + d[0] + ".png").lastModified();
+        if (TILES.containsKey(cacheKey)) return TILES.get(cacheKey);
+        int[] style = HomeView.TILE_STYLE.get(d[0]);
+        Bitmap b = Bitmap.createBitmap(TILE_W, TILE_H, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(b);
+        Paint bg = new Paint(Paint.ANTI_ALIAS_FLAG);
+        if (style != null) {
+            bg.setShader(new LinearGradient(0, 0, 0, TILE_H, style[0], style[1], Shader.TileMode.CLAMP));
+        } else {
+            bg.setColor(0xFF161618);
+        }
+        canvas.drawRect(0, 0, TILE_W, TILE_H, bg);
+        // Same sizing as the dock's logo (HomeView.crispLogo): the logo's ink, the tile's area, the SHELF size tweak.
+        float lw = logo.getWidth(), lh = logo.getHeight();
+        float scale = (float) Math.sqrt(TILE_W * TILE_H * 0.085f / (lw * lh * Math.max(0.08f, ink(logo)))) * Float.parseFloat(d[5]);
+        scale = Math.min(scale, Math.min(TILE_W * 0.76f / lw, TILE_H * 0.58f / lh));
+        float w = lw * scale, h = lh * scale;
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+        if (style != null && style[2] == 1) paint.setColorFilter(new android.graphics.PorterDuffColorFilter(0xFFFFFFFF, android.graphics.PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(logo, null, new RectF((TILE_W - w) / 2, (TILE_H - h) / 2, (TILE_W + w) / 2, (TILE_H + h) / 2), paint);
+        b.setHasMipMap(true);
+        TILES.put(cacheKey, b);
+        return b;
+    }
+
+    /** A replacement card for an app: files/logos/tiles/<package>.png (16:9), cached until the file changes. */
+    private static synchronized Bitmap tileOverride(Context c, String pkg) {
+        File f = new File(c.getExternalFilesDir(null), "logos/tiles/" + pkg + ".png");
+        if (!f.isFile()) return null;
+        String cacheKey = "override:" + pkg + ":" + f.lastModified();
+        if (TILES.containsKey(cacheKey)) return TILES.get(cacheKey);
+        Bitmap b = BitmapFactory.decodeFile(f.getPath());
+        if (b != null) {
+            if (b.getWidth() > 768) b = Bitmap.createScaledBitmap(b, 768, Math.max(1, b.getHeight() * 768 / b.getWidth()), true);
+            b.setHasMipMap(true);
+        }
+        TILES.put(cacheKey, b);
+        return b;
+    }
+
     private static synchronized Bitmap appTile(Context c, String key, String pkg, int brand) {
-        String cacheKey = key != null ? key : pkg;
+        Bitmap card = tileOverride(c, pkg);
+        if (card != null) return card;
+        String cacheKey = (key != null ? key : pkg) + ":" + logoFile(c, key != null ? key : pkg, pkg).getName();
         if (TILES.containsKey(cacheKey)) return TILES.get(cacheKey);
         Bitmap logo = key == null ? null : ownLogo(c, key);
         Bitmap tile = logo != null ? logoTile(logo, brand) : bannerTile(c, pkg);
@@ -824,7 +957,20 @@ final class HomeApps {
         if (icon == null) return b;
         int size = Math.round(TILE_H * 0.56f);
         float left = (TILE_W - size) / 2f, top = (TILE_H - size) / 2f;
-        if (icon instanceof AdaptiveIconDrawable) {
+        if (android.os.Build.VERSION.SDK_INT >= 26 && Adaptive.is(icon)) {
+            Adaptive.draw(canvas, icon, size, left, top);
+        } else {
+            // Legacy icon (a free-form drawing with transparency): smaller, no frame.
+            int s = Math.round(TILE_H * 0.46f);
+            icon.setBounds((TILE_W - s) / 2, (TILE_H - s) / 2, (TILE_W + s) / 2, (TILE_H + s) / 2);
+            icon.draw(canvas);
+        }
+        return b;
+    }
+
+    private static final class Adaptive {
+        static boolean is(Drawable icon) { return icon instanceof AdaptiveIconDrawable; }
+        static void draw(Canvas canvas, Drawable icon, int size, float left, float top) {
             // Adaptive icon: the layers clipped to a squircle, like an Apple icon.
             AdaptiveIconDrawable a = (AdaptiveIconDrawable) icon;
             Path clip = new Path();
@@ -838,13 +984,7 @@ final class HomeApps {
                 layer.draw(canvas);
             }
             canvas.restore();
-        } else {
-            // Legacy icon (a free-form drawing with transparency): smaller, no frame.
-            int s = Math.round(TILE_H * 0.46f);
-            icon.setBounds((TILE_W - s) / 2, (TILE_H - s) / 2, (TILE_W + s) / 2, (TILE_H + s) / 2);
-            icon.draw(canvas);
         }
-        return b;
     }
 
     /** Settings and the like: the icon in white on a dark card. */
@@ -892,6 +1032,16 @@ final class HomeApps {
             LOGOS.put("own:" + key, b);
         }
         return b;
+    }
+
+    private static Bitmap customLogo(Context c, String key) {
+        File f = new File(c.getExternalFilesDir(null), "logos/" + key + ".png");
+        if (!f.isFile()) return null;
+        BitmapFactory.Options o = new BitmapFactory.Options(); o.inJustDecodeBounds=true;
+        BitmapFactory.decodeFile(f.getPath(),o); int sample=1;
+        while(Math.max(o.outWidth,o.outHeight)/sample>1024) sample*=2;
+        o.inJustDecodeBounds=false; o.inSampleSize=sample;
+        return BitmapFactory.decodeFile(f.getPath(), o);
     }
 
     private static Bitmap ownLogo(Context c, String key) {
