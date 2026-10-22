@@ -22,7 +22,7 @@ Open source. Built with Claude Code. One button to undo.
 - **Trending, not sponsored.** Three fresh picks every hour from what's trending this week and the latest releases, only from apps you already have. Movies and Shows get their own tabs.
 - **Weather and markets, one press away.** The hour-by-hour forecast, sunrise and sunset, and live crypto prices.
 - **Light by day, dark by night.** It follows your city's real sunset, the way your phone does.
-- **A screensaver to match.** Full-screen photos of the picks with a big glass clock.
+- **A screensaver to match.** Full-screen photos of the picks, or your own, with a big glass clock.
 - **Fast.** 60 fps, every frame in 16.6 ms, on the TV's own chip. The home screen uses 96 MB of memory instead of 242 MB (−60%).<br><sub>Measured on a 98″ TCL Google TV running Android 14.</sub>
 - **Set up on the TV.** Language, your city, temperature, theme, the weather and prices cards, which coins, and the apps on the shelf, in Free My TV's own settings.
 - **Safe.** No root. Nothing is uninstalled. One button brings back the factory home screen.
@@ -174,6 +174,31 @@ It's your code, and Claude Code finds its way around it. Try:
 - *"Add Catalan."*
 - *"Switch to the night look an hour after sunset."*
 
+### Your own photos
+
+Your photos in the screensaver, and one as the home screen background (Google TV and Android TV):
+
+```bash
+python3 tools/photos.py <TV IP> --screensaver beach.jpg sunset.jpg hills.jpg
+python3 tools/photos.py <TV IP> --background tree.jpg
+python3 tools/photos.py <TV IP> --clear          # back to the picks' images
+```
+
+- The screensaver shows them in that order, one every 30 seconds, instead of the picks' photos.
+- The background shows sharp behind the clock when there are no picks (no TMDB key); with a key, the picks bring
+  their own.
+- Landscape photos fill the screen best; portrait ones are cropped to the middle. On a Mac, iPhone HEIC photos are
+  converted for you.
+- They live in the app's folder on the TV: uninstalling Free My TV removes them. No need to rebuild to change them.
+- Or just ask Claude Code: *"Put these photos on my TV's screensaver."*
+
+### Photo of the day
+
+Without a TMDB key, *Home Settings* → *Theme* → *Photo of the day* puts Bing's photo of the day behind the clock: sharp,
+dimmed at night, with a small caption saying what's in it and whose it is. Checked every few hours, kept on the TV for
+when it's offline. Off by default; your own background photo, if you set one, comes first. Google TV, Android TV, LG
+and Samsung.
+
 ## How it works
 
 - **A plain Android app, no Gradle, no libraries.** [`build.sh`](build.sh) runs aapt2 → javac → d8 → zipalign → apksigner and makes a 2 MB APK.
@@ -228,7 +253,7 @@ reference (fix them by hand); the others were machine-made, and corrections from
 
 ## Privacy
 
-No accounts, no analytics, no tracking. The app talks to TMDB, Open-Meteo (with the coordinates you set, or your time zone's main city), and Binance only when `show_crypto=true`, and Watchmode only when you set a `watchmode_key`. Your settings stay on your computer and your TV.
+No accounts, no analytics, no tracking. The app talks to TMDB, Open-Meteo (with the coordinates you set, or your time zone's main city), and Binance only when `show_crypto=true`, Watchmode only when you set a `watchmode_key`, and Bing only when you pick the *Photo of the day* theme (for that photo). Your settings stay on your computer and your TV.
 
 ## Credits
 

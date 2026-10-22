@@ -26,7 +26,7 @@ before you do it, and let them do the taps on the TV.
 4. **The TMDB key is theirs and secret.** Ask them to create one (free: themoviedb.org → Settings → API) and paste it
    after `tmdb_key=` in `config.properties` themselves. Don't ask for it in the chat, never print it, never commit
    it. If they paste it in the chat anyway, put it only in `config.properties`.
-   Without a key everything works except the picks and the screensaver photos.
+   Without a key everything works except the picks and the screensaver photos (their own photos can fill both: step 10).
    The same goes for the optional `watchmode_key` (free, watchmode.com; makes picks open the title's page): theirs, secret, only in `config.properties`.
 5. **Build:** `./build.sh` → `FreeMyTV.apk`. Keep `freemytv.keystore`: updates must be signed with the same key.
 6. **Install:** `adb connect <IP>:5555`. The TV asks *Allow USB debugging?*: tell them to accept and tick *Always
@@ -51,6 +51,10 @@ before you do it, and let them do the taps on the TV.
    in `adb shell dumpsys wifi` (each block starts with its `ID:`), and with their OK remove them with
    `adb shell cmd wifi forget-network <id>`.
 9. **Check:** `adb logcat -s FreeMyTV` shows what the switch did.
+10. **Offer their own photos:** for the screensaver, and one for the home screen background (shown sharp when there
+    are no picks, so only without a TMDB key). `python3 tools/photos.py <IP> --screensaver a.jpg b.jpg ...` and
+    `--background c.jpg`; `--clear` takes them out. Ask which photos; on a Mac, Photos' originals can be exported
+    with osascript (Photos' `export ... without using originals`), so they come full size.
 
 ## Installing it on an LG TV (webOS)
 
@@ -203,6 +207,10 @@ HDMI (Chromecast with Google TV, Google TV Streamer, onn 4K, NVIDIA Shield). Set
   the key to the TV. Sony ships its own Apple TV build, `com.apple.atve.sony.appletv`.
   Xiaomi projectors made by Formovie (Fengmi; L1, MediaTek, Google TV 14 tested) send the same `KEYCODE_STEM_1` for
   Netflix (`RemoteKeys.STEM_NETFLIX`); their YouTube button goes to MediaTek's `GlobalKeyReceiver` and stays with the system.
+- Their own photos: `tools/photos.py` pushes them to the app's external files folder on the TV (`photos/` for the
+  screensaver, `background/` for the home screen); `DreamView.ownPhotos` and `HomeView.loadOwnBackground` read them.
+  The *Photo of the day* theme (`Wallpaper`, Bing, no key) fills the same background when there's no photo of theirs:
+  both go through `HomeView.photoBg`, dimmed at night by `Backdrop.NIGHT_DIM`.
 - After any change, `./build.sh` must end with `Built FreeMyTV.apk`.
 - LG and Samsung (`web/`): plain ES5 JavaScript and CSS without variables, grid or backdrop-filter, since older TVs
   (webOS 3 and 4, Tizen 3) run a Chromium from 2015 to 2017; only transform and opacity animate. `web/tv.js` is the
