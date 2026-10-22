@@ -11,8 +11,10 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Settings changed on the TV itself (Free My TV > Settings). config.properties only gives the first
@@ -69,6 +71,14 @@ final class Prefs {
         version++;
     }
 
+    /**
+     * Without bumping `version`: a new version makes the home screen start over (and fetch the weather and prices
+     * again). Continue Watching's lists don't need that: the home screen reads them on every return (reload).
+     */
+    private static void putQuietly(String key, Set<String> value) {
+        sp().edit().putStringSet(key, new HashSet<>(value)).apply();
+    }
+
     // MARK: - Language and units
 
     /** "auto" or a language code as picked ("pt", "fr", "zh-CN"…); Ui.applyLanguage finds its catalogue. */
@@ -110,6 +120,27 @@ final class Prefs {
     /** The home screen's soft click when moving and opening. */
     static boolean sounds() { return sp().getBoolean("sounds", true); }
     static void setSounds(boolean on) { put("sounds", on); }
+
+    // MARK: - Top of the home screen
+
+    static final String TOP_PICKS = "picks", TOP_CONTINUE = "continue", TOP_NONE = "none";
+    static final String[] TOP_CONTENT = {TOP_PICKS, TOP_CONTINUE, TOP_NONE};
+
+    /** What the cards under the title show: the recommendations (TMDB), what you were watching in your apps, or nothing. */
+    static String topContent() {
+        String v = sp().getString("topContent", TOP_PICKS);
+        return v.equals(TOP_CONTINUE) || v.equals(TOP_NONE) ? v : TOP_PICKS;
+    }
+
+    static void setTopContent(String v) { put("topContent", v); }
+
+    /** Apps left out of Continue Watching (Settings), by package. */
+    static Set<String> watchOff() { return new HashSet<>(sp().getStringSet("watchOff", new HashSet<>())); }
+    static void setWatchOff(Set<String> packages) { putQuietly("watchOff", packages); }
+
+    /** Single items hidden from Continue Watching (holding OK on a card), as WatchNext.hideKey. */
+    static Set<String> watchHidden() { return new HashSet<>(sp().getStringSet("watchHidden", new HashSet<>())); }
+    static void setWatchHidden(Set<String> keys) { putQuietly("watchHidden", keys); }
 
     // MARK: - Widgets and coins
 
