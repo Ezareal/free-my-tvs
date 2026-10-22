@@ -13,6 +13,8 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -21,10 +23,11 @@ import java.util.Set;
 
 /**
  * Trakt (trakt.tv), only for someone who signs in with their own account: the picks leave out what they've watched and
- * bring in their watchlist. It only reads. Needs the person's own API app (config.properties "trakt_client_id" and
- * "trakt_client_secret"); without it, or until they sign in, nothing here runs and the picks stay TMDB's.
+ * bring in their watchlist. It only reads. Needs the person's own API app (config.properties "trakt_client_id"); without
+ * it, or until they sign in, nothing here runs and the picks stay TMDB's.
  *
- * Signing in is Trakt's device code: the TV shows a short code, they type it at trakt.tv/activate on their phone.
+ * Signing in is Trakt's device code with PKCE: the TV shows a short code, they type it at trakt.tv/activate on their
+ * phone. Trakt no longer gives new apps a client secret; one from an older app ("trakt_client_secret") is still sent.
  * The tokens stay in this process's SharedPreferences (:home, where Settings and the home screen both run).
  */
 final class Trakt {
@@ -48,7 +51,7 @@ final class Trakt {
 
     /** The person put their own Trakt API app in config.properties. */
     static boolean available() {
-        return !Config.TRAKT_CLIENT_ID.trim().isEmpty() && !Config.TRAKT_CLIENT_SECRET.trim().isEmpty();
+        return !Config.TRAKT_CLIENT_ID.trim().isEmpty();
     }
 
     private static SharedPreferences sp(Context c) {
@@ -92,8 +95,13 @@ final class Trakt {
         Context app = c.getApplicationContext();
         new Thread(() -> {
             try {
-                JSONObject start = new JSONObject(request("POST", "/oauth/device/code",
-                        new JSONObject().put("client_id", clientId()), null, 200));
+                // PKCE: a one-time secret for this sign-in; Trakt gets its hash now and the secret itself with the code.
+                byte[] random = new byte[48];
+                new SecureRandom().nextBytes(random);
+                String verifier = base64Url(random);
+                String challenge = base64Url(MessageDigest.getInstance("SHA-256").digest(verifier.getBytes(StandardCharsets.US_ASCII)));
+                JSONObject start = new JSONObject(request("POST", "/oauth/device/code", new JSONObject().put("client_id", clientId())
+                        .put("code_challenge", challenge).put("code_challenge_method", "S256"), null, 200));
                 code = start.getString("user_code");
                 url = start.optString("verification_url", "https://trakt.tv/activate").replaceFirst("^https?://", "");
                 changed.run();
@@ -102,8 +110,8 @@ final class Trakt {
                 long until = System.currentTimeMillis() + start.optLong("expires_in", 600) * 1000L;
                 while (System.currentTimeMillis() < until) {
                     Thread.sleep(interval);
-                    Response r = send("POST", "/oauth/device/token", new JSONObject().put("code", deviceCode)
-                            .put("client_id", clientId()).put("client_secret", Config.TRAKT_CLIENT_SECRET.trim()), null);
+                    Response r = send("POST", "/oauth/device/token", withSecret(new JSONObject().put("code", deviceCode)
+                            .put("client_id", clientId()).put("code_verifier", verifier)), null);
                     if (r.code == 200) {
                         save(app, new JSONObject(r.body));
                         String name = "";
@@ -144,8 +152,7 @@ final class Trakt {
         if (token.isEmpty()) return;
         new Thread(() -> {
             try {
-                send("POST", "/oauth/revoke", new JSONObject().put("token", token).put("client_id", clientId())
-                        .put("client_secret", Config.TRAKT_CLIENT_SECRET.trim()), null);
+                send("POST", "/oauth/revoke", withSecret(new JSONObject().put("token", token).put("client_id", clientId())), null);
             } catch (Exception ignored) {
             }
         }, "trakt").start();
@@ -163,9 +170,8 @@ final class Trakt {
         String refresh = sp.getString("refresh", "");
         if (refresh.isEmpty()) throw new IOException("not signed in");
         if (System.currentTimeMillis() < sp.getLong("expires", 0) - 3600_000L) return sp.getString("access", "");
-        Response r = send("POST", "/oauth/token", new JSONObject().put("refresh_token", refresh).put("client_id", clientId())
-                .put("client_secret", Config.TRAKT_CLIENT_SECRET.trim()).put("redirect_uri", "urn:ietf:wg:oauth:2.0:oob")
-                .put("grant_type", "refresh_token"), null);
+        Response r = send("POST", "/oauth/token", withSecret(new JSONObject().put("refresh_token", refresh).put("client_id", clientId())
+                .put("redirect_uri", "urn:ietf:wg:oauth:2.0:oob").put("grant_type", "refresh_token")), null);
         if (r.code == 400 || r.code == 401) {
             // The person disconnected the app on trakt.tv (or the token is gone): signed out here too.
             sp.edit().clear().apply();
@@ -229,6 +235,16 @@ final class Trakt {
 
     private static String clientId() {
         return Config.TRAKT_CLIENT_ID.trim();
+    }
+
+    /** Apps made before Trakt dropped the secret still send theirs; new ones (PKCE) send none. */
+    private static JSONObject withSecret(JSONObject body) throws org.json.JSONException {
+        String secret = Config.TRAKT_CLIENT_SECRET.trim();
+        return secret.isEmpty() ? body : body.put("client_secret", secret);
+    }
+
+    private static String base64Url(byte[] bytes) {
+        return android.util.Base64.encodeToString(bytes, android.util.Base64.URL_SAFE | android.util.Base64.NO_PADDING | android.util.Base64.NO_WRAP);
     }
 
     private static String get(Context c, String path) throws Exception {
