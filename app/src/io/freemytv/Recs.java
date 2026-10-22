@@ -202,6 +202,13 @@ final class Recs {
                     && (!p.detailed || (p.pkg != null && have.computeIfAbsent(p.pkg, this::installed)))) list.add(p);   // app missing: skip
         }
         if (list.isEmpty()) return list;
+        // Prime Video picks are rare (one hour in four): a service the owner doesn't subscribe to shouldn't lead the home screen.
+        long hourNow = System.currentTimeMillis() / 3600_000L;
+        if (hourNow % 4 != 0) {
+            List<Pick> noPrime = new ArrayList<>();
+            for (Pick p : list) if (!"prime".equals(p.app)) noPrime.add(p);
+            if (!noPrime.isEmpty()) list = noPrime;
+        }
         List<Pick> weighted = new ArrayList<>(list);
         for (Pick p : list) if ("netflix".equals(p.app)||"max".equals(p.app)||"disney".equals(p.app)||"vix".equals(p.app)) {
             weighted.add(p); weighted.add(p);
