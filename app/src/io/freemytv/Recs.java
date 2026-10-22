@@ -406,6 +406,17 @@ final class Recs {
             if (s != null && available(s[2])) services.put(o.getInt("provider_id"), s);
         }
         if (services.isEmpty()) throw new IOException("none of the TV's streaming services are on TMDB");
+        // Signed in to Trakt: what they've watched stays out, and their watchlist comes first. Trakt failing leaves
+        // the picks as they'd be without it.
+        Trakt.Lists trakt = null;
+        if (Trakt.signedIn(context)) {
+            try {
+                trakt = Trakt.lists(context);
+            } catch (Exception e) {
+                AppLog.w("trakt: " + e.getMessage());
+            }
+        }
+        final Set<String> watched = trakt == null ? new HashSet<>() : trakt.watched;
         StringBuilder ids = new StringBuilder();
         for (int id : services.keySet()) ids.append(ids.length() == 0 ? "" : "|").append(id);
         String common = "&language=" + lang() + "&watch_region=" + REGION + "&with_watch_monetization_types=flatrate&include_adult=false"
@@ -419,6 +430,7 @@ final class Recs {
             List<Pick> candidates = new ArrayList<>();
             for (int i = 0; i < hot.length() && i < 20; i++) add(candidates, hot.getJSONObject(i), kind);
             for (Pick pick : candidates) {
+                if (watched.contains(key(pick))) continue;
                 try {
                     fetchDetails(pick);
                 } catch (Exception e) {
@@ -436,9 +448,18 @@ final class Recs {
         List<Pick> newMovies = new ArrayList<>(), newShows = new ArrayList<>();
         for (int i = 0; i < movies.length(); i++) add(newMovies, movies.getJSONObject(i), "movie");
         for (int i = 0; i < shows.length(); i++) add(newShows, shows.getJSONObject(i), "tv");
-        // Trending first, then the new releases; movies and shows alternating, without repeats, up to 24.
+        newMovies.removeIf(x -> watched.contains(key(x)));
+        newShows.removeIf(x -> watched.contains(key(x)));
+        List<Pick> listMovies = new ArrayList<>(), listShows = new ArrayList<>();
+        if (trakt != null) {
+            fromWatchlist(trakt.watchlistMovies, watched, listMovies);
+            fromWatchlist(trakt.watchlistShows, watched, listShows);
+        }
+        // The Trakt watchlist (up to half), trending, then the new releases; movies and shows alternating, without
+        // repeats, up to 24.
         List<Pick> list = new ArrayList<>();
         java.util.Set<String> seen = new java.util.HashSet<>();
+        alternate(list, seen, listMovies, listShows, 12);
         alternate(list, seen, hotMovies, hotShows, 24);
         alternate(list, seen, newMovies, newShows, 24);
         if (list.isEmpty()) throw new IOException("TMDB returned no recommendations");
@@ -446,6 +467,23 @@ final class Recs {
         period = p;
         listAt = System.currentTimeMillis();
         listLanguage = Ui.language;
+    }
+
+    /** Trakt watchlist titles ("movie:603") on one of the TV's services, with their details; watched ones stay out. */
+    private void fromWatchlist(List<String> keys, Set<String> watched, List<Pick> out) {
+        for (String k : keys) {
+            if (watched.contains(k)) continue;
+            Pick p = new Pick();
+            p.kind = k.substring(0, k.indexOf(':'));
+            p.id = Integer.parseInt(k.substring(k.indexOf(':') + 1));
+            p.title = "";
+            try {
+                fetchDetails(p);
+            } catch (Exception e) {
+                continue;
+            }
+            if (p.pkg != null && p.backdrop != null) out.add(p);
+        }
     }
 
     /** Language of titles and genres (TMDB's "fr-FR", "zh-CN"…); the services come from the region. */
@@ -498,6 +536,7 @@ final class Recs {
         p.title = title(p, o);
         String best = bestBackdrop(o.optJSONObject("images"));
         if (best != null) p.backdrop = best;
+        else if (p.backdrop == null && !o.isNull("backdrop_path")) p.backdrop = o.optString("backdrop_path");   // a watchlist title
         List<String> parts = new ArrayList<>();
         JSONArray genres = o.optJSONArray("genres");
         if (p.kind.equals("tv")) parts.add(Ui.tr("Series"));
@@ -629,7 +668,7 @@ final class Recs {
         long stamp = (Config.TMDB_KEY.hashCode() * 31L + REGION.hashCode()) * 31L + (Config.HIDE_ANIMATION ? 1 : 0);
         stamp = stamp * 31L + (stremio() ? 1 : 0);
         for (String[] service : SERVICES) stamp = stamp * 31L + (installed(service[2]) ? service[2].hashCode() : 0);
-        return stamp;
+        return stamp * 31L + Trakt.stamp(context);   // signing in or out of Trakt fetches the picks again
     }
 
     // MARK: - Watchmode (the title's own page in its app; the free plan's web addresses are what the apps open)
