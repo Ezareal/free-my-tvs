@@ -1,6 +1,6 @@
 /*
  * The home screen on a 1920 × 1080 stage, with the Android app's measurements (HomeView): the title and tabs at the top
- * left, icon-only glass buttons at the top right, three picks, and the glass shelf at the bottom; ↓ on the shelf opens
+ * left, icon-only glass buttons at the top right, a recommendation carousel, and the glass shelf at the bottom; ↓ opens
  * the drawer (inputs, shortcuts, weather, prices). Light by day, dark from sunset to sunrise.
  * No CSS variables, grid or backdrop-filter: older LG TVs (webOS 3 and 4) don't have them, and blur is too heavy for
  * their GPUs. Only transform and opacity animate.
@@ -191,15 +191,24 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .night .round.focus { background: #FFF; color: #1D1D1F; }
 .night .round.focus .tip { color: #F5F5F7; }
 
-/* MARK: - Picks: a wide card and two tall ones; focused, a card grows 5%, rises and its edge lights up. */
+/* MARK: - Carousel: a clipped viewport, a small reusable window, transform-only movement. */
+
+#cards { position: absolute; left: 0; top: 236px; width: 1920px; height: 570px; overflow: hidden; contain: layout paint; }
+#carousel-position { position: absolute; right: 80px; top: 774px; font-size: 18px; color: #6E6E73; }
+.night #carousel-position { color: rgba(245, 245, 247, 0.62); }
 
 .card {
   position: absolute;
-  top: 262px;
-  height: 442px;
-  -webkit-transition: -webkit-transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.15);
-  transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+  left: 80px;
+  top: 26px;
+  width: 720px;
+  height: 405px;
+  will-change: transform;
+  -webkit-transition: -webkit-transform 0.16s cubic-bezier(0.22, 0.8, 0.25, 1);
+  transition: transform 0.16s cubic-bezier(0.22, 0.8, 0.25, 1);
 }
+.card-face { position: absolute; width: 100%; height: 100%; }
+.card .art { display: block; width: 100%; height: 100%; object-fit: cover; }
 .card .img {
   position: absolute;
   left: 0;
@@ -212,8 +221,6 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   background-size: cover;
   background-position: center;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14);
-  -webkit-transition: box-shadow 0.32s;
-  transition: box-shadow 0.32s;
 }
 .card .img::after {
   content: '';
@@ -230,13 +237,13 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   -webkit-transition: opacity 0.25s;
   transition: opacity 0.25s;
 }
-.card.focus { -webkit-transform: translateY(-6px) scale(1.05); transform: translateY(-6px) scale(1.05); z-index: 2; }
-.card.focus .img { box-shadow: 0 24px 46px rgba(0, 0, 0, 0.34); }
+.card.focus { z-index: 2; }
+.card.focus .card-face { -webkit-transform: translateY(-4px); transform: translateY(-4px); }
 .card.focus .img::after { opacity: 1; }
 .card .name {
   position: absolute;
   left: 0;
-  top: 464px;
+  top: 427px;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -245,13 +252,11 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   font-weight: 600;
   letter-spacing: 0.012em;
   color: #1D1D1F;
-  -webkit-transition: color 2s;
-  transition: color 2s;
 }
 .card .meta {
   position: absolute;
   left: 0;
-  top: 506px;
+  top: 467px;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -263,6 +268,9 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .night .card .img { background-color: #2C2C2E; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.32); }
 .night .card .name { color: #F5F5F7; }
 .night .card .meta { color: rgba(245, 245, 247, 0.62); }
+@media (prefers-reduced-motion: reduce) {
+  .card, .card-face, .card .img::after { -webkit-transition: none; transition: none; }
+}
 
 /* Without a TMDB key (or picks yet): the date and the time instead of the cards. */
 #clock {
@@ -280,6 +288,10 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .no-picks #clock { display: block; }
 .night #clock { color: #F5F5F7; }
 .night #clock .date { color: rgba(245, 245, 247, 0.62); }
+
+#recs-status { position: absolute; left: 80px; top: 574px; width: 1160px; font-size: 24px; line-height: 1.4; color: #6E6E73; display: none; }
+.no-picks #recs-status { display: block; }
+.night #recs-status { color: rgba(245, 245, 247, 0.62); }
 
 /* MARK: - Shelf: the glass bar with the apps, each in its brand color; focused, a tile grows 20% and rises. */
 
