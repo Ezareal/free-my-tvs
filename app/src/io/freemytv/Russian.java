@@ -120,6 +120,7 @@ final class Russian {
             case "OK picks or removes. None: a mix. Back saves.": return "OK выбирает или убирает. Ничего: подборка. «Назад» сохраняет.";
             case "chosen": return "выбрано";
             case "not chosen": return "не выбрано";
+            case "Hide AI videos": return "Скрывать видео об ИИ";
             case "on the shelf, place ": return "в избранном, позиция ";
             case "not on the shelf": return "не в избранном";
             case "Remote Buttons": return "Кнопки пульта";

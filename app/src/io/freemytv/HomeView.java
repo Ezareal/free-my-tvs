@@ -2777,13 +2777,18 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
                 retarget(false);
             }
         }
-        // This tab's cards and the first three of the others: switching tabs shows cards right away (Recs keeps 20).
-        for (Recs.Pick p : cards) recs.backdrop(p);
+        // This tab's cards and the first of each other tab (its background: switching tabs never flashes the gradient);
+        // the others' remaining cards load when shown. Within what Recs keeps, so nothing is built twice.
+        int others = 0;
         for (int t = 0; t < tabKinds.length; t++) {
-            if (t == tab) continue;
+            if (t == tab || "yt".equals(tabKinds[t])) continue;
             List<Recs.Pick> other = recs.now(tabKinds[t]);
-            for (int i = 0; i < Math.min(3, other.size()); i++) recs.backdrop(other.get(i));
+            if (!other.isEmpty()) {
+                recs.backdrop(other.get(0));
+                others++;
+            }
         }
+        for (int i = 0; i < Math.min(cards.size(), recs.keep - others); i++) recs.backdrop(cards.get(i));
         Backdrop b = cards.isEmpty() ? null : recs.backdrop(cards.get(Math.min(cardActive, cards.size() - 1)));
         if (cards.isEmpty() || b != null) showBackdrop(b);
         heroDirty = true;
@@ -2957,6 +2962,17 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             ytSlide[r].target = slide;
             if (snap) ytSlide[r].snap(slide);
         }
+        // The background is built only once the focus rests (each one is a full-size photo, blurred and kept: passing
+        // along a row would otherwise build one per card).
+        handler.removeCallbacks(rowBackdrop);
+        if (snap) rowBackdrop.run();
+        else handler.postDelayed(rowBackdrop, 400);
+    }
+
+    private final Runnable rowBackdrop = this::showRowBackdrop;
+
+    private void showRowBackdrop() {
+        if (!rowsMode() || cards.isEmpty() || cardIndex >= cards.size()) return;
         Backdrop b = recs.backdrop(cards.get(cardIndex));
         if (b != null) showBackdrop(b);
     }

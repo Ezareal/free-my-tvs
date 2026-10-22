@@ -146,6 +146,15 @@ final class Prefs {
         put("youtube", String.join(",", keys));
     }
 
+    /** The YouTube tab leaves out videos whose titles are about AI. */
+    static boolean youtubeHideAi() {
+        return sp().getBoolean("youtube_hide_ai", false);
+    }
+
+    static void setYoutubeHideAi(boolean on) {
+        put("youtube_hide_ai", on);
+    }
+
     // MARK: - Remote buttons
 
     private static String defaultApp(int keyCode) {

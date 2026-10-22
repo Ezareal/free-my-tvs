@@ -121,6 +121,7 @@ final class German {
             case "OK picks or removes. None: a mix. Back saves.": return "OK wählt aus oder ab. Keine: eine Mischung. Zurück speichert.";
             case "chosen": return "ausgewählt";
             case "not chosen": return "nicht ausgewählt";
+            case "Hide AI videos": return "KI-Videos ausblenden";
             case "on the shelf, place ": return "in der Leiste, Platz ";
             case "not on the shelf": return "nicht in der Leiste";
             case "Remote Buttons": return "Fernbedienungstasten";

@@ -100,6 +100,14 @@ final class YouTube {
             "UCAOtE1V7Ots4DjM8JLlrYgg",     // Peppa Pig
             "UCbCmjCuTUZos6Inko4u57UQ"},    // Cocomelon
     };
+    /**
+     * "Hide AI videos" (Settings > YouTube): titles about AI, in the TV's languages ("AI", ChatGPT, OpenAI, "KI",
+     * "inteligência artificial"...). By the title only: YouTube's own label for made-with-AI videos isn't public.
+     */
+    private static final Pattern AI = Pattern.compile("(?iu)\\b(A\\.?I\\.?|AGI|ChatGPT|GPT-?\\d*|OpenAI|LLMs?|Gemini AI|"
+            + "Copilot|Midjourney|Sora|DeepSeek|Grok|deepfakes?|chatbots?|artificial intelligence|machine learning|"
+            + "inteligência artificial|inteligencia artificial|künstliche intelligenz|KI|kunstmatige intelligentie|"
+            + "искусственн\\w* интеллект\\w*|ИИ|нейросет\\w*)\\b");
     /** Where each category's channels start in its row (after the key and the five names). */
     private static final int FIRST_CHANNEL = 6;
     /** None picked yet (or none at all): a mix of a few categories. */
@@ -204,7 +212,10 @@ final class YouTube {
         long now = System.currentTimeMillis();
         Set<String> seen = new HashSet<>(store.getStringSet("seen", Collections.<String>emptySet()));
         List<Video> fresh = new ArrayList<>();
-        for (Video v : videos) if (!seen.contains(v.id) && now - v.published < MAX_AGE) fresh.add(v);
+        boolean hideAi = Prefs.youtubeHideAi();
+        for (Video v : videos) {
+            if (!seen.contains(v.id) && now - v.published < MAX_AGE && !(hideAi && AI.matcher(v.title).find())) fresh.add(v);
+        }
         Map<String, Double> score = new HashMap<>();
         for (Video v : fresh) score.put(v.id, score(v, now));
         Collections.sort(fresh, (a, b) -> Double.compare(score.get(b.id), score.get(a.id)));
@@ -256,7 +267,7 @@ final class YouTube {
 
     private final Map<String, android.graphics.Bitmap> thumbs = new java.util.LinkedHashMap<String, android.graphics.Bitmap>(64, 0.75f, true) {
         @Override protected boolean removeEldestEntry(Map.Entry<String, android.graphics.Bitmap> eldest) {
-            return size() > 80;
+            return size() > 60;
         }
     };
     private final Set<String> thumbPending = new HashSet<>();

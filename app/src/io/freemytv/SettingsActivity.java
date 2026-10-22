@@ -241,7 +241,8 @@ public class SettingsActivity extends Activity {
                 }
                 case YT_EDIT: {
                     int at = pickScroll + row;
-                    if (at >= YouTube.CATEGORIES.length) return "";
+                    if (at == YouTube.CATEGORIES.length) return hideAiLabel() + ", " + onOff(Prefs.youtubeHideAi());
+                    if (at > YouTube.CATEGORIES.length) return "";
                     String[] cat = YouTube.CATEGORIES[at];
                     return YouTube.name(cat) + ", " + (ytPicked.contains(cat[0]) ? Ui.tr("escolhida", "chosen") : Ui.tr("não escolhida", "not chosen"));
                 }
@@ -351,7 +352,7 @@ public class SettingsActivity extends Activity {
                 case HOME_SETTINGS: return settingLabels().length;
                 case PICKER: return Math.min(PICK_VISIBLE, pickLabels.size());
                 case SHELF_EDIT: return Math.min(PICK_VISIBLE, shelfRows.size());
-                case YT_EDIT: return Math.min(PICK_VISIBLE, YouTube.CATEGORIES.length);
+                case YT_EDIT: return Math.min(PICK_VISIBLE, YouTube.CATEGORIES.length + 1);
                 default: return Prefs.KEYS.length;
             }
         }
@@ -827,7 +828,7 @@ public class SettingsActivity extends Activity {
         }
 
         private int listSize() {
-            return screen == SHELF_EDIT ? shelfRows.size() : screen == YT_EDIT ? YouTube.CATEGORIES.length : pickLabels.size();
+            return screen == SHELF_EDIT ? shelfRows.size() : screen == YT_EDIT ? YouTube.CATEGORIES.length + 1 : pickLabels.size();
         }
 
         // MARK: - Shelf editor
@@ -927,7 +928,15 @@ public class SettingsActivity extends Activity {
         }
 
         /** OK: picks the category or takes it out; saved right away (the home screen fetches the new channels). */
+        private static String hideAiLabel() {
+            return Ui.tr("Esconder vídeos sobre IA", "Hide AI videos", "Ocultar videos sobre IA");
+        }
+
         private void toggleYouTube() {
+            if (pickScroll + focus == YouTube.CATEGORIES.length) {     // the last row: Hide AI videos
+                Prefs.setYoutubeHideAi(!Prefs.youtubeHideAi());
+                return;
+            }
             String key = YouTube.CATEGORIES[pickScroll + focus][0];
             if (!ytPicked.remove(key)) ytPicked.add(key);
             Prefs.setYoutubeCategories(ytPicked);
@@ -939,11 +948,19 @@ public class SettingsActivity extends Activity {
                     LIST_X * k + 30 * k, (LIST_TOP - 24) * k, heading);
             int rows = rowCount();
             for (int i = 0; i < rows; i++) {
-                String[] cat = YouTube.CATEGORIES[pickScroll + i];
-                boolean on = ytPicked.contains(cat[0]);
                 float y = (LIST_TOP + 20 + i * (LIST_ROW_H + LIST_ROW_GAP)) * k;
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + LIST_ROW_H * k);
                 float f = drawRowBackground(c, i);
+                if (pickScroll + i == YouTube.CATEGORIES.length) {     // the last row: a switch, not a category
+                    rowLabel.setColor(blend(0xF2FFFFFF, INK, f));
+                    rowValue.setColor(blend(0xB3FFFFFF, 0xB31C1C1E, f));
+                    float base = rowRect.centerY() + Ui.halfCap(rowLabel);
+                    c.drawText(hideAiLabel(), rowRect.left + 30 * k, base, rowLabel);
+                    c.drawText(onOff(Prefs.youtubeHideAi()), rowRect.right - 30 * k, base, rowValue);
+                    continue;
+                }
+                String[] cat = YouTube.CATEGORIES[pickScroll + i];
+                boolean on = ytPicked.contains(cat[0]);
                 rowLabel.setColor(blend(on ? 0xF2FFFFFF : 0x99FFFFFF, on ? INK : 0x991C1C1E, f));
                 c.drawText(YouTube.name(cat), rowRect.left + 30 * k, rowRect.centerY() + Ui.halfCap(rowLabel), rowLabel);
                 if (on) {

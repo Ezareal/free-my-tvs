@@ -119,6 +119,7 @@ final class Recs {
     }
 
     private final Context context;
+    final int keep;
     private final SharedPreferences cache;
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private final Handler main = new Handler(Looper.getMainLooper());
@@ -137,6 +138,9 @@ final class Recs {
     private Recs(Context c) {
         context = c;
         cache = c.getSharedPreferences("recs", Context.MODE_PRIVATE);
+        // Backgrounds kept ready (~4 MB each: the cards in graphics memory, the glass in the heap): the tab's 10 cards
+        // and the first of each other tab; on a TV Android calls low on memory, fewer (the rest load when shown).
+        keep = ((android.app.ActivityManager) c.getSystemService(Context.ACTIVITY_SERVICE)).isLowRamDevice() ? 8 : 13;
         if (cache.getInt("version", 0) != CACHE_VERSION) cache.edit().clear().putInt("version", CACHE_VERSION).apply();
         try {
             String saved = cache.getString("picks", null);
@@ -780,7 +784,7 @@ final class Recs {
             if (forLight != light) return;   // the design changed midway: this one is stale
             synchronized (images) {
                 images.put(p.backdrop, backdrop);
-                while (images.size() > (forLight ? 20 : 4)) images.remove(images.keySet().iterator().next());
+                while (images.size() > (forLight ? keep : 4)) images.remove(images.keySet().iterator().next());
             }
             notifyListeners();
         } catch (IOException | RuntimeException | OutOfMemoryError e) {
@@ -808,10 +812,10 @@ final class Recs {
             if (parts[i].lastModified() < stale) parts[i].delete();
         }
         File[] files = dir.listFiles((d, name) -> !name.endsWith(".part"));
-        // TMDB's 24 plus the YouTube tab's 10, with room to spare.
-        if (files == null || files.length <= 48) return;
+        // TMDB's 24 plus the YouTube backgrounds last looked at.
+        if (files == null || files.length <= 36) return;
         Arrays.sort(files, (a, b) -> Long.compare(a.lastModified(), b.lastModified()));
-        for (int i = 0; i < files.length - 48; i++) {
+        for (int i = 0; i < files.length - 36; i++) {
             //noinspection ResultOfMethodCallIgnored
             files[i].delete();
         }
