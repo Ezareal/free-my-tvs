@@ -179,13 +179,14 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private final List<HomeApps.Item> lightButtons = new ArrayList<>();
     private Paint lTitle, lTab, lTabOn, lCardTitle, lCardMeta, lQuote, lTip, lDate, lClock, lWeather, lClockQuote;
     private Shader lightGradient;
-    // Without the picks there's no photo behind: a calmer, darker grey-blue than the picks' near-white fallback.
-    private Shader calmGradient;
     // Continue Watching: the background takes the focused card's colour (worked out once per picture, WatchArt), easing
     // from one to the next. Drawn as a plain fill under a fixed shade, so a colour change creates nothing per frame.
+    // Until the first picture's colour is in (a cold start reads the list and the pictures), the tint is a cool grey,
+    // so the background and the glass already look as they will and only ease to the card's colour.
+    private static final int TINT_WAIT = 0xFF8C93A0;
     private Shader tintShade;
-    private int tintFrom, tintTo;
-    private boolean tinted;
+    private int tintFrom = TINT_WAIT, tintTo = TINT_WAIT;
+    private boolean tinted;   // a card's colour is in (else TINT_WAIT)
     private final Spring tintMix = new Spring(0.7f, 1f, 1);
     // The glass (shelf, drawer) reads that same colour: two flat images blended while it eases (Android 13+, where the
     // glass reads images), so nothing is made per frame. On older TVs the glass is a flat fill of glassLight().
@@ -619,6 +620,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         layoutLight();
         hero = null;
         heroFrom = null;
+        // No photo yet (or none at all, in Continue Watching): the glass reads the plain background from the first frame.
+        if (bgTo == null && bgFadeAt == 0) neutralGlass();
         updatePicks();
         motionDirty = true;
         wake();
@@ -649,7 +652,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         lClock.setLetterSpacing(-0.01f);
         lWeather = Ui.text(Ui.medium, 34 * k, L_DIM);
         lClockQuote = Ui.numbers(Ui.medium, 28 * k, L_DIM);
-        lightGradient = calmGradient = tintShade = null;
+        lightGradient = tintShade = null;
         buttonPaint = Ui.text(Ui.semibold, 29 * k, INK);
         capsuleText = Ui.numbers(Ui.medium, 29 * k, 0xF2FFFFFF);
         tipPaint = Ui.text(Ui.semibold, 25 * k, 0xF2FFFFFF);
@@ -948,8 +951,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     /** The plain background's colour at height y (0 = top, 1 = bottom), as drawLightSky draws it. */
     private int plainAt(float y, int card) {
         if (!continueMode()) return blend(0xFFEBEBF0, 0xFF141416, night);
-        if (tinted) return blend(tintColor(card), 0xFF000000, 0.2f * y);   // under drawTint's shade
-        return blend(blend(0xFFD3D7DF, 0xFFA9B0BD, y), blend(0xFF1C1C1E, 0xFF0B0B0D, y), night);
+        return blend(tintColor(card), 0xFF000000, 0.2f * y);   // under drawTint's shade
     }
 
     /** The card's colour as a pale tint by day, a deep one at night (drawTint, before its shade). */
@@ -959,7 +961,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
 
     /** The day glass's colour: white, or in Continue Watching white with a little of the background's tint. */
     private int glassLight() {
-        if (!continueMode() || !tinted) return 0xFFFFFFFF;
+        if (!continueMode()) return 0xFFFFFFFF;
         return blend(0xFFFFFFFF, blend(tintFrom, tintTo, Ui.clamp(tintMix.value)), 0.18f);
     }
 
@@ -1079,7 +1081,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         }
         lCardTitle.setColor(watchTitleColor);
         lCardMeta.setColor(watchMetaColor);
-        if (tinted) lQuote.setColor(watchQuoteColor);
+        lQuote.setColor(watchQuoteColor);
     }
 
     private boolean tickBackgroundFade(long up) {
@@ -2893,6 +2895,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         if (modeChanged || lost) zone = Z_SHELF;
         if (modeChanged) {
             updateCards();
+            if (bgTo == null && bgFadeAt == 0) neutralGlass();   // the plain background depends on the mode too
             sky.invalidate();   // the background's gradient depends on the mode
         }
         retarget(modeChanged);
@@ -3292,17 +3295,16 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         android.graphics.ColorFilter v = veil(tone(0.32f, 0.42f) * Ui.clamp(drawer.value), blend(0xFFFFFFFF, 0xFF000000, night));
         if (bgTo == null || (fading && bgFrom == null)) {
             if (lightGradient == null) lightGradient = new LinearGradient(0, 0, 0, h, 0xFFF5F5F7, 0xFFE2E2E7, Shader.TileMode.CLAMP);
-            if (calmGradient == null) calmGradient = new LinearGradient(0, 0, 0, h, 0xFFD3D7DF, 0xFFA9B0BD, Shader.TileMode.CLAMP);
             if (nightGradient == null) nightGradient = new LinearGradient(0, 0, 0, h, 0xFF1C1C1E, 0xFF0B0B0D, Shader.TileMode.CLAMP);
             fill.setColorFilter(v);
             fill.setColor(0xFF000000);
-            if (continueMode() && tinted) {
+            if (continueMode()) {
                 drawTint(c);
             } else if (night < 0.999f) {
-                fill.setShader(continueMode() ? calmGradient : lightGradient);
+                fill.setShader(lightGradient);
                 c.drawRect(screen, fill);
             }
-            if (night > 0.001f && !(continueMode() && tinted)) {
+            if (night > 0.001f && !continueMode()) {
                 fill.setShader(nightGradient);
                 fill.setAlpha(Math.round(255 * night));
                 c.drawRect(screen, fill);
@@ -3333,6 +3335,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         if (!continueMode() || watching.isEmpty()) {
             if (tinted) {
                 tinted = false;
+                tintFrom = tintTo = TINT_WAIT;
+                tintMix.snap(1);
                 sky.invalidate();
                 platter.invalidate();
                 if (bgTo == null && bgFadeAt == 0) neutralGlass();
@@ -3342,18 +3346,13 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         WatchNext.Item it = watching.get(Math.min(watchIndex, watching.size() - 1));
         Integer color = watchArt.color(it.pictureKey, it.bannerKey);
         if (color == null || tinted && color == tintTo) return;
-        if (!tinted) {
-            tintFrom = tintTo = color;
-            tintMix.snap(1);
-            tinted = true;
-            if (bgTo == null && bgFadeAt == 0) neutralGlass();
-        } else {
-            tintFrom = blend(tintFrom, tintTo, Ui.clamp(tintMix.value));
-            tintTo = color;
-            tintMix.snap(0);
-            tintMix.target = 1;
-            easeGlass();
-        }
+        // The first colour eases in from TINT_WAIT like any other change: no jump when the pictures arrive.
+        tinted = true;
+        tintFrom = blend(tintFrom, tintTo, Ui.clamp(tintMix.value));
+        tintTo = color;
+        tintMix.snap(0);
+        tintMix.target = 1;
+        easeGlass();
         sky.invalidate();
         platter.invalidate();
         drawerDirty = heroDirty = true;
