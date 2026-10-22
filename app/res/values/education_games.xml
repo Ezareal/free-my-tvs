@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  <string name="edu_games">Gaming consoles</string>
+  <string name="edu_games_help">Choose which HDMI inputs kids can use. Watching and gaming share the same daily time.</string>
+  <string name="edu_games_empty">No HDMI inputs found on this device.</string>
+  <string name="edu_game_approval">Allow this HDMI port in Kids mode? Approval follows the port, even if you plug in a different device. When time runs out, the TV returns to maths. The console and game keep running: save your game before time expires. Test the picture and automatic return before enabling it.</string>
+  <string name="edu_game_test">Test return · 10 seconds</string>
+  <string name="edu_game_allow">Allow in Kids mode</string>
+  <string name="edu_game_off">Turn console on</string>
+  <string name="edu_game_connecting">Connecting to console…</string>
+  <string name="edu_game_no_signal">No picture yet. Turn on the console. Press Back to return.</string>
+  <string name="edu_game_failed">This TV could not open the HDMI picture here. Press Back to return.</string>
+  <string name="edu_game_time">%1$d:%2$02d left · Back to return</string>
+  <string name="edu_game_test_time">Test returns in %1$d:%2$02d</string>
+</resources>

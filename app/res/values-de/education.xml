@@ -1,0 +1,47 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="education_guard_description">Im Kindermodus wird der Name der geöffneten App erkannt und die Nutzungszeit bei eingeschaltetem Bildschirm gezählt. Bei Zeitablauf oder anderen Apps geht es zurück zu Education. Bildschirminhalte werden nicht gelesen.</string>
+    <string name="edu_welcome">Ein bisschen Fernsehen. Ein bisschen Lernen. Ein Platz für Kinder.</string>
+    <string name="edu_parent">Elternmodus</string>
+    <string name="edu_adult">Erwachsenenmodus</string>
+    <string name="edu_rule">3 Stunden täglich. Löse 5 Rechenaufgaben für weitere 30 Minuten.</string>
+    <string name="edu_hello">Hallo, kleiner Entdecker!</string>
+    <string name="edu_choose">Wähle etwas zum Anschauen oder starte ein kleines Lernabenteuer.</string>
+    <string name="edu_practice">123 · Lass uns üben</string>
+    <string name="edu_remote">Mit Pfeilen wählen · Mit OK öffnen · Die PIN schützt den Erwachsenenmodus</string>
+    <string name="edu_time">Heute noch %1$d Std. %2$02d Min. Fernsehzeit</string>
+    <string name="edu_guard_missing">Bitte einen Erwachsenen, den Education-Bedienungshilfedienst zu aktivieren. Videos bleiben bis dahin gesperrt.</string>
+    <string name="edu_ask_parent">Bitte einen Erwachsenen, diese App im Elternmodus einzurichten.</string>
+    <string name="edu_storage_error">Die Familieneinstellungen konnten nicht gelesen werden. Bitte einen Erwachsenen, die App zu reparieren.</string>
+    <string name="edu_create_pin">Erstelle eine vierstellige Eltern-PIN. Halte sie geheim.</string>
+    <string name="edu_confirm_pin">Gib dieselbe PIN erneut ein.</string>
+    <string name="edu_enter_pin">Gib deine vierstellige PIN ein, um Education zu verwalten oder zum Erwachsenenmodus zu wechseln.</string>
+    <string name="edu_ok">OK</string>
+    <string name="edu_four_digits">Gib alle 4 Ziffern ein und wähle OK.</string>
+    <string name="edu_mismatch">Die PINs stimmen nicht überein. Bitte erneut beginnen.</string>
+    <string name="edu_checking">Wird geprüft…</string>
+    <string name="edu_wrong_pin">PIN nicht akzeptiert. Nach 5 Versuchen bitte 30 Sekunden warten.</string>
+    <string name="edu_parent_intro">Familieneinstellungen. Zum Verlassen des Kindermodus ist immer deine PIN nötig.</string>
+    <string name="edu_start_kids">Kindermodus starten</string>
+    <string name="edu_approve">Richte zuerst mindestens eine Kinder-App ein und bestätige sie.</string>
+    <string name="edu_guard_setup">Education-Kontrollen aktivieren</string>
+    <string name="edu_adult_first">Wechsle zuerst zum Erwachsenenmodus, um die TV-Einstellungen zu öffnen.</string>
+    <string name="edu_progress">Lernfortschritt: %1$d Übungstage. Kleine tägliche Schritte, kein Sprung nach Pausen.</string>
+    <string name="edu_change_pin">PIN ändern</string>
+    <string name="edu_reset_maths">Rechnen wieder leicht machen</string>
+    <string name="edu_reset_confirm">Wieder mit kleinen Additionen beginnen? Die heutige Fernsehzeit bleibt unverändert.</string>
+    <string name="edu_limits">Die Kontrollen benötigen den Education-Dienst. Sie ersetzen keine Geräteverwaltung: Einstellungen, Dienstentfernung, HDMI und App-Profile werden weiterhin vom Fernseher oder der jeweiligen App verwaltet.</string>
+    <string name="edu_missing_app">Keine unterstützte App installiert. Installiere im Erwachsenenmodus YouTube oder ABC iview aus dem TV-Store und kehre zurück.</string>
+    <string name="edu_youtube_setup">Wähle in YouTube das YouTube-Kids-Profil und richte einen Elterncode ein, der andere Profile und die Nutzung ohne Anmeldung schützt. Dieser Startbildschirm kann das Profil nicht wählen oder sperren. Bestätige erst nach der Einrichtung.</string>
+    <string name="edu_abc_setup">Erstelle und wähle in ABC iview ein Kinderprofil mit ABC-Kids-Inhalten. Dieser Startbildschirm öffnet ABC iview, verhindert aber keinen Profilwechsel. Prüfe die Kindersicherung vor der Freigabe.</string>
+    <string name="edu_remove">Freigabe entfernen</string>
+    <string name="edu_confirm_profile">Kinderprofil ist eingerichtet</string>
+    <string name="edu_math_time">Zeit für ein Rechenabenteuer!</string>
+    <string name="edu_question">Aufgabe %1$d von %2$d · Lass dir Zeit. Es gibt keinen Timer.</string>
+    <string name="edu_math_hint">Wähle die Ziffern deiner Antwort und drücke OK.</string>
+    <string name="edu_try_again">Fast! Versuche zu zählen. Du darfst es noch einmal versuchen.</string>
+    <string name="edu_well_done">Geschafft! ★</string>
+    <string name="edu_earned">Fünf richtige Antworten. Du hast weitere 30 Minuten verdient!</string>
+    <string name="edu_practised">Gut geübt! Dein nächstes Abenteuer wartet.</string>
+    <string name="edu_continue">Zurück zu meinen Sendungen</string>
+</resources>

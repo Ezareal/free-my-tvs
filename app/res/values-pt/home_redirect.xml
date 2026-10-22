@@ -1,0 +1,5 @@
+<!-- Home routing compatibility service -->
+<resources>
+<string name="home_redirect_label">Início Free My TV</string>
+<string name="home_redirect_description">Abre o Free My TV quando a TV ignora o início escolhido. Lê apenas eventos da janela inicial; mantém os apps do sistema e as redes Wi-Fi.</string>
+</resources>

@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  <string name="edu_next">Set up Kids mode</string>
+  <string name="edu_setup_hint">Complete these two steps, then start watching.</string>
+  <string name="edu_controls_ready">1. Viewing controls are on</string>
+  <string name="edu_controls_needed">1. Turn on viewing controls</string>
+  <string name="edu_controls_help">On the next screen, choose Education and turn it on. Then press Back.</string>
+  <string name="edu_apps_step">2. Choose the kids apps</string>
+  <string name="edu_ready">Ready</string>
+  <string name="edu_set_up">Set up</string>
+  <string name="edu_more">More settings</string>
+  <string name="edu_back_parent">Back to Parent Mode</string>
+  <string name="edu_watch">What would you like to watch?</string>
+  <string name="edu_ready_hint">Ready to watch. Choose Kids mode or return to the home screen.</string>
+  <string name="edu_home_return">Back to home screen</string>
+  <string name="edu_kids_mode">Kids mode</string>
+  <string name="edu_parent_settings">Parent settings</string>
+  <string name="edu_manage">Apps and consoles</string>
+</resources>

@@ -1,0 +1,5 @@
+<!-- Home routing compatibility service -->
+<resources>
+<string name="home_redirect_label">Free My TV Home</string>
+<string name="home_redirect_description">Opens Free My TV when the TV overrides your selected Home app. Reads only Home window events; leaves system apps and saved Wi-Fi networks enabled.</string>
+</resources>

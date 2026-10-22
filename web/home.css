@@ -524,3 +524,14 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 
 /* The Magic Remote's pointer: no text selection, no outlines. */
 * { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+
+/* Built-in, texture-free ambient washes: transforms only, no animated blur. */
+#ambient { position:absolute; inset:0; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden; }
+#ambient i { position:absolute; width:94%; height:140%; left:-35%; top:-20%; border-radius:50%; background:radial-gradient(ellipse,rgba(65,170,184,.22),rgba(65,170,184,0) 70%); }
+#ambient i:nth-child(2) { left:3%; top:-40%; background:radial-gradient(ellipse,rgba(117,143,206,.22),rgba(117,143,206,0) 70%); }
+#ambient i:nth-child(3) { left:41%; top:0; background:radial-gradient(ellipse,rgba(112,184,167,.22),rgba(112,184,167,0) 70%); }
+.education-open #ambient i { width:60%; height:96%; left:-18%; background:radial-gradient(ellipse,rgba(57,203,167,.30),rgba(57,203,167,0) 70%); }
+.education-open #ambient i:nth-child(2) { left:20%; background:radial-gradient(ellipse,rgba(168,144,238,.30),rgba(168,144,238,0) 70%); }
+.education-open #ambient i:nth-child(3) { left:58%; background:radial-gradient(ellipse,rgba(244,189,118,.30),rgba(244,189,118,0) 70%); }
+
+#ambient::after { content:""; position:absolute; left:0; top:0; width:100%; height:100%; background:url(ambient-grain.png) repeat; pointer-events:none; }

@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  <string name="edu_limits_title">Лимиты времени</string>
+  <string name="edu_total_limit">Все приложения и приставки вместе</string>
+  <string name="edu_limits_help">Задайте общий дневной лимит и лимиты приложений. Использованное время сохраняется.</string>
+  <string name="edu_daily_minutes">%1$d мин в день</string>
+  <string name="edu_minutes_left">Осталось %1$d мин</string>
+  <string name="edu_daily_limit">Дневной лимит в минутах</string>
+  <string name="edu_extra_minutes">Минуты за решение задач</string>
+  <string name="edu_enter_minutes">Введите от 1 до %1$d минут и нажмите OK.</string>
+  <string name="edu_time_earned">Дополнительное время готово. Выберите просмотр или игру.</string>
+  <string name="edu_rule_limits">Общий лимит: %1$d минут в день. У приложений и приставок есть отдельные лимиты.</string>
+  <string name="edu_math_keypad_hint">Введите ответ и нажмите OK.</string>
+</resources>

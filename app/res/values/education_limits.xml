@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  <string name="edu_limits_title">Time limits</string>
+  <string name="edu_total_limit">All apps and consoles combined</string>
+  <string name="edu_limits_help">Set the overall daily allowance, then each app or console. Time already used is kept.</string>
+  <string name="edu_daily_minutes">%1$d min per day</string>
+  <string name="edu_minutes_left">%1$d min left</string>
+  <string name="edu_daily_limit">Daily limit in minutes</string>
+  <string name="edu_extra_minutes">Minutes earned after maths</string>
+  <string name="edu_enter_minutes">Enter 1–%1$d minutes, then choose OK.</string>
+  <string name="edu_time_earned">Extra time is ready. Choose what to watch or play.</string>
+  <string name="edu_rule_limits">%1$d minutes shared each day. Each app and console also has its own limit.</string>
+  <string name="edu_math_keypad_hint">Enter your answer, then choose OK.</string>
+</resources>

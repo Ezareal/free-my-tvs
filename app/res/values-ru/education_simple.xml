@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  <string name="edu_next">Настроить детский режим</string>
+  <string name="edu_setup_hint">Два шага — и можно смотреть.</string>
+  <string name="edu_controls_ready">1. Контроль просмотра включён</string>
+  <string name="edu_controls_needed">1. Включить контроль просмотра</string>
+  <string name="edu_controls_help">На следующем экране включите Education и нажмите Назад.</string>
+  <string name="edu_apps_step">2. Выберите детские приложения</string>
+  <string name="edu_ready">Готово</string>
+  <string name="edu_set_up">Настроить</string>
+  <string name="edu_more">Другие настройки</string>
+  <string name="edu_back_parent">Назад в родительский режим</string>
+  <string name="edu_watch">Что хочешь посмотреть?</string>
+  <string name="edu_ready_hint">Всё готово. Включите детский режим или вернитесь домой.</string>
+  <string name="edu_home_return">На главный экран</string>
+  <string name="edu_kids_mode">Детский режим</string>
+  <string name="edu_parent_settings">Родительские настройки</string>
+  <string name="edu_manage">Приложения и приставки</string>
+</resources>

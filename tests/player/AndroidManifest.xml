@@ -1,0 +1,8 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.google.android.youtube.tv">
+    <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="33" />
+    <application android:label="Education test fixture (not YouTube)">
+        <activity android:name=".Fixture" android:exported="true" android:screenOrientation="landscape">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LEANBACK_LAUNCHER" /></intent-filter>
+        </activity>
+    </application>
+</manifest>

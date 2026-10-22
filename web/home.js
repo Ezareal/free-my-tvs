@@ -204,10 +204,10 @@
     var buttons = $('buttons');
     buttons.innerHTML = '';
     var defs = [['live_tv', tr('TV aberta', 'Live TV', 'TV en vivo')], ['hdmi', tr('Entradas HDMI', 'HDMI Inputs', 'Entradas HDMI')],
-      ['settings', tr('Ajustes', 'Settings', 'Ajustes')]];
-    for (var b = 0; b < 3; b++) {
-      var r = el('button', 'round' + (b === 2 ? ' last' : ''), buttons);
-      r.style.left = (1596 + 88 * b) + 'px';
+      ['sparkles', tr('Modo infantil', 'Kids mode', 'Modo infantil')], ['settings', tr('Ajustes', 'Settings', 'Ajustes')]];
+    for (var b = 0; b < defs.length; b++) {
+      var r = el('button', 'round' + (b === defs.length - 1 ? ' last' : ''), buttons);
+      r.style.left = (1508 + 88 * b) + 'px';
       sym(defs[b][0], r);
       el('div', 'tip', r, defs[b][1]);
       hover(r, Z.TOP, 3 + b);
@@ -329,6 +329,7 @@
     drawerInputs = drawerItems.length;
     drawerItems.push({label: tr('Todos os Apps', 'All Apps', 'Todas las apps'), symbol: 'apps', run: openApps});
     drawerItems.push({label: tr('Ajustes do Início', 'Home Settings', 'Ajustes de inicio'), symbol: 'settings', run: openSettings});
+    drawerItems.push({label: 'Education', symbol: 'sparkles', run: Education.open});
     drawerItems.push({label: tr('Ajustes da TV', 'TV Settings', 'Ajustes del TV'), symbol: 'tv_settings', run: tvSettings});
     var n = drawerItems.length, gap = 18, groupGap = 56, groups = drawerInputs > 0 && drawerInputs < n ? 2 : 1;
     var tw = Math.min(230, (1760 - Math.max(0, n - groups) * gap - (groups - 1) * groupGap) / Math.max(1, n));
@@ -627,6 +628,7 @@
         if (st.top < 3) return;
         if (st.top === 3) { var live = liveTV(); if (live) launcher(live.id, tr('TV aberta', 'Live TV', 'TV en vivo'))(); }
         else if (st.top === 4) { st.zone = Z.SHELF; openDrawer(); st.drawer = 1 < drawerInputs ? 1 : 0; updateFocus(); }
+        else if (st.top === 5) Education.open();
         else openSettings();
         return;
       case Z.CARDS:
@@ -675,7 +677,7 @@
         break;
       case Z.TOP:
         if (dx) {
-          st.top = Math.max(0, Math.min(5, st.top + dx));
+          st.top = Math.max(0, Math.min(6, st.top + dx));
           if (st.top < 3) selectTab(st.top);   // as on Apple TV: focusing a tab selects it
         } else if (dy > 0) {
           if (cards.length) { st.zone = Z.CARDS; st.card = Math.min(cards.length - 1, st.top < 3 ? 0 : cards.length - 1); }
@@ -811,6 +813,7 @@
   // MARK: - Keys
 
   document.addEventListener('keydown', function (e) {
+    if (Education.active()) return;
     var k = e.keyCode;
     if (poke()) { e.preventDefault(); return; }   // the first press only wakes the screen
     if (k === TV.keys.left) move(-1, 0);

@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  <string name="edu_next">Configurar modo infantil</string>
+  <string name="edu_setup_hint">Completa estos dos pasos para empezar.</string>
+  <string name="edu_controls_ready">1. Controles activados</string>
+  <string name="edu_controls_needed">1. Activar controles</string>
+  <string name="edu_controls_help">En la siguiente pantalla, activa Education. Luego pulsa Atrás.</string>
+  <string name="edu_apps_step">2. Elegir aplicaciones infantiles</string>
+  <string name="edu_ready">Listo</string>
+  <string name="edu_set_up">Configurar</string>
+  <string name="edu_more">Más ajustes</string>
+  <string name="edu_back_parent">Volver al modo padres</string>
+  <string name="edu_watch">¿Qué quieres ver?</string>
+  <string name="edu_ready_hint">Todo listo. Elige el modo infantil o vuelve al inicio.</string>
+  <string name="edu_home_return">Volver al inicio</string>
+  <string name="edu_kids_mode">Modo infantil</string>
+  <string name="edu_parent_settings">Ajustes para padres</string>
+  <string name="edu_manage">Apps y consolas</string>
+</resources>

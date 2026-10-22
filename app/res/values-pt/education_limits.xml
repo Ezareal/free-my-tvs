@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  <string name="edu_limits_title">Limites de tempo</string>
+  <string name="edu_total_limit">Todos os apps e consoles juntos</string>
+  <string name="edu_limits_help">Defina o tempo diário total e de cada app ou console. O tempo usado é mantido.</string>
+  <string name="edu_daily_minutes">%1$d min por dia</string>
+  <string name="edu_minutes_left">Restam %1$d min</string>
+  <string name="edu_daily_limit">Limite diário em minutos</string>
+  <string name="edu_extra_minutes">Minutos ganhos com matemática</string>
+  <string name="edu_enter_minutes">Digite 1–%1$d minutos e escolha OK.</string>
+  <string name="edu_time_earned">Tempo extra liberado. Escolha o que assistir ou jogar.</string>
+  <string name="edu_rule_limits">%1$d minutos compartilhados por dia. Cada app e console também tem seu limite.</string>
+  <string name="edu_math_keypad_hint">Digite a resposta e escolha OK.</string>
+</resources>

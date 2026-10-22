@@ -1,0 +1,5 @@
+<!-- Home routing compatibility service -->
+<resources>
+<string name="home_redirect_label">Главный экран Free My TV</string>
+<string name="home_redirect_description">Открывает Free My TV, если телевизор игнорирует выбранный главный экран. Читает только события главного окна; системные приложения и сети Wi-Fi сохраняются.</string>
+</resources>

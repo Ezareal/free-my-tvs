@@ -49,6 +49,7 @@ public class SettingsActivity extends Activity {
 
     @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (EducationStore.kids(this)) { EducationStore.open(this); finish(); return; }
         Watchdog.install(this);
         Ui.init(this);
         view = new SettingsView(this);
@@ -57,6 +58,8 @@ public class SettingsActivity extends Activity {
 
     @Override protected void onResume() {
         super.onResume();
+        if (EducationStore.kids(this)) { EducationStore.open(this); finish(); return; }
+        if (view == null) return;
         view.resume();
         // From ADB: am start -n io.freemytv/.SettingsActivity --ez screensaver true (straight to the preview).
         if (preview == null && getIntent().getBooleanExtra("screensaver", false)) {
@@ -73,7 +76,7 @@ public class SettingsActivity extends Activity {
 
     @Override protected void onPause() {
         closePreview();     // before pausing the view: closing the preview resumes it (view.resume)
-        view.pause();
+        if (view != null) view.pause();
         super.onPause();
     }
 
@@ -94,7 +97,7 @@ public class SettingsActivity extends Activity {
                     return super.dispatchKeyEvent(event);
             }
         }
-        if (view.onKey(event)) return true;
+        if (view != null && view.onKey(event)) return true;
         return super.dispatchKeyEvent(event);
     }
 
@@ -210,7 +213,7 @@ public class SettingsActivity extends Activity {
                         return Ui.tr("Início, ", "Home Screen, ") + value;
                     }
                     String[] names = {Ui.tr("Tela de Descanso, ver agora", "Screensaver, preview"), Ui.tr("Ajustes do Início", "Home Settings"),
-                            Ui.tr("Prateleira", "Shelf"), Ui.tr("Botões do Controle", "Remote Buttons"), Ui.tr("Ajustes da TV", "TV Settings")};
+                            Ui.tr("Prateleira", "Shelf"), Ui.tr("Botões do Controle", "Remote Buttons"), Ui.tr("Ajustes da TV", "TV Settings"), "Education"};
                     return row - 1 < names.length ? names[row - 1] : "";
                 }
                 case HOME_CHOICE: {
@@ -332,7 +335,7 @@ public class SettingsActivity extends Activity {
 
         private int rowCount() {
             switch (screen) {
-                case MAIN: return 6;
+                case MAIN: return 7;
                 case HOME_CHOICE: return 2;
                 case HOME_SETTINGS: return settingLabels().length;
                 case PICKER: return Math.min(PICK_VISIBLE, pickLabels.size());
@@ -374,9 +377,9 @@ public class SettingsActivity extends Activity {
             String mode = freeActive() ? "Free My TV" : Ui.tr("Original", "Original");
             String[] labels = {Ui.tr("Início", "Home Screen"), Ui.tr("Tela de Descanso", "Screensaver"),
                     Ui.tr("Ajustes do Início", "Home Settings"), Ui.tr("Prateleira", "Shelf"),
-                    Ui.tr("Botões do Controle", "Remote Buttons"), Ui.tr("Ajustes da TV", "TV Settings")};
-            String[] values = {working ? "" : mode, Ui.tr("Ver agora", "Preview"), "", "", "", ""};
-            for (int i = 0; i < 6; i++) {
+                    Ui.tr("Botões do Controle", "Remote Buttons"), Ui.tr("Ajustes da TV", "TV Settings"), "Education"};
+            String[] values = {working ? "" : mode, Ui.tr("Ver agora", "Preview"), "", "", "", "", ""};
+            for (int i = 0; i < 7; i++) {
                 float y = (LIST_TOP + i * (ROW_H + ROW_GAP)) * k;
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + ROW_H * k);
                 float f = drawRowBackground(c, i);
@@ -403,7 +406,7 @@ public class SettingsActivity extends Activity {
                 }
             }
 
-            float y = (LIST_TOP + 6 * (ROW_H + ROW_GAP) + 20) * k;
+            float y = (LIST_TOP + 7 * (ROW_H + ROW_GAP) + 20) * k;
             String error = state.optString("error");
             if (working && (busyText.contains("Permitir") || busyText.contains("Allow") || busyText.contains("разрешите"))) {
                 c.drawText(Ui.tr("Na TV: marque “Sempre permitir” e aperte OK.", "On the TV: tick “Always allow” and press OK."),
@@ -1018,6 +1021,8 @@ public class SettingsActivity extends Activity {
                 loadApps();
                 screen = REMOTE_KEYS;
                 focus = 0;
+            } else if (focus == 6) {
+                EducationStore.open(c);
             } else {
                 activity.startActivity(new Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             }

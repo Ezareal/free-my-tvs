@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  <string name="edu_games">Consoles de jogos</string>
+  <string name="edu_games_help">Escolha as entradas HDMI permitidas. TV e jogos compartilham o tempo diário.</string>
+  <string name="edu_games_empty">Nenhuma entrada HDMI encontrada.</string>
+  <string name="edu_game_approval">Permitir esta porta HDMI? A permissão vale para qualquer aparelho conectado nela. Ao acabar o tempo, a TV volta à matemática. O jogo continua no console: salve antes. Teste a imagem e o retorno automático primeiro.</string>
+  <string name="edu_game_test">Testar retorno · 10 segundos</string>
+  <string name="edu_game_allow">Permitir no modo infantil</string>
+  <string name="edu_game_off">Ligue o console</string>
+  <string name="edu_game_connecting">Conectando ao console…</string>
+  <string name="edu_game_no_signal">Sem imagem. Ligue o console. Voltar para sair.</string>
+  <string name="edu_game_failed">A TV não abriu a imagem HDMI. Pressione Voltar.</string>
+  <string name="edu_game_time">Restam %1$d:%2$02d · Voltar para sair</string>
+  <string name="edu_game_test_time">Teste termina em %1$d:%2$02d</string>
+</resources>

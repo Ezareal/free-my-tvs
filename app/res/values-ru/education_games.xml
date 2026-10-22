@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  <string name="edu_games">Игровые приставки</string>
+  <string name="edu_games_help">Выберите разрешённые HDMI-входы. Просмотр и игры используют общий дневной лимит.</string>
+  <string name="edu_games_empty">Входы HDMI не найдены.</string>
+  <string name="edu_game_approval">Разрешить этот HDMI-порт? Разрешение действует и при замене устройства. По истечении времени ТВ вернётся к задачам. Игра на приставке продолжится: сохранитесь заранее. Сначала проверьте изображение и автоматический возврат.</string>
+  <string name="edu_game_test">Проверить возврат · 10 секунд</string>
+  <string name="edu_game_allow">Разрешить детям</string>
+  <string name="edu_game_off">Включите приставку</string>
+  <string name="edu_game_connecting">Подключение к приставке…</string>
+  <string name="edu_game_no_signal">Нет изображения. Включите приставку. Назад — вернуться.</string>
+  <string name="edu_game_failed">Не удалось открыть HDMI. Нажмите Назад.</string>
+  <string name="edu_game_time">Осталось %1$d:%2$02d · Назад — выйти</string>
+  <string name="edu_game_test_time">Возврат через %1$d:%2$02d</string>
+</resources>

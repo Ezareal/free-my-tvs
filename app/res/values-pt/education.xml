@@ -1,0 +1,47 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="education_guard_description">No modo infantil, observa qual aplicativo está aberto, conta o tempo com a tela ligada e retorna a Education ao terminar o tempo ou abrir outro aplicativo. Não lê o conteúdo da tela.</string>
+    <string name="edu_welcome">Um pouco de TV. Um pouco de aprendizado. Um espaço para crianças.</string>
+    <string name="edu_parent">Modo dos pais</string>
+    <string name="edu_adult">Modo adulto</string>
+    <string name="edu_rule">3 horas por dia. Resolva 5 questões de matemática para ganhar mais 30 minutos.</string>
+    <string name="edu_hello">Olá, pequeno explorador!</string>
+    <string name="edu_choose">Escolha o que assistir ou faça uma pequena aventura de aprendizado.</string>
+    <string name="edu_practice">123 · Vamos praticar</string>
+    <string name="edu_remote">Use as setas para escolher · OK para abrir · O PIN protege o modo adulto</string>
+    <string name="edu_time">Restam %1$d h %2$02d min para assistir hoje</string>
+    <string name="edu_guard_missing">Peça a um adulto para ativar o serviço de acessibilidade Education. Os vídeos ficam bloqueados até ele funcionar.</string>
+    <string name="edu_ask_parent">Peça a um adulto para configurar este aplicativo no Modo dos pais.</string>
+    <string name="edu_storage_error">Não foi possível ler os ajustes da família. Peça a um adulto para reparar o aplicativo.</string>
+    <string name="edu_create_pin">Crie um PIN de 4 dígitos. Mantenha-o em segredo.</string>
+    <string name="edu_confirm_pin">Digite o mesmo PIN novamente.</string>
+    <string name="edu_enter_pin">Digite seu PIN de 4 dígitos para gerenciar Education ou voltar ao modo adulto.</string>
+    <string name="edu_ok">OK</string>
+    <string name="edu_four_digits">Digite os 4 dígitos e escolha OK.</string>
+    <string name="edu_mismatch">Os PINs não coincidem. Comece novamente.</string>
+    <string name="edu_checking">Verificando…</string>
+    <string name="edu_wrong_pin">PIN não aceito. Após 5 tentativas, aguarde 30 segundos.</string>
+    <string name="edu_parent_intro">Ajustes da família. Sair do modo infantil sempre exige seu PIN.</string>
+    <string name="edu_start_kids">Iniciar modo infantil</string>
+    <string name="edu_approve">Configure e aprove pelo menos um aplicativo infantil primeiro.</string>
+    <string name="edu_guard_setup">Ativar controles de Education</string>
+    <string name="edu_adult_first">Mude para o modo adulto antes de abrir os ajustes da TV.</string>
+    <string name="edu_progress">Progresso: %1$d dias de prática. Pequenos passos diários, sem saltos após dias ausentes.</string>
+    <string name="edu_change_pin">Alterar PIN</string>
+    <string name="edu_reset_maths">Voltar à matemática fácil</string>
+    <string name="edu_reset_confirm">Reiniciar com pequenas adições? O tempo de hoje não será alterado.</string>
+    <string name="edu_limits">Os controles exigem o serviço Education. Não substituem o gerenciamento do dispositivo: ajustes, remoção do serviço, entradas HDMI e perfis continuam sob controle da TV ou de cada aplicativo.</string>
+    <string name="edu_missing_app">Nenhum aplicativo compatível instalado. No modo adulto, instale YouTube ou ABC iview pela loja da TV e volte aqui.</string>
+    <string name="edu_youtube_setup">No YouTube, selecione o perfil YouTube Kids e configure um código dos pais para proteger outros perfis e o uso sem login. Este início não seleciona nem bloqueia esse perfil. Confirme após configurar no aplicativo.</string>
+    <string name="edu_abc_setup">No ABC iview, crie e selecione um perfil infantil com conteúdo ABC Kids. Este início abre ABC iview, mas não impede a troca de perfil. Confira os controles do aplicativo antes de aprovar.</string>
+    <string name="edu_remove">Remover aprovação</string>
+    <string name="edu_confirm_profile">Configurei o perfil infantil</string>
+    <string name="edu_math_time">Hora da aventura matemática!</string>
+    <string name="edu_question">Questão %1$d de %2$d · Sem pressa. Não há cronômetro.</string>
+    <string name="edu_math_hint">Escolha os números da resposta abaixo e pressione OK.</string>
+    <string name="edu_try_again">Quase! Tente contar. Você pode tentar novamente.</string>
+    <string name="edu_well_done">Você conseguiu! ★</string>
+    <string name="edu_earned">Cinco respostas certas. Você ganhou mais 30 minutos!</string>
+    <string name="edu_practised">Boa prática! A próxima aventura está esperando.</string>
+    <string name="edu_continue">Voltar aos meus programas</string>
+</resources>

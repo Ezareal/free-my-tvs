@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="io.freemytv.hdmiprobe">
+    <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="33" />
+    <application android:label="FreeMyTV HDMI diagnostic" />
+    <instrumentation android:name="io.freemytv.HdmiProbe" android:targetPackage="io.freemytv" />
+    <instrumentation android:name="io.freemytv.ConsoleCycleProbe" android:targetPackage="io.freemytv" />
+</manifest>

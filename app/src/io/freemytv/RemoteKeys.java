@@ -54,6 +54,10 @@ final class RemoteKeys {
         boolean ours = false;
         for (int key : Prefs.KEYS) ours |= key == keyCode;
         if (!ours) return false;
+        if (EducationStore.kids(c)) {
+            if (e.getAction() == KeyEvent.ACTION_DOWN && e.getRepeatCount() == 0) EducationStore.open(c);
+            return true;
+        }
         String pkg = Prefs.keyApp(keyCode);
         if (pkg.isEmpty()) return false;   // "Nothing": the key goes on as if we weren't here
         if (e.getAction() == KeyEvent.ACTION_DOWN && e.getRepeatCount() == 0) {

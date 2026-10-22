@@ -27,6 +27,12 @@ Open source. Built with Claude Code. One button to undo.
 - **Set up on the TV.** Language, your city, temperature, theme, the weather and prices cards, which coins, and the apps on the shelf, in Free My TV's own settings.
 - **Safe.** No root. Nothing is uninstalled. One button brings back the factory home screen.
 
+## Education mode (Android / Google TV)
+
+Open **Free My TV → Education** for a simple Kids home with YouTube Kids and ABC Kids choices, a PIN-protected Parent Mode, approved HDMI consoles, and configurable daily limits for each app/console plus a combined allowance. Defaults are three hours daily and five generated maths questions to earn 30 more minutes. Maths gets a little harder with each completed practice day, and Kids/Adult mode, time and progress are remembered. The UI uses FreeMyTV's existing fonts and focus styling, with compact parent controls, a fixed maths keypad, and built-in animated Adult/Kids backgrounds.
+
+Parents enable the Education accessibility service and configure the streaming apps' child profiles first. App-level restrictions do not lock profiles inside YouTube or ABC iview and are not device-owner controls. The webOS/Tizen version contains a clearly labelled visual/practice preview only. See [Education setup, limits and tests](EDUCATION.md).
+
 ## Install
 
 About ten minutes. You need a Google TV or Android TV (Android 9 or newer) and a computer on the same Wi-Fi.

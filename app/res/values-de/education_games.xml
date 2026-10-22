@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  <string name="edu_games">Spielkonsolen</string>
+  <string name="edu_games_help">Erlaubte HDMI-Eingänge wählen. Fernsehen und Spielen teilen sich das Tageslimit.</string>
+  <string name="edu_games_empty">Keine HDMI-Eingänge gefunden.</string>
+  <string name="edu_game_approval">Diesen HDMI-Anschluss erlauben? Die Freigabe gilt auch für andere angeschlossene Geräte. Nach Ablauf kehrt der Fernseher zu den Rechenaufgaben zurück. Die Konsole läuft weiter: vorher speichern. Bild und automatische Rückkehr zuerst testen.</string>
+  <string name="edu_game_test">Rückkehr testen · 10 Sekunden</string>
+  <string name="edu_game_allow">Im Kindermodus erlauben</string>
+  <string name="edu_game_off">Konsole einschalten</string>
+  <string name="edu_game_connecting">Verbindung zur Konsole…</string>
+  <string name="edu_game_no_signal">Noch kein Bild. Konsole einschalten. Zurück zum Beenden.</string>
+  <string name="edu_game_failed">HDMI-Bild konnte nicht geöffnet werden. Zurück drücken.</string>
+  <string name="edu_game_time">Noch %1$d:%2$02d · Zurück zum Beenden</string>
+  <string name="edu_game_test_time">Test endet in %1$d:%2$02d</string>
+</resources>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="education_guard_description">In Kids mode, observes which app is open, counts viewing time while the screen is on, and returns to Education when time is up or another app opens. Does not read screen content. Enable only for family controls.</string>
+    <string name="edu_welcome">A little watching. A little learning. A space just for kids.</string>
+    <string name="edu_parent">Parent Mode</string>
+    <string name="edu_adult">Adult mode</string>
+    <string name="edu_rule">3 hours each day. Complete 5 maths questions for 30 more minutes.</string>
+    <string name="edu_hello">Hello, little explorer!</string>
+    <string name="edu_choose">Choose something to watch, or give your brain a little adventure.</string>
+    <string name="edu_practice">123 · Let’s practise</string>
+    <string name="edu_remote">Use the arrows to choose · Press OK to open · Parent PIN protects adult mode</string>
+    <string name="edu_time">%1$d h %2$02d min of watching left today</string>
+    <string name="edu_guard_missing">Ask a parent to enable the Education accessibility service. Watching stays locked until it is running.</string>
+    <string name="edu_ask_parent">Ask a parent to set up this app in Parent Mode.</string>
+    <string name="edu_storage_error">Family settings could not be read. Ask a parent to repair the app before continuing.</string>
+    <string name="edu_create_pin">Create a 4-digit parent PIN. Keep it private.</string>
+    <string name="edu_confirm_pin">Enter the same PIN again.</string>
+    <string name="edu_enter_pin">Enter your 4-digit PIN to manage Education or return to adult mode.</string>
+    <string name="edu_ok">OK</string>
+    <string name="edu_four_digits">Enter all 4 digits, then choose OK.</string>
+    <string name="edu_mismatch">Those PINs did not match. Please start again.</string>
+    <string name="edu_checking">Checking…</string>
+    <string name="edu_wrong_pin">PIN not accepted. After 5 attempts, wait 30 seconds before trying again.</string>
+    <string name="edu_parent_intro">Your family settings. Switching to adult mode always needs your PIN while Kids mode is on.</string>
+    <string name="edu_start_kids">Start Kids mode</string>
+    <string name="edu_approve">Set up and approve at least one kids app first.</string>
+    <string name="edu_guard_setup">Enable Education controls</string>
+    <string name="edu_adult_first">Switch to adult mode first to open TV settings.</string>
+    <string name="edu_progress">Learning progress: %1$d practice days. Small daily steps, with no jump after days away.</string>
+    <string name="edu_change_pin">Change PIN</string>
+    <string name="edu_reset_maths">Make maths easy again</string>
+    <string name="edu_reset_confirm">Reset learning to small additions? Today’s viewing time will stay the same.</string>
+    <string name="edu_limits">Family controls require the Education service. They do not replace device management: TV settings, service removal, HDMI inputs and each streaming app’s profiles remain controlled by the TV or app.</string>
+    <string name="edu_missing_app">No supported app is installed. In adult mode, install YouTube or ABC iview from the TV store, then return here.</string>
+    <string name="edu_youtube_setup">In YouTube, select the child’s YouTube Kids profile and set a YouTube parent code to protect other profiles and signed-out viewing. This launcher cannot select or lock that profile for you. Confirm only after setting it up in the app.</string>
+    <string name="edu_abc_setup">In ABC iview, create and select a child profile with ABC Kids content. This launcher opens ABC iview and cannot prevent profile switching inside that app. Check its parental controls before approving it.</string>
+    <string name="edu_remove">Remove approval</string>
+    <string name="edu_confirm_profile">I have set up the child profile</string>
+    <string name="edu_math_time">Time for a maths adventure!</string>
+    <string name="edu_question">Question %1$d of %2$d · Take your time. There is no timer.</string>
+    <string name="edu_math_hint">Choose the answer numbers below, then press OK.</string>
+    <string name="edu_try_again">Nearly! Try counting it out. You can have another go.</string>
+    <string name="edu_well_done">You did it! ★</string>
+    <string name="edu_earned">Five answers, five little wins. You earned 30 more minutes!</string>
+    <string name="edu_practised">Lovely practising! Your next adventure is waiting.</string>
+    <string name="edu_continue">Back to my shows</string>
+</resources>

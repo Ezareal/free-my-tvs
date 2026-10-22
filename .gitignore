@@ -9,6 +9,7 @@ out/
 *.ipk
 *.wgt
 __pycache__/
+.local-test/
 
 # macOS
 .DS_Store

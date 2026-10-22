@@ -13,6 +13,10 @@
          returns null). The shelf and streaming apps, the live TV apps and, through the <intent>, every TV app
          (for "All Apps"). -->
     <queries>
+        <package android:name="com.google.android.youtube.tvkids" />
+        <package android:name="com.google.android.apps.youtube.kids" />
+        <package android:name="au.net.abc.iview" />
+        <package android:name="au.net.abc.kids.iview" />
         <package android:name="com.netflix.ninja" />
         <package android:name="com.google.android.youtube.tv" />
         <package android:name="com.amazon.amazonvideo.livingroom" />
@@ -54,6 +58,27 @@
         android:banner="@drawable/banner"
         android:allowBackup="false"
         android:usesCleartextTraffic="false">
+
+        <service android:name=".HomeRedirect" android:process=":home_redirect"
+            android:exported="true" android:label="@string/home_redirect_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter><action android:name="android.accessibilityservice.AccessibilityService" /></intent-filter>
+            <meta-data android:name="android.accessibilityservice" android:resource="@xml/home_redirect" />
+        </service>
+
+        <activity android:name=".EducationGameActivity" android:process=":home"
+            android:exported="false" android:screenOrientation="landscape"
+            android:excludeFromRecents="true" android:theme="@style/FreeMyTV.Home" />
+        <activity android:name=".EducationActivity" android:process=":home"
+            android:exported="false" android:launchMode="singleTask"
+            android:screenOrientation="landscape" android:excludeFromRecents="true"
+            android:theme="@style/FreeMyTV.Home" />
+        <service android:name=".EducationGuard" android:process=":education"
+            android:exported="true" android:label="Education"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter><action android:name="android.accessibilityservice.AccessibilityService" /></intent-filter>
+            <meta-data android:name="android.accessibilityservice" android:resource="@xml/education_guard" />
+        </service>
 
         <!-- The app's icon opens the settings (switch between Free My TV and the original home screen). -->
         <activity

@@ -139,8 +139,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private int tab, topIndex, cardIndex;
     private int widgetIndex;    // with TalkBack on, the drawer's weather (0) or quotes (1) card can take the focus
     private List<Recs.Pick> cards = new ArrayList<>();
-    private final Spring[] topFocus = new Spring[6];
-    private final RectF[] topRects = new RectF[6];
+    private final Spring[] topFocus = new Spring[7];
+    private final RectF[] topRects = new RectF[7];
     private final Spring[] cardFocus = new Spring[3];
     private final RectF[] cardRects = new RectF[3];
     private final List<HomeApps.Item> lightButtons = new ArrayList<>();
@@ -374,7 +374,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         }
         setContentDescription("Free My TV");
         drawerLayer.setVisibility(INVISIBLE);
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < topRects.length; i++) {
             topFocus[i] = new Spring(0.26f, 0.85f, 0);
             topRects[i] = new RectF();
         }
@@ -396,9 +396,20 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
 
     // MARK: - Lifecycle (called by HomeActivity)
 
+    private final AmbientBackground ambient = new AmbientBackground(false);
+    private final Runnable ambientFrame = new Runnable() {
+        @Override public void run() {
+            if (!running) return;
+            ambient.prepare();
+            sky.invalidate();
+            handler.postDelayed(this, AmbientBackground.FRAME_MS);
+        }
+    };
+
     void resume() {
         if (running) return;
         running = true;
+        handler.post(ambientFrame);
         checkNight(false);
         resumedAt = SystemClock.uptimeMillis();
         lastNanos = 0;
@@ -425,6 +436,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     void pause() {
         if (!running) return;
         running = false;
+        handler.removeCallbacks(ambientFrame);
         cancelReorder(true);
         handler.removeCallbacks(holdStart);
         okHeld = holdArmed = false;
@@ -470,6 +482,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         lightButtons.clear();
         lightButtons.add(HomeApps.action(HomeApps.LIVE_TV, "live", Ui.tr("TV aberta", "Live TV"), "live_tv"));
         lightButtons.add(HomeApps.action(HomeApps.INPUTS, "inputs", Ui.tr("Entradas HDMI", "HDMI Inputs"), "hdmi"));
+        lightButtons.add(HomeApps.action(HomeApps.KIDS, "kids", getContext().getString(R.string.edu_kids_mode), "sparkles"));
         lightButtons.add(HomeApps.action(HomeApps.SETTINGS, "settings", Ui.tr("Configurações", "Settings"), "settings"));
     }
 
@@ -1193,7 +1206,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         Paint text = clock ? lClockQuote : lQuote;
         // The corner buttons' names appear in this row: the quotes fade out while one of them has focus.
         float fade = 1;
-        for (int i = 3; i < 6 && !clock; i++) fade = Math.min(fade, 1 - Ui.clamp(topFocus[i].value));
+        for (int i = 3; i < topFocus.length && !clock; i++) fade = Math.min(fade, 1 - Ui.clamp(topFocus[i].value));
         if (fade <= 0.01f) return;
         int textColor = text.getColor();
         text.setColor(Ui.alpha(textColor, fade));
@@ -1941,6 +1954,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     // MARK: - Keys: only the arrows, OK and Back (system keys pass through to the system)
 
     boolean onKey(KeyEvent e) {
+        if(e.getAction()==KeyEvent.ACTION_DOWN) ambient.key(e.getKeyCode());
         wake();
         boolean down = e.getAction() == KeyEvent.ACTION_DOWN;
         if (reordering) return reorderKey(e, down);
@@ -2603,7 +2617,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             x = topRects[i].right + 4 * k;
         }
         float b = L_BUTTON * k, right = CONTENT_R * k, cy = L_BUTTON_CY * k;
-        for (int i = 2; i >= 0; i--) {
+        for (int i = lightButtons.size() - 1; i >= 0; i--) {
             topRects[3 + i].set(right - b, cy - b / 2, right, cy + b / 2);
             right -= b + L_BUTTON_GAP * k;
         }
@@ -2672,6 +2686,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         if (fading && bgFrom != null) drawLightImage(c, bgFrom, bgTo == null ? 1 - e : 1);
         if (bgTo != null) drawLightImage(c, bgTo, fading ? e : 1);
         imagePaint.setColorFilter(null);
+        ambient.draw(c, w, h, night);
     }
 
     private void drawLightImage(Canvas c, Backdrop b, float alpha) {
@@ -2819,7 +2834,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
      */
     private void drawLightButtons(Canvas c) {
         applyTone();
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < lightButtons.size(); i++) {
             RectF r = topRects[3 + i];
             float f = Ui.clamp(topFocus[3 + i].value), s = 1 + 0.1f * f, rad = r.width() / 2 * s;
             cell.set(r.centerX() - rad, r.centerY() - rad, r.centerX() + rad, r.centerY() + rad);
@@ -2874,7 +2889,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
                 break;
             case Z_TOP:
                 if (dx != 0) {
-                    int next = Math.max(picksOn() ? 0 : 3, Math.min(5, topIndex + dx));
+                    int next = Math.max(picksOn() ? 0 : 3, Math.min(topRects.length - 1, topIndex + dx));
                     if (next == topIndex) return true;
                     topIndex = next;
                     if (topIndex < 3) selectTab(topIndex);   // like Apple TV tabs: focusing a tab selects it

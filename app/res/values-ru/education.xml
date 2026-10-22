@@ -1,0 +1,47 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="education_guard_description">В детском режиме служба определяет открытую программу, считает время при включённом экране и возвращает в Education, когда время вышло или открыта другая программа. Содержимое экрана не читается.</string>
+    <string name="edu_welcome">Немного просмотра. Немного учёбы. Пространство для детей.</string>
+    <string name="edu_parent">Режим родителей</string>
+    <string name="edu_adult">Взрослый режим</string>
+    <string name="edu_rule">3 часа в день. Реши 5 задач и получи ещё 30 минут.</string>
+    <string name="edu_hello">Привет, маленький исследователь!</string>
+    <string name="edu_choose">Выбери, что посмотреть, или отправляйся в учебное приключение.</string>
+    <string name="edu_practice">123 · Давай потренируемся</string>
+    <string name="edu_remote">Стрелки — выбор · OK — открыть · PIN защищает взрослый режим</string>
+    <string name="edu_time">Сегодня осталось %1$d ч %2$02d мин просмотра</string>
+    <string name="edu_guard_missing">Попроси взрослого включить службу специальных возможностей Education. До этого просмотр заблокирован.</string>
+    <string name="edu_ask_parent">Попроси взрослого настроить эту программу в режиме родителей.</string>
+    <string name="edu_storage_error">Не удалось прочитать настройки семьи. Попроси взрослого восстановить программу.</string>
+    <string name="edu_create_pin">Создайте PIN из 4 цифр. Держите его в секрете.</string>
+    <string name="edu_confirm_pin">Введите тот же PIN ещё раз.</string>
+    <string name="edu_enter_pin">Введите PIN из 4 цифр для настройки Education или перехода во взрослый режим.</string>
+    <string name="edu_ok">OK</string>
+    <string name="edu_four_digits">Введите все 4 цифры и выберите OK.</string>
+    <string name="edu_mismatch">PIN-коды не совпали. Начните заново.</string>
+    <string name="edu_checking">Проверка…</string>
+    <string name="edu_wrong_pin">PIN не принят. После 5 попыток подождите 30 секунд.</string>
+    <string name="edu_parent_intro">Настройки семьи. Для выхода из детского режима всегда нужен ваш PIN.</string>
+    <string name="edu_start_kids">Включить детский режим</string>
+    <string name="edu_approve">Сначала настройте и разрешите хотя бы одну детскую программу.</string>
+    <string name="edu_guard_setup">Включить контроль Education</string>
+    <string name="edu_adult_first">Сначала перейдите во взрослый режим, чтобы открыть настройки телевизора.</string>
+    <string name="edu_progress">Прогресс: %1$d дней практики. Небольшие ежедневные шаги без скачков после перерывов.</string>
+    <string name="edu_change_pin">Изменить PIN</string>
+    <string name="edu_reset_maths">Снова лёгкие задачи</string>
+    <string name="edu_reset_confirm">Вернуться к простому сложению? Время просмотра сегодня не изменится.</string>
+    <string name="edu_limits">Контроль требует службы Education и не заменяет управление устройством: настройки, удаление службы, HDMI и профили остаются под контролем телевизора или самой программы.</string>
+    <string name="edu_missing_app">Совместимая программа не установлена. Во взрослом режиме установите YouTube или ABC iview из магазина телевизора и вернитесь сюда.</string>
+    <string name="edu_youtube_setup">В YouTube выберите детский профиль YouTube Kids и задайте родительский код для защиты других профилей и просмотра без входа. Этот экран не может выбирать или блокировать профиль. Подтвердите после настройки программы.</string>
+    <string name="edu_abc_setup">В ABC iview создайте и выберите детский профиль с контентом ABC Kids. Этот экран открывает ABC iview, но не запрещает смену профиля. Проверьте родительский контроль перед разрешением.</string>
+    <string name="edu_remove">Отменить разрешение</string>
+    <string name="edu_confirm_profile">Детский профиль настроен</string>
+    <string name="edu_math_time">Время математических приключений!</string>
+    <string name="edu_question">Задача %1$d из %2$d · Не спеши. Таймера нет.</string>
+    <string name="edu_math_hint">Выбери цифры ответа и нажми OK.</string>
+    <string name="edu_try_again">Почти! Попробуй посчитать. Можно попробовать ещё раз.</string>
+    <string name="edu_well_done">Получилось! ★</string>
+    <string name="edu_earned">Пять верных ответов. Ты получил ещё 30 минут!</string>
+    <string name="edu_practised">Отличная тренировка! Следующее приключение ждёт.</string>
+    <string name="edu_continue">Вернуться к моим передачам</string>
+</resources>

@@ -20,6 +20,7 @@ public class HomeActivity extends Activity {
 
     @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (EducationStore.kids(this)) { EducationStore.open(this); finish(); return; }
         Watchdog.install(this);
         if (Watchdog.crashedTooOften(this)) {
             // Don't try to draw again: only show a notice while the main process restores the original home screen.
@@ -42,6 +43,7 @@ public class HomeActivity extends Activity {
 
     @Override protected void onResume() {
         super.onResume();
+        if (EducationStore.kids(this)) { EducationStore.open(this); finish(); return; }
         if (prefsVersion != Prefs.version) {
             prefsVersion = Prefs.version;
             HomeData.get(this).settingsChanged();

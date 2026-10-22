@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  <string name="edu_next">Kindermodus einrichten</string>
+  <string name="edu_setup_hint">Zwei Schritte, dann kann es losgehen.</string>
+  <string name="edu_controls_ready">1. Zeitkontrolle ist aktiv</string>
+  <string name="edu_controls_needed">1. Zeitkontrolle einschalten</string>
+  <string name="edu_controls_help">Im nächsten Bildschirm Education einschalten, dann Zurück drücken.</string>
+  <string name="edu_apps_step">2. Kinder-Apps auswählen</string>
+  <string name="edu_ready">Bereit</string>
+  <string name="edu_set_up">Einrichten</string>
+  <string name="edu_more">Weitere Einstellungen</string>
+  <string name="edu_back_parent">Zurück zum Elternmodus</string>
+  <string name="edu_watch">Was möchtest du anschauen?</string>
+  <string name="edu_ready_hint">Alles bereit. Kindermodus starten oder zur Startseite zurückkehren.</string>
+  <string name="edu_home_return">Zur Startseite</string>
+  <string name="edu_kids_mode">Kindermodus</string>
+  <string name="edu_parent_settings">Elterneinstellungen</string>
+  <string name="edu_manage">Apps und Konsolen</string>
+</resources>
