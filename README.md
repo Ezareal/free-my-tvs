@@ -6,6 +6,8 @@
 
 **A fast, ad-free home screen for Google TV, LG and Samsung TVs.**
 
+## This fork includes: Stremio and Smarttube support on the Home page (you just need to have them installed) 
+
 Trending picks from your own apps, the weather at a glance, and a look that follows the sunset.<br>
 Open source. Built with Claude Code. One button to undo.
 
