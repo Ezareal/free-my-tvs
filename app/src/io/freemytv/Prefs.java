@@ -30,9 +30,11 @@ final class Prefs {
     /** Sony's app buttons, as SONY_KEY + scan code (read from a BRAVIA's log; the key codes are shared). */
     static final int SONY_KEY = 100_000;
     static final int KEY_SONY_CORE = SONY_KEY + 496, KEY_SONY_NETFLIX = SONY_KEY + 583, KEY_SONY_DISNEY = SONY_KEY + 491,
-            KEY_SONY_PRIME = SONY_KEY + 490, KEY_SONY_YOUTUBE = SONY_KEY + 485, KEY_SONY_CRUNCHYROLL = SONY_KEY + 507;
+            KEY_SONY_PRIME = SONY_KEY + 490, KEY_SONY_YOUTUBE = SONY_KEY + 485, KEY_SONY_CRUNCHYROLL = SONY_KEY + 507,
+            KEY_SONY_PLAY = SONY_KEY + 587;   // the Google Play button of older remotes: BUTTON_8 (BRAVIA 4K UR3, Android 10)
     static final int[] KEYS = RemoteKeys.SONY
-            ? new int[] {KEY_SONY_CORE, KEY_SONY_NETFLIX, KEY_SONY_DISNEY, KEY_SONY_PRIME, KEY_SONY_YOUTUBE, KEY_SONY_CRUNCHYROLL}
+            ? new int[] {KEY_SONY_CORE, KEY_SONY_NETFLIX, KEY_SONY_DISNEY, KEY_SONY_PRIME, KEY_SONY_YOUTUBE, KEY_SONY_CRUNCHYROLL,
+                    KEY_SONY_PLAY}
             : RemoteKeys.STEM_NETFLIX ? new int[] {KEY_STEM_NETFLIX}
             : RemoteKeys.KTC ? new int[] {KEY_KTC_TABII}
             : new int[] {KEY_NETFLIX, KEY_YOUTUBE, KEY_PRIME, KEY_TCL_CHANNEL};
@@ -46,6 +48,11 @@ final class Prefs {
         app = c.getApplicationContext();
         migrateKeys();   // before anything reads the button choices
         Ui.applyLanguage();   // the language picked on the TV, now that it can be read
+    }
+
+    /** The app's context in this process (null before App.onCreate). */
+    static Context context() {
+        return app;
     }
 
     private static SharedPreferences sp() {
@@ -64,12 +71,11 @@ final class Prefs {
 
     // MARK: - Language and units
 
-    /** "auto", "pt", "en", "es", "de" or "ru". */
+    /** "auto" or a language code as picked ("pt", "fr", "zh-CN"…); Ui.applyLanguage finds its catalogue. */
     static String language() {
         String v = app == null ? Config.LANGUAGE : sp().getString("language", Config.LANGUAGE);
-        v = v.trim().toLowerCase(Locale.ROOT);
-        return v.startsWith("ru") ? "ru" : v.startsWith("pt") ? "pt" : v.startsWith("es") ? "es" : v.startsWith("de") ? "de"
-                : v.startsWith("en") ? "en" : "auto";
+        v = v.trim();
+        return v.isEmpty() || v.equalsIgnoreCase("auto") ? "auto" : v;
     }
 
     static void setLanguage(String v) { put("language", v); Ui.applyLanguage(); }

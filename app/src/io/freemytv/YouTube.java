@@ -53,49 +53,48 @@ final class YouTube {
      * lookup. YouTube sometimes answers 404 for a channel's feed for a while: that channel keeps its last videos.
      */
     static final String[][] CATEGORIES = {
-        {"tech", "Tecnologia", "Tech", "Tecnología", "Technik", "Технологии",
+        {"tech",
             "UCBJycsmduvYEL83R_U4JriQ",     // Marques Brownlee
             "UCXuqSBlHAE6Xw-yeJA0Tunw",     // Linus Tech Tips
             "UCMiJRAwDNSNzuYeN2uWa0pA",     // Mrwhosetheboss
             "UCsTcErHg8oDvUnTzoqsYeNw"},    // Unbox Therapy
-        {"science", "Ciência", "Science", "Ciencia", "Wissenschaft", "Наука",
+        {"science",
             "UCHnyfMqiRRG1u-2MsSQLbXA",     // Veritasium
             "UCsXVk37bltHxD1rDPwtNM8Q",     // Kurzgesagt
             "UCY1kMZp36IQSyNx_9h4mpCg",     // Mark Rober
             "UC6107grRI4m0o2-emgoDnAA",     // SmarterEveryDay
             "UC6nSFpj9HTCZ5t-N3Rm3-HA"},    // Vsauce
-        {"gaming", "Games", "Gaming", "Videojuegos", "Gaming", "Игры",
+        {"gaming",
             "UC7_YxT-KID8kRbqZo7MyscQ",     // Markiplier
             "UCYzPXprvl5Y-Sf0g4vX-m6g",     // jacksepticeye
             "UCKy1dAqELo0zrOtPkf0eTMw"},    // IGN
-        {"cars", "Carros", "Cars", "Coches", "Autos", "Автомобили",
+        {"cars",
             "UCjOl2AUblVmg2rA_cRgZkFg",     // Top Gear
             "UCsqjHFMB_JYTaEnf_vmTNqg",     // Doug DeMuro
             "UCUhFaUpnq31m6TNX2VKVSVA"},    // carwow
-        {"sport", "Esportes", "Sports", "Deportes", "Sport", "Спорт",
+        {"sport",
             "UCB_qr75-ydFVKSF9Dmo6izg",     // Formula 1
             "UCWJ2lWNubArHWmf3FIHbfcQ"},    // NBA
-        {"news", "Notícias", "News", "Noticias", "Nachrichten", "Новости",
+        {"news",
             "UC16niRr50-MSBwiO3YDb3RA",     // BBC News
             "UCNye-wNBqNL5ZzHSJj3l8Bg",     // Al Jazeera English
             "UChqUTb7kYRX8-EiaN3XFrSQ"},    // Reuters
-        {"food", "Culinária", "Food", "Cocina", "Essen", "Еда",
+        {"food",
             "UCMyOj6fhvKFMjxUCp3b_3gA",     // Nick DiGiovanni
             "UChBEbMKI1eCcejTtmI32UEw"},    // Joshua Weissman
-        {"music", "Música", "Music", "Música", "Musik", "Музыка",
+        {"music",
             "UC2Qw1dzXDBAZPwS7zm37g8g",     // COLORS
             "UC4eYXhJI4-7wSWc8UNRwD4A",     // NPR Music (Tiny Desk)
             "UC3I2GFN_F8WudD_2jUZbojA"},    // KEXP
-        {"fun", "Entretenimento", "Entertainment", "Entretenimiento", "Unterhaltung", "Развлечения",
+        {"fun",
             "UCX6OQ3DkcsbYNE6H8uQQuVA",     // MrBeast
             "UC3XTzVzaHQEd30rQbuvCtTQ",     // Last Week Tonight
             "UC8-Th83bH_thdKZDJCrn88g"},    // The Tonight Show
-        {"nature", "Natureza e documentários", "Nature & documentaries", "Naturaleza y documentales", "Natur & Dokus",
-            "Природа и документальное",
+        {"nature",
             "UCpVm7bg6pXKo1Pr6k5kxG9A",     // National Geographic
             "UCW39zufHfsuGgpLviKh297Q",     // DW Documentary
             "UCwmZiChSryoWQCZMIQezgTg"},    // BBC Earth
-        {"kids", "Infantil", "Kids", "Infantil", "Kinder", "Детям",
+        {"kids",
             "UCoookXUzPciGrEZEXmh4Jjg",     // Sesame Street
             "UCAOtE1V7Ots4DjM8JLlrYgg",     // Peppa Pig
             "UCbCmjCuTUZos6Inko4u57UQ"},    // Cocomelon
@@ -108,8 +107,8 @@ final class YouTube {
             + "Copilot|Midjourney|Sora|DeepSeek|Grok|deepfakes?|chatbots?|artificial intelligence|machine learning|"
             + "inteligência artificial|inteligencia artificial|künstliche intelligenz|KI|kunstmatige intelligentie|"
             + "искусственн\\w* интеллект\\w*|ИИ|нейросет\\w*)\\b");
-    /** Where each category's channels start in its row (after the key and the five names). */
-    private static final int FIRST_CHANNEL = 6;
+    /** Where each category's channels start in its row (after the key). */
+    private static final int FIRST_CHANNEL = 1;
     /** None picked yet (or none at all): a mix of a few categories. */
     private static final String[] MIX = {"tech", "science", "cars", "sport", "news"};
     private static final long EVERY = 3600_000L, MAX_AGE = 30L * 24 * 3600_000L;
@@ -151,7 +150,20 @@ final class YouTube {
 
     /** The categories' name in the TV's language. */
     static String name(String[] category) {
-        return category[Ui.ru ? 5 : Ui.de ? 4 : Ui.es ? 3 : Ui.en ? 2 : 1];
+        switch (category[0]) {
+            case "tech": return Ui.tr("Tech");
+            case "science": return Ui.tr("Science");
+            case "gaming": return Ui.tr("Gaming");
+            case "cars": return Ui.tr("Cars");
+            case "sport": return Ui.tr("Sports");
+            case "news": return Ui.tr("News");
+            case "food": return Ui.tr("Food");
+            case "music": return Ui.tr("Music");
+            case "fun": return Ui.tr("Entertainment");
+            case "nature": return Ui.tr("Nature & documentaries");
+            case "kids": return Ui.tr("Kids");
+            default: return category[0];
+        }
     }
 
     /** config.properties "youtube_channels" set: they win, and the categories aren't asked. */
@@ -310,9 +322,8 @@ final class YouTube {
         Recs.Pick p = new Recs.Pick();
         p.kind = "yt-setup";
         p.video = "setup";
-        p.title = Ui.tr("Escolha suas categorias do YouTube", "Choose your YouTube categories",
-                "Elige tus categorías de YouTube");
-        p.meta = Ui.tr("OK para escolher · só desta vez", "OK to choose · only this once", "OK para elegir · solo esta vez");
+        p.title = Ui.tr("Choose your YouTube categories");
+        p.meta = Ui.tr("OK to choose · only this once");
         p.detailed = true;
         return p;
     }
@@ -344,27 +355,10 @@ final class YouTube {
     }
 
     private static String age(long ms) {
-        long hours = Math.max(0, ms / 3600_000L), days = hours / 24;
-        if (hours == 0) {
-            long minutes = Math.max(1, ms / 60_000L);
-            if (Ui.en) return minutes + " min ago";
-            if (Ui.ru) return minutes + " мин назад";
-            if (Ui.es) return "hace " + minutes + " min";
-            if (Ui.de) return "vor " + minutes + " Min.";
-            return "há " + minutes + " min";
-        }
-        if (days == 0) {
-            if (Ui.en) return hours + " h ago";
-            if (Ui.ru) return hours + " ч назад";
-            if (Ui.es) return "hace " + hours + " h";
-            if (Ui.de) return "vor " + hours + " Std.";
-            return "há " + hours + " h";
-        }
-        if (Ui.en) return days == 1 ? "1 day ago" : days + " days ago";
-        if (Ui.ru) return Russian.count((int) days, "день", "дня", "дней") + " назад";
-        if (Ui.es) return days == 1 ? "hace 1 día" : "hace " + days + " días";
-        if (Ui.de) return days == 1 ? "vor 1 Tag" : "vor " + days + " Tagen";
-        return days == 1 ? "há 1 dia" : "há " + days + " dias";
+        long minutes = Math.max(1, ms / 60_000L);
+        if (minutes < 60) return Ui.trf("{n} min ago", "n", minutes);
+        if (minutes < 24 * 60) return Ui.trf("{n} h ago", "n", minutes / 60);
+        return Ui.plural("plural|one:{n} day ago|other:{n} days ago", minutes / 1440);
     }
 
     /** A video was opened from the tab: its channel moves up and the video leaves the tab. */

@@ -104,7 +104,9 @@ screen stays. Two ways:
 6. **Build and sign:** `python3 tizen/build.py --sign <profile>` must end with `Built FreeMyTV-tizen.wgt (...,
    signed with "<profile>")`.
 7. **Install:** `python3 tizen/install.py <IP>`: it pushes the app over SDB (port 26101), installs it with the TV's
-   `0 vd_appinstall` and opens it with `0 was_execute` (tested on a 2017 Tizen 3.0 TV); `--uninstall` removes it.
+   `0 vd_appinstall` and opens it with `0 was_execute` (tested on 2017 Tizen 3.0 and 2019 Tizen 5.0 TVs); it only
+   reports success when the TV says `install completed` (`cmd_ret:0` comes after failures too). `--uninstall` removes
+   it; some TVs' sdbd doesn't answer that, and then it's removed on the TV (Apps, Settings, Free My TV, Delete).
    With Samsung's tools instead: `sdb connect <IP>`, `tizen install -n FreeMyTV-tizen.wgt -t <serial from sdb
    devices>` and `tizen run -p FreeMyTVio.FreeMyTV -t <serial>`. Updates need the same certificate: the TV refuses
    one signed by another (uninstall first). A retail TV's sdbd only takes files (`filesync_support:push`): nothing
@@ -152,27 +154,37 @@ HDMI (Chromecast with Google TV, Google TV Streamer, onn 4K, NVIDIA Shield). Set
 
 ## The code
 
-- Java 8 language level, minSdk 28 (Android 9), targetSdk 33. No Gradle, no libraries: only the Android SDK.
-  Android 9 has no RenderNode (`Recording` wraps it, with a Picture there) and no `cmd role`. On Android 9 to 11
+- Java 8 language level, minSdk 26 (Android 8), targetSdk 33. No Gradle, no libraries: only the Android SDK.
+  Android 9 and older have no RenderNode (`Recording` wraps it, with a Picture there) and no `cmd role`. On Android 8 to 11
   (`Ui.LEGACY`) the home screen skips the GPU layers, draws blurred shadows from cached bitmaps (`Shadows`) and
   rounds images with a shader instead of clipPath: their GPUs (a Mi Box 3's Mali-450) choked on those.
   Android 11 runs the screensaver as `ScreensaverAlone`, in the main process (its DreamActivity needs the dream in the
   app's default process, without a home activity); `res/values-v30/bools.xml` picks it, every other version keeps
   `Screensaver` in `:home`. Keep both in step.
-  To check for newer APIs, compile against `platforms/android-28/android.jar`: only AGSL (`RuntimeShader`, guarded
-  by a try/catch), `BitmapShader.setFilterMode` (guarded) and `Recording.Node` should come up.
+  To check for newer APIs, compile against `platforms/android-26/android.jar`: only AGSL (`RuntimeShader`, guarded
+  by a try/catch), `BitmapShader.setFilterMode` (guarded), `Recording.Node` and `Ui.Weighted` (the Android 9 font weight) should come up.
 - The home screen is drawn by hand on one Canvas (`HomeView`); the glass and the sky are AGSL shaders (`Shaders`,
-  Android 13+, with a fallback for 9 to 12). Keep it at 60 fps: no allocations in `onDraw`, no work on the UI thread.
+  Android 13+, with a fallback for 8 to 12). Keep it at 60 fps: no allocations in `onDraw`, no work on the UI thread.
 - Some TVs draw their UI at 1280×720 on a 1080p panel (TCL's 1 GB models: `ro.surface_flinger.max_graphics_width`
   and `_height`, `ro.config.low_ram`). There every pixel and every MB counts: `Backdrop` builds its images at the UI's
   size (and the picks use TMDB's w1280), and the shelf logos have a copy at the resting size and one at the focused
   size, so both draw pixel for pixel.
 - `HomeMode` runs every switch as a background job (`ModeJob`) in the main process; the UI is in the `:home`
   process. `Watchdog` goes back to the stock home screen after 3 crashes in 5 minutes.
-- On-screen text: `Ui.tr("pt", "en")`, with the Spanish, German and Russian in `Spanish.java`, `German.java` and
-  `Russian.java` (keyed by the English); text built at runtime uses `Ui.tr(pt, en, es)`, and its German and Russian
-  come from those files too (patterns for the parts built at runtime). Add them all. Comments in English, short, only where the why
-  isn't obvious.
+- On-screen text: `Ui.tr("English")`, translated from `app/assets/i18n/<lang>.json` (keyed by the English; one
+  HashMap lookup, English when a language lacks it). Text built at runtime is a pattern: `Ui.trf("{n} min ago", "n", 12)`,
+  never concatenated words. A key `"context|Text"` is the same English where a language may need another word
+  (`"unit|Automatic"`, `"format|h:mm"` holds a SimpleDateFormat pattern). A count with a word is
+  `Ui.plural("plural|one:{n} season|other:{n} seasons", n)`: each catalogue gives one form per CLDR plural category of
+  its language (`one`/`few`/`many`/`other` in Russian, Ukrainian, Polish; only `other` in Japanese, Chinese…), and
+  ICU's rules pick one. Portuguese, Spanish, German and Russian are hand translations: the reference, edited by hand,
+  never replaced with machine ones. Dates and numbers use `Ui.locale()`. Text
+  drawn every frame is cached and made again when `Ui.generation` changes. After changing text, run
+  `python3 tools/translate.py`: it rebuilds `en.json` from the code and lists what each language lacks; translate those
+  in every catalogue (or `--fill` with `ANTHROPIC_API_KEY`, which sends only the strings), and keep placeholders as they
+  are. Run `python3 tools/translate.py --check` to validate all catalogues without writing files.
+  No right-to-left languages yet (the layout isn't mirrored); CJK and Devanagari use the system font.
+  Comments in English, short, only where the why isn't obvious.
 - Settings come from `config.properties` through the generated `out/gen/io/freemytv/Config.java` (never edit that).
   What the person changes on the TV (`Prefs`: Home Settings, Shelf, Remote Buttons) wins over those first values.
 - The remote's app buttons (`RemoteKeys`, `RemoteKeyService`) use each brand's key codes: they run only on TCL,
@@ -185,7 +197,8 @@ HDMI (Chromecast with Google TV, Google TV Streamer, onn 4K, NVIDIA Shield). Set
   KTC (NextStar; MediaTek, Google TV 14 tested) maps its Tabii button to `KEYCODE_BUTTON_8`, also a global key, which
   KTC's own hot-key receiver would open Tabii with; its Netflix, YouTube and Prime Video buttons stay with the system.
   Sony (BRAVIA VH22, Android TV 12 tested) sends `KEYCODE_BUTTON_9` for its BRAVIA CORE, Disney+, Prime Video,
-  YouTube and Crunchyroll buttons and `KEYCODE_BUTTON_4` for Netflix, global keys for `com.sony.dtv.sonyvendorservice`;
+  YouTube and Crunchyroll buttons, `KEYCODE_BUTTON_4` for Netflix and `KEYCODE_BUTTON_8` for the Google Play button of
+  older remotes (BRAVIA 4K UR3, Android 10 tested), global keys for `com.sony.dtv.sonyvendorservice`;
   only the scan code tells them apart, so `Prefs` keys them as `SONY_KEY` + scan code. "Sony default" (empty) leaves
   the key to the TV. Sony ships its own Apple TV build, `com.apple.atve.sony.appletv`.
   Xiaomi projectors made by Formovie (Fengmi; L1, MediaTek, Google TV 14 tested) send the same `KEYCODE_STEM_1` for
