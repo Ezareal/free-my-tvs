@@ -93,7 +93,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     // The tab bar is a 68 px capsule; the cards sit on the 5-column grid (the wide one spans 3).
     private static final float L_TITLE_BASE = 130, L_TABBAR_TOP = 158, L_TABBAR_H = 68, L_CARDS_TOP = 262, L_CARD_H = 442;
     private static final float L_TALL_W = 320, L_CARD_GAP = 40, L_BUTTON = 68, L_BUTTON_GAP = 20, L_BUTTON_CY = 103;
-    private static final float L_PLATTER_TOP = 814, L_TILE_H = 126;
+    private static final float L_PLATTER_TOP = 796, L_TILE_H = 144;
     private static final float L_DATE_BASE = 330, L_CLOCK_BASE = 540, L_WEATHER_BASE = 626, L_QUOTES_BASE = 694;
     private static final int L_INK = 0xFF1D1D1F, L_DIM = 0xFF6E6E73, L_FAINT = 0xFF8E8E93;
     private static String[] tabs;
@@ -174,6 +174,11 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private long reorderAt;
     private float wiggle;
     private Spring[] tileSlide = new Spring[0];
+    // Tiles keep their size; past what fits across, the shelf scrolls (in tiles) under a glass as wide as the content,
+    // keeping a neighbour on each side of the focused app in view. tileRects hold the scrolled positions.
+    private final Spring shelfScroll = new Spring(0.34f, 0.92f, 0);
+    private boolean shelfScrolls;
+    private float shelfX0, shelfStep, shelfY, shelfMax, shelfVisible;
     private final Spring moveLift = new Spring(0.3f, 0.72f, 0);
     private List<HomeApps.Item> reorderOrigin;
     private final Runnable holdStart = () -> { if (this.okDown && this.holdArmed) startReorder(); };
@@ -636,6 +641,10 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         long up = SystemClock.uptimeMillis();
 
         boolean tilesMoving = step(tileFocus, dt);
+        if (shelfScroll.step(dt)) {
+            placeTiles();
+            tilesMoving = true;
+        }
         if (reorderAnim) tilesMoving |= stepReorder(dt, up);
         boolean statusMoving = step(statusFocus, dt);
         boolean heroMoving = heroFocus.step(dt);
@@ -1124,19 +1133,41 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         int n = shelf.size();
         float pad = SHELF_PAD * k, gap = TILE_GAP * k;
         float full = (CONTENT_R - MARGIN) * k;
-        // Tiles in the TV banners' own 16:9, so an app's art is never stretched; never taller than L_TILE_H. The glass
-        // keeps its bottom edge, so with more apps it only gets lower.
-        float tw = Math.min(L_TILE_H * 16f / 9 * k, (full - Math.max(0, n - 1) * gap) / Math.max(1, n));
-        float th = tw * 9f / 16;
-        float width = n * tw + Math.max(0, n - 1) * gap, left = (w - width) / 2f;
-        float top = (L_PLATTER_TOP + L_TILE_H) * k - th;
-        platterRect.set(left - pad, top, left + width + pad, top + th + 2 * pad);
-        float x = left, y = top + pad;
-        for (int i = 0; i < n; i++) {
-            tileRects[i].set(x, y, x + tw, y + th);
-            x += tw + gap;
-        }
+        // Tiles in the TV banners' own 16:9, so an app's art is never stretched.
+        float th = L_TILE_H * k, tw = th * 16f / 9;
+        float width = n * tw + Math.max(0, n - 1) * gap;
+        shelfScrolls = width > full;
+        float left = shelfScrolls ? MARGIN * k : (w - width) / 2f, top = L_PLATTER_TOP * k;
+        if (shelfScrolls) platterRect.set(MARGIN * k - pad, top, CONTENT_R * k + pad, top + th + 2 * pad);
+        else platterRect.set(left - pad, top, left + width + pad, top + th + 2 * pad);
+        shelfX0 = left;
+        shelfStep = tw + gap;
+        shelfY = top + pad;
+        shelfVisible = (full + gap) / shelfStep;
+        shelfMax = shelfScrolls ? (width - full) / shelfStep : 0;
+        aimShelf(true);
+        placeTiles();
         crispLogos.clear();
+    }
+
+    /** The tiles at the shelf's scroll. */
+    private void placeTiles() {
+        float th = L_TILE_H * k, tw = th * 16f / 9;
+        for (int i = 0; i < tileRects.length; i++) {
+            float x = shelfX0 + (i - shelfScroll.value) * shelfStep;
+            tileRects[i].set(x, shelfY, x + tw, shelfY + th);
+        }
+    }
+
+    /** Scrolls only as far as needed for the focused app and one neighbour on each side. */
+    private void aimShelf(boolean snap) {
+        float target = 0;
+        if (shelfScrolls) {
+            target = Math.max(shelfIndex + 2 - shelfVisible, Math.min(shelfIndex - 1, shelfScroll.target));
+            target = Math.max(0, Math.min(shelfMax, target));
+        }
+        if (snap) shelfScroll.snap(target);
+        else shelfScroll.target = target;
     }
 
     /** Shelf layer: the glass bar and its shadow (it only changes with the background). */
@@ -1240,12 +1271,20 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
             }
         }
         if (liftIndex >= 0 && liftIndex < shelf.size() && moveLift.value > 0.02f) top = liftIndex;
+        // Scrolling: tiles end just inside the glass's edge (inside its rounded corners, with room for the first and
+        // last apps to grow when focused), and the ones past it aren't drawn at all.
+        float clipL = platterRect.left + 12 * k, clipR = platterRect.right - 12 * k;
+        if (shelfScrolls) {
+            c.save();
+            c.clipRect(clipL, 0, clipR, h);
+        }
         for (int pass = 0; pass < 2; pass++) {
             for (int i = 0; i < shelf.size(); i++) {
                 if ((pass == 0) == (i == top)) continue;
                 // Moving apps: the tile slides from where it was and the lifted one wiggles (only then: no extra work
                 // otherwise).
                 float dx = i < tileSlide.length ? tileSlide[i].value : 0;
+                if (shelfScrolls && (tileRects[i].right + dx < clipL || tileRects[i].left + dx > clipR)) continue;
                 float angle = i == liftIndex ? wiggle * moveLift.value : 0;
                 if (dx == 0 && angle == 0) {
                     drawShelfTile(c, i);
@@ -1258,6 +1297,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
                 c.restore();
             }
         }
+        if (shelfScrolls) c.restore();
     }
 
     /**
@@ -1700,6 +1740,8 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private void retarget(boolean snap) {
         // Only the group whose focus changed is redrawn (moving along the shelf doesn't redraw the hero or capsule).
         boolean tilesChanged = aim(tileFocus, !sheetOpen && zone == Z_SHELF ? shelfIndex : -1, snap);
+        aimShelf(snap);
+        if (snap) placeTiles();
         boolean statusChanged = aim(statusFocus, !sheetOpen && zone == Z_STATUS ? statusIndex : -1, snap);
         boolean drawerChanged = aim(drawerFocus, !sheetOpen && zone == Z_DRAWER ? drawerIndex : -1, snap);
         boolean heroChanged = heroFocus.target != (!sheetOpen && zone == Z_HERO ? 1 : 0);
