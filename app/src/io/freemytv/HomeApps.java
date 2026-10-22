@@ -886,6 +886,22 @@ final class HomeApps {
         return b;
     }
 
+    /**
+     * The dock's depth on any card that isn't drawn by the launcher itself (an app's own TV art or a replacement card):
+     * a soft highlight at the top and a darker foot, like the Netflix and YouTube cards. A copy: the original stays.
+     */
+    private static Bitmap polish(Bitmap src) {
+        if (src == null) return null;
+        Bitmap b = src.copy(Bitmap.Config.ARGB_8888, true);
+        if (b == null) return src;
+        Paint p = new Paint();
+        p.setShader(new LinearGradient(0, 0, 0, b.getHeight(), new int[] {0x2AFFFFFF, 0x00FFFFFF, 0x00000000, 0x40000000},
+                new float[] {0f, 0.38f, 0.58f, 1f}, Shader.TileMode.CLAMP));
+        new Canvas(b).drawRect(0, 0, b.getWidth(), b.getHeight(), p);
+        b.setHasMipMap(true);
+        return b;
+    }
+
     /** A replacement card for an app: files/logos/tiles/<package>.png (16:9), cached until the file changes. */
     private static synchronized Bitmap tileOverride(Context c, String pkg) {
         File f = new File(c.getExternalFilesDir(null), "logos/tiles/" + pkg + ".png");
@@ -895,7 +911,7 @@ final class HomeApps {
         Bitmap b = BitmapFactory.decodeFile(f.getPath());
         if (b != null) {
             if (b.getWidth() > 768) b = Bitmap.createScaledBitmap(b, 768, Math.max(1, b.getHeight() * 768 / b.getWidth()), true);
-            b.setHasMipMap(true);
+            b = polish(b);
         }
         TILES.put(cacheKey, b);
         return b;
@@ -909,6 +925,7 @@ final class HomeApps {
         Bitmap logo = key == null ? null : ownLogo(c, key);
         Bitmap tile = logo != null ? logoTile(logo, brand) : bannerTile(c, pkg);
         if (tile == null) tile = iconTile(c, pkg);
+        if (logo == null) tile = polish(tile);   // the launcher's own logo cards already have the gradient
         tile.setHasMipMap(true);
         TILES.put(cacheKey, tile);
         return tile;

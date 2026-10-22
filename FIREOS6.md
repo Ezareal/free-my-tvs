@@ -44,7 +44,8 @@ del launcher son de sus autores originales; esta rama lo porta a Android 7.1 y a
   only, never the Apple TV Store) and Prime Video less; *"… Amazon Channel"* entries are ignored.
 - **Icons**: per-app replacement cards (`/sdcard/Android/data/io.freemytv/files/logos/tiles/<package>.png`, 16:9, e.g.
   768×432, full-bleed, square corners and no transparency: the launcher rounds them) or logos (`logos/<key>.png`).
-  The cards in *More apps* look the same as on the dock.
+  The cards in *More apps* look the same as on the dock, and every card that the launcher doesn't draw itself gets the same
+  soft depth gradient (light at the top, darker foot) as the Netflix/YouTube cards.
 - **Wallpapers** adapted without `java.nio.file`; **Aerial Views** works as the system screensaver (configure it in its own app).
 
 ### Install
@@ -98,7 +99,7 @@ del launcher son de sus autores originales; esta rama lo porta a Android 7.1 y a
 - **Recomendaciones**: proveedores *flatrate* de TMDB para tu región; Netflix, HBO Max, Disney+ y ViX pesan más; Apple TV
   (solo proveedor 350, nunca la tienda) y Prime Video menos; se ignoran los «… Amazon Channel».
 - **Iconos**: tarjetas propias por app (`logos/tiles/<paquete>.png`, 16:9 a sangre, esquinas cuadradas y sin transparencia)
-  o logos sueltos; las tarjetas de «Más aplicaciones» se ven igual que en el dock.
+  o logos sueltos; las tarjetas de «Más aplicaciones» se ven igual que en el dock, y todas las tarjetas que el launcher no dibuja por sí mismo reciben el mismo degradado suave (claro arriba, pie más oscuro) que Netflix y YouTube.
 
 ### Instalación
 1. `cp config.example.properties config.properties` y edita latitud/longitud, `tmdb_region` y tu propia clave gratuita de
