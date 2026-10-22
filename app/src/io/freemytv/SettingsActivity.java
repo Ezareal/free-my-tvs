@@ -123,6 +123,7 @@ public class SettingsActivity extends Activity {
         private final Scene scene = new Scene();
         private final Handler handler = new Handler(Looper.getMainLooper());
         private final Spring[] pop;
+        private final float homeRowH;
         private final List<String> appPkgs = new ArrayList<>(), appLabels = new ArrayList<>();
         // The list picker (the app of a remote button): what it shows, which one is in use, where we are.
         private final List<String> pickLabels = new ArrayList<>();
@@ -173,7 +174,9 @@ public class SettingsActivity extends Activity {
         SettingsView(SettingsActivity a) {
             super(a);
             activity = a;
-            pop = new Spring[Math.max(settingLabels().length, Math.max(6, Math.max(PICK_VISIBLE, Prefs.KEYS.length)))];
+            int homeRows = settingLabels().length;
+            pop = new Spring[Math.max(homeRows, Math.max(6, Math.max(PICK_VISIBLE, Prefs.KEYS.length)))];
+            homeRowH = Math.min(56, 744f / homeRows - LIST_ROW_GAP);
             for (int i = 0; i < pop.length; i++) pop[i] = new Spring(0.28f, 0.85f, 0);
             HomeData.Weather wx = HomeData.get(a).weather;
             Shaders.sky(scene.palette, System.currentTimeMillis(), wx.sunrise, wx.sunset);
@@ -769,7 +772,7 @@ public class SettingsActivity extends Activity {
                     break;
                 }
                 case 3: Prefs.setSounds(!Prefs.sounds()); break;
-                case 4: {
+                case TOP_ROW: {
                     int at = java.util.Arrays.asList(Prefs.TOP_CONTENT).indexOf(Prefs.topContent());
                     String next = Prefs.TOP_CONTENT[(at + dir + Prefs.TOP_CONTENT.length) % Prefs.TOP_CONTENT.length];
                     Prefs.setTopContent(next);
@@ -842,11 +845,11 @@ public class SettingsActivity extends Activity {
         }
 
         /**
-         * Home Settings has 11 or 12 rows (the city, Continue Watching, and the dollar with BRL): tighter rows there, so
-         * the list and its hint end well above the bottom edge (the hint at 986 px of 1080 with 12 rows).
+         * Home Settings has 12 or 13 rows (the sounds, the city, Continue Watching, and the dollar with BRL): tighter rows
+         * there, so the list and its hint end well above the bottom edge (the hint at 986 px of 1080).
          */
         private float listRowH() {
-            return screen == HOME_SETTINGS ? 56 : LIST_ROW_H;
+            return screen == HOME_SETTINGS ? homeRowH : LIST_ROW_H;
         }
 
         private boolean scrolling() {
