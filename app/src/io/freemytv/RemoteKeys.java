@@ -17,6 +17,8 @@ import android.view.KeyEvent;
  * On KTC TVs (NextStar) only the Tabii button is ours, a global key too: the TV's hot-key receiver opens Tabii with it.
  * On Sony TVs, the app buttons (and the Google Play button of older remotes) are global keys for Sony's own receiver;
  * the filter sees them first, the same way.
+ * On Xiaomi TVs only the YouTube button is ours: BUTTON_3, a global key for the stock home screen (launcherx), which
+ * Free My TV turns off. Netflix goes to Xiaomi's own key receiver, which stays on.
  */
 final class RemoteKeys {
     private RemoteKeys() {}
@@ -29,12 +31,19 @@ final class RemoteKeys {
      * Vestel builds TVs sold under other brands (F&U...), so BRAND varies: check the maker too.
      */
     static final boolean TCL = is("TCL"), VESTEL = is("Vestel"), KTC = is("KTC"), SONY = is("Sony"), FORMOVIE = is("Formovie");
+    /** Xiaomi TVs (MiTV-MOOR0, Android TV 11 tested); Formovie projectors can carry the Xiaomi brand too. */
+    static final boolean XIAOMI = is("Xiaomi") && !FORMOVIE;
     /** Brands whose Netflix button is STEM_1, a global key (MediaTek): only that button is ours. */
     static final boolean STEM_NETFLIX = VESTEL || FORMOVIE;
 
     static boolean supported() {
-        return TCL || STEM_NETFLIX || KTC || SONY;
+        return TCL || STEM_NETFLIX || KTC || SONY || XIAOMI;
     }
+
+    /** Xiaomi's remote sends one press as a burst of separate presses: a press this soon after the last one is the same. */
+    private static final long BURST_MS = 1000;
+    private static int lastKey;
+    private static long lastDown;
 
     private static boolean is(String maker) {
         return maker.equalsIgnoreCase(Build.MANUFACTURER) || maker.equalsIgnoreCase(Build.BRAND);
@@ -60,6 +69,10 @@ final class RemoteKeys {
         String pkg = Prefs.keyApp(keyCode);
         if (pkg.isEmpty()) return false;   // "Nothing": the key goes on as if we weren't here
         if (e.getAction() == KeyEvent.ACTION_DOWN && e.getRepeatCount() == 0) {
+            boolean burst = keyCode == lastKey && e.getEventTime() - lastDown < BURST_MS;
+            lastKey = keyCode;
+            lastDown = e.getEventTime();
+            if (burst) return true;
             Intent intent = launchIntent(c.getPackageManager(), pkg);
             AppLog.w("remote key " + e.getKeyCode() + " -> " + pkg + (intent == null ? " (not installed)" : ""));
             if (intent != null) c.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));

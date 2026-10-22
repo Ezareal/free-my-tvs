@@ -37,6 +37,7 @@ final class Prefs {
                     KEY_SONY_PLAY}
             : RemoteKeys.STEM_NETFLIX ? new int[] {KEY_STEM_NETFLIX}
             : RemoteKeys.KTC ? new int[] {KEY_KTC_TABII}
+            : RemoteKeys.XIAOMI ? new int[] {KEY_YOUTUBE}
             : new int[] {KEY_NETFLIX, KEY_YOUTUBE, KEY_PRIME, KEY_TCL_CHANNEL};
 
     /** Bumped by every change: screens compare it to know when to redraw. */
