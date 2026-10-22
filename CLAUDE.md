@@ -175,6 +175,9 @@ HDMI (Chromecast with Google TV, Google TV Streamer, onn 4K, NVIDIA Shield). Set
   isn't obvious.
 - Settings come from `config.properties` through the generated `out/gen/io/freemytv/Config.java` (never edit that).
   What the person changes on the TV (`Prefs`: Home Settings, Shelf, Remote Buttons) wins over those first values.
+- Picks from Lampa: opt-in (`Prefs.recsSource`, "services" by default; the Home Settings row shows only with Lampa
+  installed). Then titles on none of the TV's services go to Lampa, with `p.link` set to their themoviedb.org address,
+  which Lampa opens on the title's card (`HomeApps.open` falls back to Lampa's home).
 - The remote's app buttons (`RemoteKeys`, `RemoteKeyService`) use each brand's key codes: they run only on TCL,
   Vestel, KTC (NextStar) and Sony TVs and Formovie projectors, the service is on only in Free My TV mode, and *Original* takes it out of the enabled accessibility
   services. The system waits for the service on every key, so it lives alone in the `:keys` process: what it reads is

@@ -90,6 +90,13 @@ final class Prefs {
 
     static void setTheme(String v) { put("theme", v); }
 
+    /** Where the picks come from: "services" (only what streams on the TV's apps) or "lampa" (any title, opened in Lampa). */
+    static String recsSource() {
+        return "lampa".equals(sp().getString("recs_source", "services")) ? "lampa" : "services";
+    }
+
+    static void setRecsSource(String v) { put("recs_source", v); }
+
     // MARK: - City
 
     static String city() { return sp().getString("city", Config.CITY).trim(); }
