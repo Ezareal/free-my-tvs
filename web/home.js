@@ -2,7 +2,7 @@
  * The home screen for web-app TVs (LG webOS, Samsung Tizen), with the Android app's design and behavior (HomeView):
  *  - top: the "For You" title and the tabs (Explore, Movies, Shows); icon-only glass buttons at the right (Live TV,
  *    HDMI Inputs, Settings) and the crypto quotes at the end of the tab row;
- *  - three picks for this hour in the selected tab; the background is the first one's photo, blurred and almost white;
+ *  - a bounded carousel of cached picks; the first photo softly colors the background;
  *  - the glass shelf with the apps; ↓ opens the drawer (inputs, shortcuts, weather, prices); ↑ or Back closes it;
  *  - a night look from sunset to sunrise; a screensaver after a few idle minutes.
  * The remote's arrows, OK and Back move the focus; a pointer (LG's Magic Remote) focuses what it points at.
@@ -149,8 +149,7 @@
     list = $('buttons').children;
     for (i = 0; i < list.length; i++) setClass(list[i], 'focus', st.zone === Z.TOP && st.top === 3 + i);
     setClass($('quotes'), 'hide', st.zone === Z.TOP && st.top >= 3);
-    list = $('cards').children;
-    for (i = 0; i < list.length; i++) setClass(list[i], 'focus', st.zone === Z.CARDS && st.card === i);
+    positionCards();
     list = $('tiles').children;
     for (i = 0; i < list.length; i++) setClass(list[i], 'focus', st.zone === Z.SHELF && st.shelf === i);
     list = document.querySelectorAll('#drawer .key');
@@ -227,29 +226,85 @@
   // MARK: - Picks and background
 
   function renderCards() {
-    var list = Data.picks(TAB_KIND[st.tab]);
+    var list = Data.carousel(TAB_KIND[st.tab]);
     var holder = $('cards');
     setClass(body, 'no-picks', !list.length);
+    $('recs-status').textContent = Data.recommendationStatus();
     var same = list.length === cards.length;
-    for (var i = 0; same && i < list.length; i++) same = list[i].id === cards[i].id && list[i].backdrop === cards[i].backdrop && list[i].meta === cards[i].meta;
-    if (same && holder.children.length === list.length) return;
+    for (var i = 0; same && i < list.length; i++) same = cardKey(list[i]) === cardKey(cards[i]) && list[i].backdrop === cards[i].backdrop && list[i].meta === cards[i].meta && list[i].title === cards[i].title;
+    if (same && (list.length || !holder.children.length)) return;
+    var selected = cards[st.card] && cardKey(cards[st.card]);
     cards = list;
     holder.innerHTML = '';
-    var rects = [[80, 1040], [1160, 320], [1520, 320]];
-    for (var c = 0; c < list.length; c++) {
-      var p = list[c], card = el('div', 'card', holder);
-      card.style.left = rects[c][0] + 'px';
-      card.style.width = rects[c][1] + 'px';
-      var img = el('div', 'img', card);
-      img.style.backgroundImage = 'url(' + Data.image(p.backdrop, c === 0 ? 'w1280' : 'w780') + ')';
-      el('div', 'name', card, p.title);
-      if (c === 0 && p.meta) el('div', 'meta', card, p.meta);
-      hover(card, Z.CARDS, c);
-    }
+    for (var c = 0; selected && c < list.length; c++) if (cardKey(list[c]) === selected) { st.card = c; break; }
     st.card = Math.min(st.card, Math.max(0, list.length - 1));
     if (!list.length && st.zone === Z.CARDS) st.zone = Z.SHELF;
-    backdrop(list.length ? Data.image(list[0].backdrop, 'w300') : '');
     updateFocus();
+  }
+
+  function cardKey(p) { return p.kind + ':' + p.id; }
+
+  /** At most five 780px images and five moving layers, irrespective of catalogue length. */
+  function positionCards() {
+    var holder = $('cards'), first = Math.max(0, Math.min(cards.length - 2, st.card - 1));
+    var from = Math.max(0, first - 1), to = Math.min(cards.length - 1, first + 3);
+    var nodes = holder.children, i, node;
+    for (i = nodes.length - 1; i >= 0; i--) {
+      node = nodes[i];
+      if (node._cardIndex < from || node._cardIndex > to) holder.removeChild(node);
+    }
+    var existing = {};
+    for (i = 0; i < nodes.length; i++) existing[nodes[i]._cardIndex] = nodes[i];
+    for (i = from; i <= to; i++) {
+      node = existing[i];
+      if (!node) {
+        var p = cards[i];
+        node = el('div', 'card', holder);
+        node._cardIndex = i;
+        node.setAttribute('role', 'button');
+        node.setAttribute('aria-label', p.title);
+        var face = el('div', 'card-face', node), frame = el('div', 'img', face), img = el('img', 'art', frame);
+        img.setAttribute('decoding', 'async');
+        img.setAttribute('alt', '');
+        img.src = Data.image(p.backdrop, 'w780');
+        el('div', 'name', face, p.title);
+        if (p.meta) el('div', 'meta', face, p.meta);
+        hover(node, Z.CARDS, i);
+      }
+      var x = (i - first) * 760;
+      if (node._cardX !== x) {
+        node.style.webkitTransform = node.style.transform = 'translate3d(' + x + 'px,0,0)';
+        node._cardX = x;
+      }
+      setClass(node, 'focus', st.zone === Z.CARDS && st.card === i);
+    }
+    var counter = $('carousel-position'), text = cards.length ? (st.card > 0 ? '‹  ' : '') + (st.card + 1) + ' / ' + cards.length + (st.card < cards.length - 1 ? '  ›' : '') : '';
+    if (counter.textContent !== text) counter.textContent = text;
+    // Keep the ambient background still while browsing: no full-screen crossfade competing with the carousel.
+    scheduleBackdrop(cards.length ? Data.image(cards[0].backdrop, 'w300') : '');
+  }
+
+  function cardNode(index) {
+    var nodes = $('cards').children;
+    for (var i = 0; i < nodes.length; i++) if (nodes[i]._cardIndex === index) return nodes[i];
+    return null;
+  }
+
+  function nearestCard(x) {
+    var nodes = $('cards').children, visible = [];
+    for (var i = 0; i < nodes.length; i++) {
+      var r = nodes[i].getBoundingClientRect();
+      if (r.right > 0 && r.left < window.innerWidth) visible.push(nodes[i]);
+    }
+    return visible.length ? visible[nearest(visible, x)]._cardIndex : st.card;
+  }
+
+  var bgTimer = 0, bgPending = null;
+  function scheduleBackdrop(url) {
+    if (url === bgPending) return;
+    bgPending = url;
+    clearTimeout(bgTimer);
+    bgTimer = setTimeout(function () { backdrop(bgPending); }, 180);
   }
 
   var bgUrl = null, bgFront = 'bgA';
@@ -654,24 +709,31 @@
   function selectTab(i) {
     if (i === st.tab) return;
     st.tab = i;
+    st.card = 0;
+    cards = [];
+    $('cards').innerHTML = '';
     renderCards();
   }
 
   function move(dx, dy) {
-    var tiles = $('tiles').children, cardNodes = $('cards').children;
+    var tiles = $('tiles').children;
     switch (st.zone) {
       case Z.SHELF:
         if (dx) st.shelf = Math.max(0, Math.min(shelf.length - 1, st.shelf + dx));
         else if (dy > 0) { openDrawer(); return; }
         else if (dy < 0) {
-          if (cards.length) { st.zone = Z.CARDS; st.card = nearest(cardNodes, centerX(tiles[st.shelf])); }
+          if (cards.length) { st.zone = Z.CARDS; st.card = nearestCard(centerX(tiles[st.shelf])); }
           else { st.zone = Z.TOP; st.top = st.tab; }
         }
         break;
       case Z.CARDS:
-        if (dx) st.card = Math.max(0, Math.min(cards.length - 1, st.card + dx));
+        if (dx) {
+          var next = Math.max(0, Math.min(cards.length - 1, st.card + dx));
+          if (next !== st.card) { st.card = next; positionCards(); }
+          return;
+        }
         else if (dy < 0) { st.zone = Z.TOP; st.top = st.tab; }
-        else if (shelf.length) { st.zone = Z.SHELF; st.shelf = nearest(tiles, centerX(cardNodes[st.card])); }
+        else if (shelf.length) { st.zone = Z.SHELF; st.shelf = nearest(tiles, centerX(cardNode(st.card))); }
         break;
       case Z.TOP:
         if (dx) {
@@ -810,9 +872,41 @@
 
   // MARK: - Keys
 
+  var cardMoveAt = 0, cardMoveTimer = 0, cardMoveQueued = 0;
+
+  function cancelCardMove() {
+    clearTimeout(cardMoveTimer);
+    cardMoveTimer = 0;
+    cardMoveQueued = 0;
+  }
+
+  /** Samsung repeats can arrive before a slide finishes. Keep one pending step, never a growing animation queue. */
+  function remoteCardMove(dx) {
+    var wait = 170 - (Date.now() - cardMoveAt);
+    if (wait > 0) {
+      cardMoveQueued = dx;
+      if (!cardMoveTimer) cardMoveTimer = setTimeout(function () {
+        cardMoveTimer = 0;
+        var direction = cardMoveQueued;
+        cardMoveQueued = 0;
+        if (st.zone === Z.CARDS && direction) remoteCardMove(direction);
+      }, wait);
+      return;
+    }
+    cancelCardMove();
+    cardMoveAt = Date.now();
+    move(dx, 0);
+  }
+
   document.addEventListener('keydown', function (e) {
     var k = e.keyCode;
     if (poke()) { e.preventDefault(); return; }   // the first press only wakes the screen
+    if (st.zone === Z.CARDS && (k === TV.keys.left || k === TV.keys.right)) {
+      remoteCardMove(k === TV.keys.left ? -1 : 1);
+      e.preventDefault();
+      return;
+    }
+    cancelCardMove();
     if (k === TV.keys.left) move(-1, 0);
     else if (k === TV.keys.right) move(1, 0);
     else if (k === TV.keys.up) move(0, -1);
@@ -857,7 +951,7 @@
     closeSheets();
     st.zone = Z.SHELF;
     st.shelf = 0;
-    if (st.tab !== 0) { st.tab = 0; renderCards(); }
+    if (st.tab !== 0) selectTab(0);
     updateFocus();
   }
 

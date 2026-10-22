@@ -297,6 +297,20 @@ var Data = (function () {
 
   function lang() { return I18N.locale(); }
 
+  /** The carousel reads only the bounded cache; remote-control movement never fetches metadata. */
+  function carousel(kind) {
+    var out = [], seen = {};
+    if (!KEY) return out;
+    for (var i = 0; i < picks.length && out.length < 24; i++) {
+      var p = picks[i], key = keyOf(p);
+      if (!seen[key] && (kind === null || kind === p.kind) && p.detailed && p.app && appFor(p.app)) {
+        seen[key] = true;
+        out.push(p);
+      }
+    }
+    return out;
+  }
+
   function day(offset) {
     var d = new Date(Date.now() + offset * 86400000);
     function two(n) { return (n < 10 ? '0' : '') + n; }
@@ -452,7 +466,7 @@ var Data = (function () {
     var t = Date.now(), p = hourPeriod(new Date()), st = sourceStamp();
     if (st === stamp && failedAt && t - failedAt < 10 * 60000 && t >= failedAt) return;
     var stale = st !== stamp || p !== period || t - listAt > 6 * 3600000 || t < listAt || !picks.length || listLang !== I18N.lang;
-    var wanted = all(), missing = false;
+    var wanted = picks.slice(0, 24), missing = false;
     for (var i = 0; i < wanted.length; i++) missing = missing || !wanted[i].detailed;
     if (!stale && !missing) return;
     fetchingRecs = true;
@@ -464,7 +478,7 @@ var Data = (function () {
       changed();
     }
     function detailWanted() {
-      var todo = all().filter(function (x) { return !x.detailed; });
+      var todo = picks.slice(0, 24).filter(function (x) { return !x.detailed; });
       each(todo, function (x, next) { details(x, function () { next(); }); }, function () { finish(null); });
     }
     if (stale) {
@@ -514,8 +528,19 @@ var Data = (function () {
     get pricesAt() { return pricesAt; },
     activeCoins: activeCoins,
     hasKey: function () { return !!KEY; },
+    recommendationStatus: function () {
+      if (!KEY) return tr('Recomendações não configuradas. Adicione uma chave TMDB para ativar Explorar, Filmes e Séries.',
+        'Recommendations are not configured. Add a TMDB key to enable Explore, Movies and Shows.',
+        'Recomendaciones sin configurar. Añade una clave TMDB para activar Explorar, Películas y Series.');
+      if (recsError) return tr('Não foi possível carregar recomendações. Verifique a conexão e a chave TMDB.',
+        "Couldn't load recommendations. Check your connection and TMDB key.",
+        'No se pudieron cargar las recomendaciones. Revisa la conexión y la clave TMDB.');
+      return tr('Nenhuma recomendação disponível no momento.', 'No recommendations available right now.',
+        'No hay recomendaciones disponibles en este momento.');
+    },
     recsError: function () { return recsError; },
     picks: now,
+    carousel: carousel,
     showcase: all,
     image: function (path, size) { return path ? 'https://image.tmdb.org/t/p/' + (size || 'w1280') + path : ''; },
 

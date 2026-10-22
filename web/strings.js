@@ -7,6 +7,9 @@ var I18N = (function () {
 
   var lang = 'en';
   var german = {
+    "Recommendations are not configured. Add a TMDB key to enable Explore, Movies and Shows.": "Empfehlungen sind nicht eingerichtet. Füge einen TMDB-Schlüssel hinzu, um Entdecken, Filme und Serien zu aktivieren.",
+    "Couldn't load recommendations. Check your connection and TMDB key.": "Empfehlungen konnten nicht geladen werden. Prüfe die Verbindung und den TMDB-Schlüssel.",
+    "No recommendations available right now.": "Zurzeit sind keine Empfehlungen verfügbar.",
     "Live TV": "Live-TV",
     "All Apps": "Alle Apps",
     "Settings": "Einstellungen",
@@ -71,6 +74,9 @@ var I18N = (function () {
   }
 
   var russian = {
+    "Recommendations are not configured. Add a TMDB key to enable Explore, Movies and Shows.": "Рекомендации не настроены. Добавьте ключ TMDB для разделов «Обзор», «Фильмы» и «Сериалы».",
+    "Couldn't load recommendations. Check your connection and TMDB key.": "Не удалось загрузить рекомендации. Проверьте подключение и ключ TMDB.",
+    "No recommendations available right now.": "Сейчас нет доступных рекомендаций.",
     "Live TV": "Телеканалы",
     "All Apps": "Приложения",
     "Settings": "Настройки",
