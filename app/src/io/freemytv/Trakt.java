@@ -43,6 +43,8 @@ final class Trakt {
     // Sign-in in progress (Settings shows it in the Trakt row); null when none.
     private static volatile String code, url, message = "";
     private static volatile boolean signingIn;
+    /** Its own lock: a token renewal (network, on the picks' thread) never holds up OK on the Trakt row. */
+    private static final Object SIGN_IN = new Object();
 
     /** The person put their own Trakt API app in config.properties. */
     static boolean available() {
@@ -80,9 +82,11 @@ final class Trakt {
     // MARK: - Sign in and out
 
     /** Starts Trakt's device sign-in in the background; `changed` runs (on that thread) at every step. */
-    static synchronized void signIn(Context c, Runnable changed) {
-        if (signingIn || !available()) return;
-        signingIn = true;
+    static void signIn(Context c, Runnable changed) {
+        synchronized (SIGN_IN) {
+            if (signingIn || !available()) return;
+            signingIn = true;
+        }
         code = null;
         message = "";
         Context app = c.getApplicationContext();
@@ -169,6 +173,8 @@ final class Trakt {
             throw new IOException("Trakt signed this TV out");
         }
         if (r.code != 200) throw new IOException("Trakt returned HTTP " + r.code);
+        // Signed out (or in again) while this was on its way: the new token isn't theirs anymore.
+        if (!refresh.equals(sp.getString("refresh", ""))) throw new IOException("not signed in");
         save(c, new JSONObject(r.body));
         return sp.getString("access", "");
     }
