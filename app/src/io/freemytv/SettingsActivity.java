@@ -130,7 +130,7 @@ public class SettingsActivity extends Activity {
         private final List<String[]> shelfRows = new ArrayList<>();
         private final List<String> shelfOrder = new ArrayList<>();
         private int pickFor, pickCurrent, pickScroll;   // pickFor: the remote button (index + 1)
-        private static final int PICK_CITY = 0, PICK_LANGUAGE = -1;
+        private static final int PICK_CITY = 0, PICK_LANGUAGE = -1, PICK_SPACE = -2;
         private final List<String[]> cities = new ArrayList<>();
         private String cityStatus = "";
         private final RectF tmp = new RectF(), rowRect = new RectF(), focusBox = new RectF();
@@ -601,8 +601,8 @@ public class SettingsActivity extends Activity {
                         if (e.getRepeatCount() == 0) backDown = true;
                     } else {
                         if (backDown && !e.isCanceled()) {
-                            if (screen == PICKER && (pickFor == PICK_CITY || pickFor == PICK_LANGUAGE)) {
-                                focus = pickFor == PICK_CITY ? CITY_ROW : 0;
+                            if (screen == PICKER && (pickFor == PICK_CITY || pickFor == PICK_LANGUAGE || pickFor == PICK_SPACE)) {
+                                focus = pickFor == PICK_CITY ? CITY_ROW : pickFor == PICK_SPACE ? 6 : 0;
                                 screen = HOME_SETTINGS;
                             } else if (screen == PICKER) {
                                 focus = pickFor - 1;
@@ -626,7 +626,7 @@ public class SettingsActivity extends Activity {
 
         private static final String[] UNITS = {"auto", "C", "F"}, THEMES = {"auto", "light", "dark"};
         /** Home Settings: language, temperature, theme, sounds, weather, city, quotes, then one row per coin. */
-        private static final int CITY_ROW = 5, COIN_ROWS = 7;
+        private static final int CITY_ROW = 5, TITLE_ROW = 7, COIN_ROWS = 8;
 
         private boolean dollar() {
             return "BRL".equalsIgnoreCase(Config.CURRENCY.trim());
@@ -640,11 +640,11 @@ public class SettingsActivity extends Activity {
             l.add(Ui.tr("Navigation sounds"));
             l.add(Ui.tr("Weather widget"));
             l.add(Ui.tr("City"));
-            l.add(Ui.tr("Quotes widget"));
-            l.add("Bitcoin");
-            l.add("Ethereum");
+            l.add(Ui.tr("Quotes space"));
+            l.add(Ui.tr("Home title"));
+            l.add(Ui.tr("Dollar") + " (USDT)");
+            l.add("USD Coin (USDC)");
             l.add("Solana");
-            if (dollar()) l.add(Ui.tr("Dollar"));
             return l.toArray(new String[0]);
         }
 
@@ -660,9 +660,10 @@ public class SettingsActivity extends Activity {
             v[3] = onOff(Prefs.sounds());
             v[4] = onOff(Prefs.weather());
             v[CITY_ROW] = !cityStatus.isEmpty() ? cityStatus : Prefs.city().isEmpty() ? "—" : Prefs.city();
-            v[6] = onOff(Prefs.quotes());
-            // No quotes widget, nowhere to show prices: the coins read as off (and stay locked) until it is back on.
-            for (int i = COIN_ROWS; i < v.length; i++) v[i] = onOff(Prefs.quotes() && Prefs.coin(i - COIN_ROWS));
+            v[6] = HomeData.spaceName(Prefs.space());
+            v[TITLE_ROW] = Prefs.homeTitle().isEmpty() ? Ui.tr("For You") : Prefs.homeTitle();
+            // Only the crypto prices have coins: with IPL scores (or nothing) on, the coins read as off and stay locked.
+            for (int i = COIN_ROWS; i < v.length; i++) v[i] = onOff(Prefs.space().equals("crypto") && Prefs.coin(i - COIN_ROWS));
             return v;
         }
 
@@ -741,13 +742,51 @@ public class SettingsActivity extends Activity {
                 case 3: Prefs.setSounds(!Prefs.sounds()); break;
                 case 4: Prefs.setWeather(!Prefs.weather()); break;
                 case CITY_ROW: return;
-                case 6: Prefs.setQuotes(!Prefs.quotes()); break;
+                case TITLE_ROW: return;
+                case 6: {
+                    // The arrows step through the options; OK opens the drop-down with all of them.
+                    String[][] all = HomeData.SPACES;
+                    int at = 0;
+                    for (int i = 0; i < all.length; i++) if (all[i][0].equals(Prefs.space())) at = i;
+                    Prefs.setSpace(all[(at + (dir >= 0 ? 1 : all.length - 1)) % all.length][0]);
+                    break;
+                }
                 default:
-                    if (!Prefs.quotes()) return;
+                    if (!Prefs.space().equals("crypto")) return;
                     Prefs.setCoin(focus - COIN_ROWS, !Prefs.coin(focus - COIN_ROWS));
                     break;
             }
             HomeData.get(getContext()).settingsChanged();
+        }
+
+        /** The home screen's heading: type your name or anything; empty goes back to "For You". */
+        private void askTitle() {
+            EditText field = new EditText(activity);
+            field.setSingleLine(true);
+            field.setText(Prefs.homeTitle());
+            field.setSelection(field.getText().length());
+            field.setHint(Ui.tr("For You"));
+            field.setImeOptions(EditorInfo.IME_ACTION_DONE);
+            field.setFilters(new android.text.InputFilter[] {new android.text.InputFilter.LengthFilter(24)});
+            AlertDialog dialog = new AlertDialog.Builder(activity, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+                    .setTitle(Ui.tr("Home title"))
+                    .setMessage(Ui.tr("Your name or any words (up to 24 letters). Empty brings back \"For You\"."))
+                    .setView(field)
+                    .setPositiveButton(Ui.tr("Save"), (d, which) -> saveTitle(field.getText().toString()))
+                    .setNegativeButton(Ui.tr("Cancel"), null)
+                    .create();
+            field.setOnEditorActionListener((v, action, event) -> {
+                dialog.dismiss();
+                saveTitle(field.getText().toString());
+                return true;
+            });
+            dialog.show();
+            if (dialog.getWindow() != null) dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+        }
+
+        private void saveTitle(String text) {
+            Prefs.setHomeTitle(text);
+            invalidate();
         }
 
         private void askCity() {
@@ -899,6 +938,13 @@ public class SettingsActivity extends Activity {
                     pickLabels.add(code.equals("auto") ? Ui.tr("Automatic") : Ui.languageName(code));
                 }
                 pickCurrent = java.util.Arrays.asList(choices).indexOf(Prefs.language());
+            } else if (which == PICK_SPACE) {
+                int at = 0;
+                for (int i = 0; i < HomeData.SPACES.length; i++) {
+                    pickLabels.add(HomeData.spaceName(HomeData.SPACES[i][0]));
+                    if (HomeData.SPACES[i][0].equals(Prefs.space())) at = i;
+                }
+                pickCurrent = at;
             } else {
                 pickLabels.addAll(appLabels);
                 pickCurrent = appPkgs.indexOf(Prefs.keyApp(Prefs.KEYS[which - 1]));
@@ -914,7 +960,7 @@ public class SettingsActivity extends Activity {
         private void drawPicker(Canvas c) {
             Paint heading = Ui.text(Ui.displaySemibold, 34 * k, 0xFFFFFFFF);
             String title = pickFor == PICK_CITY ? Ui.tr("City")
-                    : pickFor == PICK_LANGUAGE ? Ui.tr("Language") : keyLabels()[pickFor - 1];
+                    : pickFor == PICK_LANGUAGE ? Ui.tr("Language") : pickFor == PICK_SPACE ? Ui.tr("Quotes space") : keyLabels()[pickFor - 1];
             c.drawText(title, LIST_X * k + 30 * k, (LIST_TOP - 24) * k, heading);
             int rows = rowCount();
             for (int i = 0; i < rows; i++) {
@@ -947,7 +993,7 @@ public class SettingsActivity extends Activity {
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + LIST_ROW_H * k);
                 float f = drawRowBackground(c, i);
                 rowLabel.setColor(blend(0xF2FFFFFF, INK, f));
-                boolean locked = !keys && i >= COIN_ROWS && !Prefs.quotes();
+                boolean locked = !keys && i >= COIN_ROWS && !Prefs.space().equals("crypto");
                 rowValue.setColor(blend(locked ? 0x59FFFFFF : 0xB3FFFFFF, locked ? 0x591C1C1E : 0xB31C1C1E, f));
                 if (locked) rowLabel.setColor(blend(0x73FFFFFF, 0x731C1C1E, f));
                 float base = rowRect.centerY() + Ui.halfCap(rowLabel);
@@ -988,6 +1034,11 @@ public class SettingsActivity extends Activity {
                 Prefs.setLanguage(languageChoices()[pickScroll + focus]);
                 focus = 0;
                 screen = HOME_SETTINGS;
+            } else if (screen == PICKER && pickFor == PICK_SPACE) {
+                Prefs.setSpace(HomeData.SPACES[pickScroll + focus][0]);
+                HomeData.get(c).settingsChanged();
+                focus = 6;
+                screen = HOME_SETTINGS;
             } else if (screen == PICKER) {
                 int at = pickScroll + focus;
                 Prefs.setKeyApp(Prefs.KEYS[pickFor - 1], appPkgs.get(at));
@@ -1003,6 +1054,11 @@ public class SettingsActivity extends Activity {
                 openPicker(PICK_LANGUAGE);
             } else if (screen == HOME_SETTINGS && focus == CITY_ROW) {
                 askCity();
+                return;
+            } else if (screen == HOME_SETTINGS && focus == 6) {
+                openPicker(PICK_SPACE);
+            } else if (screen == HOME_SETTINGS && focus == TITLE_ROW) {
+                askTitle();
                 return;
             } else if (screen == HOME_SETTINGS) {
                 adjust(1);

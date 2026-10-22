@@ -45,7 +45,7 @@ final class Recs {
     static final class Pick {
         int id;
         String kind;            // "movie" or "tv"
-        String title, backdrop, meta = "", app, pkg;
+        String title, backdrop, poster, meta = "", app, pkg;
         String link;            // opens the title in its app (looked up with Watchmode), or null: the app's home
         boolean detailed;
     }
@@ -59,7 +59,7 @@ final class Recs {
     private static final int ANIMATION = 16;
     private static final long LIST_EVERY = 6 * 3600_000L;
     /** Bump when what is saved for each title changes (the saved list is discarded and fetched again). */
-    private static final int CACHE_VERSION = 3;
+    private static final int CACHE_VERSION = 4;
     private static final int MANHA = 0, TARDE = 1, NOITE = 2;
     /** Service name on TMDB (part of the name, lowercase) → TV app (HomeApps key, package). */
     private static final String[][] SERVICES = {
@@ -183,6 +183,42 @@ final class Recs {
 
     /** This hour's 3, movies only ("movie") or shows only ("tv"); null = both (the home screen tabs). */
     List<Pick> now(String kind) {
+        return now(kind, pageOf[kindIndex(kind)]);
+    }
+
+    private static int kindIndex(String kind) {
+        return kind == null ? 0 : kind.equals("movie") ? 1 : 2;
+    }
+
+    /** The card row's page per tab (Explore, Movies, Shows): 0 = this hour's 3, then the next 3, and so on. */
+    private final int[] pageOf = new int[3];
+    private int pagedTab;
+
+    /** How many pages of 3 a tab has (at most 6). */
+    int pages(String kind) {
+        return Math.max(1, Math.min(6, countFor(kind) / 3));
+    }
+
+    int page(String kind) {
+        return pageOf[kindIndex(kind)];
+    }
+
+    /** Moves the tab's card row to the next (1) or previous (-1) page; false at either end. */
+    boolean turnPage(String kind, int dir) {
+        int i = kindIndex(kind), to = Math.max(0, Math.min(pages(kind) - 1, pageOf[i] + dir));
+        if (to == pageOf[i]) return false;
+        pageOf[i] = to;
+        pagedTab = i;
+        return true;
+    }
+
+    private int countFor(String kind) {
+        int n = 0;
+        for (Pick p : picks) if (kind == null || kind.equals(p.kind)) n++;
+        return n;
+    }
+
+    private List<Pick> now(String kind, int page) {
         List<Pick> list = new ArrayList<>();
         if (!hasKey(context)) return list;    // no TMDB key: no recommendations
         Map<String, Boolean> have = new HashMap<>();   // one look per app, not per title (this runs every 15 s)
@@ -196,7 +232,7 @@ final class Recs {
         List<Pick> out = new ArrayList<>();
         java.util.Set<String> seen = new java.util.HashSet<>();
         for (int i = 0; i < list.size() && out.size() < 3; i++) {
-            Pick p = list.get((int) ((hour * 3 + i) % list.size()));
+            Pick p = list.get((int) ((hour * 3 + page * 3 + i) % list.size()));
             if (seen.add(franchise(p.title))) out.add(p);
         }
         return out;
@@ -254,7 +290,8 @@ final class Recs {
         boolean stale = newKey || p != period || now - listAt > LIST_EVERY || now < listAt || picks.isEmpty()
                 || !listLanguage.equals(Ui.language);
         boolean missing = false;
-        for (Pick pick : wanted()) missing |= !pick.detailed || !hasImage(pick) || needsLink(pick);
+        java.util.Set<String> bgNow = backdropKeys();
+        for (Pick pick : wanted()) missing |= !pick.detailed || needsLink(pick) || (pick.pkg != null && bgNow.contains(key(pick)) && !hasImage(pick));
         if (!stale && !missing) return;
         keyStamp = stamp;
         fetching = true;
@@ -264,11 +301,12 @@ final class Recs {
                 // One failing title doesn't stop the others; whatever has no app on the TV is not downloaded.
                 int failures = 0, tried = 0;
                 String last = "";
+                java.util.Set<String> bg = backdropKeys();
                 for (Pick pick : wanted()) {
                     tried++;
                     try {
                         if (!pick.detailed) fetchDetails(pick);
-                        if (pick.pkg != null) download(pick);
+                        if (pick.pkg != null && bg.contains(key(pick))) download(pick);
                     } catch (Exception e) {
                         failures++;
                         last = e.getMessage() == null ? e.toString() : e.getMessage();
@@ -361,23 +399,184 @@ final class Recs {
         });
     }
 
-    /** This hour's picks for the three tabs (Explore, Movies, Shows), without repeats. */
-    List<Pick> wanted() {
+    /** Cards in a tab's row (up to 20): the picks on the TV's apps, from where this hour starts, no repeated franchise. */
+    List<Pick> strip(String kind, int max) {
+        List<Pick> list = new ArrayList<>();
+        if (!hasKey(context)) return list;
+        Map<String, Boolean> have = new HashMap<>();
+        for (Pick p : picks) {
+            if ((kind == null || kind.equals(p.kind)) && p.poster != null
+                    && (!p.detailed || (p.pkg != null && have.computeIfAbsent(p.pkg, this::installed)))) list.add(p);
+        }
         List<Pick> out = new ArrayList<>();
+        if (list.isEmpty()) return out;
+        int start = (int) ((System.currentTimeMillis() / 3600_000L * 5) % list.size());
         java.util.Set<String> seen = new java.util.HashSet<>();
-        for (String kind : new String[] {null, "movie", "tv"}) {
-            for (Pick p : now(kind)) if (seen.add(key(p))) out.add(p);
+        for (int i = 0; i < list.size() && out.size() < max; i++) {
+            Pick p = list.get((start + i) % list.size());
+            if (seen.add(franchise(p.title))) out.add(p);
         }
         return out;
     }
 
-    /** Movies and shows are numbered separately on TMDB: a pick is identified by type + number. */
+    /** Everything the three tabs show: details (where it streams) are fetched for all of it. */
+    List<Pick> wanted() {
+        List<Pick> out = new ArrayList<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        if (!HomeView.POSTER_ROW) {
+            // The original design: this hour's three for each tab, and the next three of the one being paged.
+            for (String kind : new String[] {null, "movie", "tv"}) {
+                for (Pick p : now(kind)) if (seen.add(key(p))) out.add(p);
+            }
+            String paged = pagedTab == 0 ? null : pagedTab == 1 ? "movie" : "tv";
+            if (pageOf[pagedTab] + 1 < pages(paged)) for (Pick p : now(paged, pageOf[pagedTab] + 1)) if (seen.add(key(p))) out.add(p);
+            return out;
+        }
+        for (String kind : new String[] {null, "movie", "tv"}) {
+            for (Pick p : strip(kind, 20)) if (seen.add(key(p))) out.add(p);
+        }
+        return out;
+    }
+
+    /** The first few of each tab: their photos are downloaded and built ahead (the background changes with focus). */
+    List<Pick> wantedBackdrops() {
+        if (!HomeView.POSTER_ROW) return wanted();
+        List<Pick> out = new ArrayList<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (String kind : new String[] {null, "movie", "tv"}) {
+            for (Pick p : strip(kind, 5)) if (seen.add(key(p))) out.add(p);
+        }
+        return out;
+    }
+
+    private java.util.Set<String> backdropKeys() {
+        java.util.Set<String> keys = new java.util.HashSet<>();
+        for (Pick p : wantedBackdrops()) keys.add(key(p));
+        return keys;
+    }
+
+    // MARK: - Posters (the portrait cards of the home screen)
+
+    private final android.util.LruCache<String, Bitmap> posters = new android.util.LruCache<>(36);
+    private final java.util.Set<String> posterPending = new HashSet<>();
+    private final ExecutorService posterIo = Executors.newFixedThreadPool(3);
+
+    /** The title's poster at card size, or null while it downloads (listeners are told when it is ready). */
+    Bitmap poster(Pick p) {
+        if (p == null || p.poster == null) return null;
+        final String path = p.poster;
+        Bitmap b = posters.get(path);
+        if (b != null) return b;
+        synchronized (posterPending) {
+            if (!posterPending.add(path)) return null;
+        }
+        posterIo.execute(() -> {
+            try {
+                int w = Math.round(340 * Backdrop.W / 1920f), h = w * 3 / 2;
+                HttpURLConnection c = (HttpURLConnection) new URL("https://image.tmdb.org/t/p/w342" + path).openConnection();
+                c.setConnectTimeout(8000);
+                c.setReadTimeout(8000);
+                try (java.io.InputStream in = c.getInputStream()) {
+                    Bitmap raw = BitmapFactory.decodeStream(in);
+                    if (raw != null) {
+                        Bitmap scaled = raw.getWidth() > w ? Bitmap.createScaledBitmap(raw, w, h, true) : raw;
+                        if (scaled != raw) raw.recycle();
+                        posters.put(path, scaled);
+                    }
+                } finally {
+                    c.disconnect();
+                }
+            } catch (Exception | OutOfMemoryError e) {
+                AppLog.w("poster: " + e.getMessage());
+            } finally {
+                synchronized (posterPending) {
+                    posterPending.remove(path);
+                }
+                notifyListeners();
+            }
+        });
+        return null;
+    }
+
     static String key(Pick p) {
         return p.kind + ":" + p.id;
     }
 
     private void notifyListeners() {
         main.post(() -> { for (Listener l : new ArrayList<>(listeners)) l.onRecs(); });
+    }
+
+    // MARK: - Browse screen (all of TMDB, filtered to the TV's apps)
+
+    private volatile String providerIds;
+    private volatile List<String[]> providerList;   // {TMDB id, name} of the services whose app is on the TV
+
+    /** The streaming services whose app is on the TV (for the Platform filter). Blocking the first time. */
+    List<String[]> providerList() {
+        providerIds();
+        List<String[]> l = providerList;
+        return l == null ? new ArrayList<>() : l;
+    }
+
+    /** Raw TMDB request for the browse screen (the key stays in here). */
+    JSONObject tmdb(String path) throws Exception {
+        return get(path);
+    }
+
+    static String language() {
+        return lang();
+    }
+
+    static String region() {
+        return REGION;
+    }
+
+    /** "8|119|122": TMDB ids of the streaming services the TV has, in this region ("" = no filter). */
+    synchronized String providerIds() {
+        if (providerIds != null) return providerIds;
+        StringBuilder ids = new StringBuilder();
+        List<String[]> list = new ArrayList<>();
+        try {
+            for (String kind : new String[] {"movie", "tv"}) {
+                JSONArray providers = get("/watch/providers/" + kind + "?language=" + lang() + "&watch_region=" + REGION).getJSONArray("results");
+                for (int i = 0; i < providers.length(); i++) {
+                    JSONObject o = providers.getJSONObject(i);
+                    String[] s = service(o.optString("provider_name"));
+                    String id = String.valueOf(o.getInt("provider_id"));
+                    if (s != null && installed(s[2]) && !("|" + ids + "|").contains("|" + id + "|")) {
+                        ids.append(ids.length() == 0 ? "" : "|").append(id);
+                        String shown = SERVICE_NAME.get(s[1]);
+                        list.add(new String[] {id, shown == null ? o.optString("provider_name") : shown});
+                    }
+                }
+            }
+        } catch (Exception e) {
+            AppLog.w("browse providers: " + e.getMessage());
+            return "";
+        }
+        // One entry per service name ("Netflix" and "Netflix with ads" are the same app): their ids joined with "|".
+        java.util.Map<String, String> merged = new java.util.LinkedHashMap<>();
+        for (String[] e : list) merged.put(e[1], merged.containsKey(e[1]) ? merged.get(e[1]) + "|" + e[0] : e[0]);
+        List<String[]> byName = new ArrayList<>();
+        for (java.util.Map.Entry<String, String> e : merged.entrySet()) byName.add(new String[] {e.getValue(), e.getKey()});
+        providerList = byName;
+        providerIds = ids.toString();
+        return providerIds;
+    }
+
+    /** Fills in where a title streams (the app on this TV) and the link that opens it there. Blocking. */
+    Pick resolve(int id, String kind, String title) {
+        Pick p = new Pick();
+        p.id = id;
+        p.kind = kind;
+        p.title = title;
+        try {
+            fetchDetails(p);
+            findLink(p);
+        } catch (Exception e) {
+            AppLog.w("browse resolve: " + e.getMessage());
+        }
+        return p;
     }
 
     // MARK: - TMDB
@@ -422,11 +621,31 @@ final class Recs {
         List<Pick> newMovies = new ArrayList<>(), newShows = new ArrayList<>();
         for (int i = 0; i < movies.length(); i++) add(newMovies, movies.getJSONObject(i), "movie");
         for (int i = 0; i < shows.length(); i++) add(newShows, shows.getJSONObject(i), "tv");
-        // Trending first, then the new releases; movies and shows alternating, without repeats, up to 24.
+        // 3. Made in India (Hindi, Tamil, Telugu…): popular on the TV's services in the past 2 years, two pages each.
+        List<Pick> inMovies = new ArrayList<>(), inShows = new ArrayList<>();
+        if (REGION.equals("IN")) {
+            for (int page = 1; page <= 2; page++) {
+                JSONArray im = get("/discover/movie?vote_count.gte=20&with_origin_country=IN&page=" + page
+                        + "&primary_release_date.gte=" + day(-730) + "&primary_release_date.lte=" + day(0) + common).getJSONArray("results");
+                JSONArray is = get("/discover/tv?vote_count.gte=10&with_origin_country=IN&page=" + page
+                        + "&air_date.gte=" + day(-365) + "&air_date.lte=" + day(0) + common).getJSONArray("results");
+                for (int i = 0; i < im.length(); i++) add(inMovies, im.getJSONObject(i), "movie");
+                for (int i = 0; i < is.length(); i++) add(inShows, is.getJSONObject(i), "tv");
+            }
+        }
+        // Trending, Indian and new releases take turns (movies and shows alternating), without repeats, up to 60.
         List<Pick> list = new ArrayList<>();
         java.util.Set<String> seen = new java.util.HashSet<>();
-        alternate(list, seen, hotMovies, hotShows, 24);
-        alternate(list, seen, newMovies, newShows, 24);
+        List<Pick> a1 = new ArrayList<>(), b1 = new ArrayList<>(), c1 = new ArrayList<>();
+        alternate(a1, new java.util.HashSet<>(), hotMovies, hotShows, 24);
+        alternate(b1, new java.util.HashSet<>(), inMovies, inShows, 40);
+        alternate(c1, new java.util.HashSet<>(), newMovies, newShows, 24);
+        for (int i = 0; i < 40 && list.size() < 60; i++) {
+            if (i < a1.size() && seen.add(key(a1.get(i)))) list.add(a1.get(i));
+            if (i < b1.size() && seen.add(key(b1.get(i)))) list.add(b1.get(i));
+            if (i < b1.size() - 1 && seen.add(key(b1.get(i + 1)))) list.add(b1.get(i + 1));   // Indian content gets two slots
+            if (i < c1.size() && seen.add(key(c1.get(i)))) list.add(c1.get(i));
+        }
         if (list.isEmpty()) throw new IOException("TMDB returned no recommendations");
         picks = list;
         period = p;
@@ -468,6 +687,8 @@ final class Recs {
         p.kind = kind;
         p.title = o.optString(kind.equals("movie") ? "title" : "name");
         p.backdrop = backdrop;
+        String poster = o.optString("poster_path", "");
+        p.poster = poster.isEmpty() || "null".equals(poster) ? null : poster;
         list.add(p);
     }
 
@@ -482,6 +703,8 @@ final class Recs {
         JSONObject o = get("/" + p.kind + "/" + p.id
                 + "?language=" + lang() + "&append_to_response=watch/providers,images&include_image_language=null," + Ui.language.replaceAll("-.*", "") + ",en");
         p.title = title(p, o);
+        String posterPath = o.optString("poster_path", "");
+        if (!posterPath.isEmpty() && !"null".equals(posterPath)) p.poster = posterPath;
         String best = bestBackdrop(o.optJSONObject("images"));
         if (best != null) p.backdrop = best;
         List<String> parts = new ArrayList<>();
@@ -741,7 +964,16 @@ final class Recs {
             if (forLight != light) return;   // the design changed midway: this one is stale
             synchronized (images) {
                 images.put(p.backdrop, backdrop);
-                while (images.size() > (forLight ? 10 : 4)) images.remove(images.keySet().iterator().next());
+                if (images.size() > (forLight ? 18 : 4)) {
+                    // Drop the oldest ones, never one of the pictures the cards need right now.
+                    java.util.Set<String> needed = new java.util.HashSet<>();
+                    for (Pick w : wantedBackdrops()) if (w.backdrop != null) needed.add(w.backdrop);
+                    java.util.Iterator<String> it = images.keySet().iterator();
+                    while (images.size() > (forLight ? 18 : 4) && it.hasNext()) {
+                        String key = it.next();
+                        if (!needed.contains(key)) it.remove();
+                    }
+                }
             }
             notifyListeners();
         } catch (IOException | RuntimeException | OutOfMemoryError e) {
@@ -769,9 +1001,9 @@ final class Recs {
             if (parts[i].lastModified() < stale) parts[i].delete();
         }
         File[] files = dir.listFiles((d, name) -> !name.endsWith(".part"));
-        if (files == null || files.length <= 24) return;
+        if (files == null || files.length <= 60) return;
         Arrays.sort(files, (a, b) -> Long.compare(a.lastModified(), b.lastModified()));
-        for (int i = 0; i < files.length - 24; i++) {
+        for (int i = 0; i < files.length - 60; i++) {
             //noinspection ResultOfMethodCallIgnored
             files[i].delete();
         }
@@ -785,7 +1017,7 @@ final class Recs {
             for (Pick p : picks) {
                 a.put(new JSONObject().put("id", p.id).put("kind", p.kind).put("title", p.title).put("backdrop", p.backdrop).put("link", p.link == null ? "" : p.link)
                         .put("meta", p.meta).put("app", p.app == null ? "" : p.app).put("pkg", p.pkg == null ? "" : p.pkg)
-                        .put("detailed", p.detailed));
+                        .put("detailed", p.detailed).put("poster", p.poster == null ? "" : p.poster));
             }
             SharedPreferences.Editor e = cache.edit().putString("picks", a.toString()).putInt("period", period).putLong("listAt", listAt)
                     .putString("language", listLanguage)
@@ -814,6 +1046,7 @@ final class Recs {
             p.app = o.optString("app").isEmpty() ? null : o.optString("app");
             p.pkg = o.optString("pkg").isEmpty() ? null : o.optString("pkg");
             p.detailed = o.optBoolean("detailed");
+            p.poster = o.optString("poster").isEmpty() ? null : o.optString("poster");
             out.add(p);
         }
         return out;

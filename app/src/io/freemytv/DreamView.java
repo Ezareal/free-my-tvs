@@ -780,7 +780,7 @@ final class DreamView extends View implements Choreographer.FrameCallback, HomeD
         String[] values = new String[HomeData.coinCount()];
         float total = spacing * (values.length - 1);
         for (int i = 0; i < values.length; i++) {
-            values[i] = HomeData.price(data.prices[coins[i]]);
+            values[i] = HomeData.currencyMark() + HomeData.price(data.prices[coins[i]]);
             total += Glyphs.width(getContext(), HomeData.COINS[coins[i]], cap) + gap + quotePaint.measureText(values[i]);
         }
         float x = cx - total / 2, base = h - 92 * k;

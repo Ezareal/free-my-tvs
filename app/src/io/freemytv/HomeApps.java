@@ -56,7 +56,7 @@ final class HomeApps {
 
     static final int APP = 0, LIVE_TV = 1, INPUT = 2, ALL_APPS = 3, SETTINGS = 4, ANDROID_SETTINGS = 5;
     /** The "HDMI Inputs" button: opens the bottom drawer on the inputs (the home screen handles it). */
-    static final int INPUTS = 7;
+    static final int INPUTS = 7, THEME = 8;
     /** Image size of each card (16:9; on screen it shows up to ~330 px wide). */
     static final int TILE_W = 384, TILE_H = 216;
 
@@ -81,8 +81,11 @@ final class HomeApps {
      */
     private static final String[][] SHELF = {
         {"netflix", "Netflix", "com.netflix.ninja", "E50914", "", "1"},
-        {"youtube", "YouTube", "com.google.android.youtube.tv", "FF0033", "play", "1"},
+        {"smarttube", "SmartTube", "org.smarttube.stable", "FF0033", "", "1"},
         {"prime", "Prime Video", "com.amazon.amazonvideo.livingroom", "1A98FF", "tint", "0.96"},
+        {"hotstar", "JioHotstar", "in.startv.hotstar", "1F80E0", "", "1"},
+        {"iptv", "IPTV", "com.iptvstreamer.iptvstreamerpro", "2E7D32", "banner", "1"},
+        {"airscreen", "AirScreen", "com.ionitech.airscreen", "00A3FF", "", "1"},
         {"disney", "Disney+", "com.disney.disneyplus", "1838C8", "", "1"},
         {"max", "Max", "com.wbd.stream", "6C3BE0", "", "1.32"},
         {"max", "HBO Max", "com.hbo.hbonow", "6C3BE0", "", "1.32"},
@@ -94,7 +97,8 @@ final class HomeApps {
         {"globoplay", "Globoplay", "com.globo.globotv", "FF5A1F", "tint", "1"},
         {"spotify", "Spotify", "com.spotify.tv.android", "1DB954", "", "1"},
     };
-    static final int MAX_SHELF = 8;
+    /** The most apps the deck holds. */
+    static final int MAX_SHELF = 6;
     /** Live TV apps of some brands (the antenna's channels open through the standard Android request first). */
     static final String[] LIVE_TV_APPS = {"com.tcl.tv", "com.google.android.tv", "com.mediatek.wwtv.tvcenter", "com.sony.dtv.tvx",
             "com.smartdevice.livetv", "com.mediatek.tv.oneworld.tvcenter"};
@@ -143,7 +147,8 @@ final class HomeApps {
             } else {
                 it.key = d[0];
                 it.label = d[1];
-                it.logo = shelfLogo(c, d[0], d[2], d[4], extract);
+                // "banner": the app's own TV banner as it is (its logo can't be lifted cleanly onto our tile).
+                it.logo = d[4].equals("banner") ? null : shelfLogo(c, d[0], d[2], d[4], extract);
                 if (it.logo == null) it.tile = appTile(c, d[0], d[2], 0xFF000000 | Integer.parseInt(d[3], 16));
                 if (it.logo != null) it.logoInk = ink(it.logo);
                 it.logoDark = ownLogoCached(c, d[0] + "-dark");

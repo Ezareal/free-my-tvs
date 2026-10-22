@@ -72,7 +72,7 @@ final class Backdrop {
         src.recycle();
         if (forLight) {
             // Light design: everything comes from the photo without scrims.
-            Bitmap wide = card(out, WIDE_W, WIDE_H), tall = card(out, TALL_W, TALL_H);
+            Bitmap wide = wideCard(out, WIDE_W, WIDE_H), tall = null;
             int[] frost = reduce(out, FW, FH, 3, 3);
             int[] light = whiten(frost.clone(), 0.82f);
             int[] glass = reduce(out, GW, GH, 2, 2);
@@ -155,6 +155,42 @@ final class Backdrop {
     }
 
     /** The center of the photo at the card's aspect ratio, filtered down (halving while possible) to the exact size. */
+    /**
+     * The wide card: the whole photo at its own proportions (never stretched, nobody's face cut off), centered, with its
+     * edges fading into the same photo blurred to fill the card.
+     */
+    private static Bitmap wideCard(Bitmap full, int w, int h) {
+        Bitmap out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(out);
+        Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.DITHER_FLAG);
+        // Behind: a crop of the photo, shrunk to almost nothing and stretched back (a blur), a little darker.
+        float ratio = (float) w / h;
+        int cw = Math.min(full.getWidth(), Math.round(full.getHeight() * ratio));
+        int ch = Math.min(full.getHeight(), Math.round(cw / ratio));
+        Bitmap crop = Bitmap.createBitmap(full, (full.getWidth() - cw) / 2, (full.getHeight() - ch) / 2, cw, ch);
+        Bitmap tiny = Bitmap.createScaledBitmap(crop, Math.max(2, w / 24), Math.max(2, h / 24), true);
+        if (crop != full) crop.recycle();
+        c.drawBitmap(tiny, null, new RectF(0, 0, w, h), paint);
+        tiny.recycle();
+        c.drawColor(0x40000000);
+        // In front: the photo at the card's height, its left and right edges fading out.
+        int fw = Math.min(w, Math.round(h * (float) full.getWidth() / full.getHeight()));
+        Bitmap fg = Bitmap.createBitmap(fw, h, Bitmap.Config.ARGB_8888);
+        Canvas fc = new Canvas(fg);
+        fc.drawBitmap(full, null, new RectF(0, 0, fw, h), paint);
+        if (fw < w) {
+            float edge = Math.min(0.12f, 56f / fw);
+            Paint mask = new Paint();
+            mask.setShader(new LinearGradient(0, 0, fw, 0, new int[] {0, 0xFF000000, 0xFF000000, 0},
+                    new float[] {0, edge, 1 - edge, 1}, Shader.TileMode.CLAMP));
+            mask.setXfermode(new android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DST_IN));
+            fc.drawRect(0, 0, fw, h, mask);
+        }
+        c.drawBitmap(fg, (w - fw) / 2f, 0, paint);
+        fg.recycle();
+        return gpu(out);
+    }
+
     private static Bitmap card(Bitmap full, int w, int h) {
         float ratio = (float) w / h;
         int cw = Math.min(full.getWidth(), Math.round(full.getHeight() * ratio));
