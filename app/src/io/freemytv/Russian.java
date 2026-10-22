@@ -114,6 +114,12 @@ final class Russian {
             case "On": return "Вкл.";
             case "Off": return "Выкл.";
             case "Shelf": return "Избранные приложения";
+            case "Choose your YouTube categories": return "Выберите категории YouTube";
+            case "OK to choose · only this once": return "OK, чтобы выбрать · только один раз";
+            case "YouTube: what do you like?": return "YouTube: что вам нравится?";
+            case "OK picks or removes. None: a mix. Back saves.": return "OK выбирает или убирает. Ничего: подборка. «Назад» сохраняет.";
+            case "chosen": return "выбрано";
+            case "not chosen": return "не выбрано";
             case "on the shelf, place ": return "в избранном, позиция ";
             case "not on the shelf": return "не в избранном";
             case "Remote Buttons": return "Кнопки пульта";

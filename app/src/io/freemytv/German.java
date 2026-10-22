@@ -115,6 +115,12 @@ final class German {
             case "On": return "An";
             case "Off": return "Aus";
             case "Shelf": return "Leiste";
+            case "Choose your YouTube categories": return "Wähle deine YouTube-Kategorien";
+            case "OK to choose · only this once": return "OK zum Auswählen · nur dieses eine Mal";
+            case "YouTube: what do you like?": return "YouTube: Was gefällt dir?";
+            case "OK picks or removes. None: a mix. Back saves.": return "OK wählt aus oder ab. Keine: eine Mischung. Zurück speichert.";
+            case "chosen": return "ausgewählt";
+            case "not chosen": return "nicht ausgewählt";
             case "on the shelf, place ": return "in der Leiste, Platz ";
             case "not on the shelf": return "nicht in der Leiste";
             case "Remote Buttons": return "Fernbedienungstasten";

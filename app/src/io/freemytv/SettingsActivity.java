@@ -59,6 +59,11 @@ public class SettingsActivity extends Activity {
         super.onResume();
         view.resume();
         // From ADB: am start -n io.freemytv/.SettingsActivity --ez screensaver true (straight to the preview).
+        // From the home screen's YouTube tab (its first card): straight to the categories.
+        if (getIntent().getBooleanExtra("youtube", false)) {
+            getIntent().removeExtra("youtube");
+            view.openYouTube(true);
+        }
         if (preview == null && getIntent().getBooleanExtra("screensaver", false)) {
             getIntent().removeExtra("screensaver");
             view.pause();
@@ -113,7 +118,7 @@ public class SettingsActivity extends Activity {
     }
 
     static final class SettingsView extends View implements Choreographer.FrameCallback {
-        private static final int MAIN = 0, HOME_CHOICE = 1, HOME_SETTINGS = 2, REMOTE_KEYS = 3, PICKER = 4, SHELF_EDIT = 5;
+        private static final int MAIN = 0, HOME_CHOICE = 1, HOME_SETTINGS = 2, REMOTE_KEYS = 3, PICKER = 4, SHELF_EDIT = 5, YT_EDIT = 6;
         private static final float LIST_ROW_H = 68, LIST_ROW_GAP = 6;
         private static final int PICK_VISIBLE = 9;
         private static final float LIST_X = 1000, LIST_R = 1824, LIST_TOP = 186, ROW_H = 74, ROW_GAP = 8, CHOICE_H = 104;
@@ -130,6 +135,9 @@ public class SettingsActivity extends Activity {
         private final List<String[]> shelfRows = new ArrayList<>();
         private final List<String> shelfOrder = new ArrayList<>();
         private int pickFor, pickCurrent, pickScroll;   // pickFor: the remote button (index + 1)
+        // The YouTube tab's categories (YouTube.CATEGORIES keys) and whether the home screen opened this screen.
+        private final List<String> ytPicked = new ArrayList<>();
+        private boolean ytFromHome;
         private static final int PICK_CITY = 0;
         private final List<String[]> cities = new ArrayList<>();
         private String cityStatus = "";
@@ -210,7 +218,7 @@ public class SettingsActivity extends Activity {
                         return Ui.tr("Início, ", "Home Screen, ") + value;
                     }
                     String[] names = {Ui.tr("Tela de Descanso, ver agora", "Screensaver, preview"), Ui.tr("Ajustes do Início", "Home Settings"),
-                            Ui.tr("Prateleira", "Shelf"), Ui.tr("Botões do Controle", "Remote Buttons"), Ui.tr("Ajustes da TV", "TV Settings")};
+                            Ui.tr("Prateleira", "Shelf"), "YouTube", Ui.tr("Botões do Controle", "Remote Buttons"), Ui.tr("Ajustes da TV", "TV Settings")};
                     return row - 1 < names.length ? names[row - 1] : "";
                 }
                 case HOME_CHOICE: {
@@ -230,6 +238,12 @@ public class SettingsActivity extends Activity {
                     if (at >= pickLabels.size()) return "";
                     return pickLabels.get(at) + (at == pickCurrent ? Ui.tr(", escolhido", ", selected") : "")
                             + ", " + (at + 1) + Ui.tr(" de ", " of ") + pickLabels.size();
+                }
+                case YT_EDIT: {
+                    int at = pickScroll + row;
+                    if (at >= YouTube.CATEGORIES.length) return "";
+                    String[] cat = YouTube.CATEGORIES[at];
+                    return YouTube.name(cat) + ", " + (ytPicked.contains(cat[0]) ? Ui.tr("escolhida", "chosen") : Ui.tr("não escolhida", "not chosen"));
                 }
                 case SHELF_EDIT: {
                     int at = pickScroll + row;
@@ -332,11 +346,12 @@ public class SettingsActivity extends Activity {
 
         private int rowCount() {
             switch (screen) {
-                case MAIN: return 6;
+                case MAIN: return 7;
                 case HOME_CHOICE: return 2;
                 case HOME_SETTINGS: return settingLabels().length;
                 case PICKER: return Math.min(PICK_VISIBLE, pickLabels.size());
                 case SHELF_EDIT: return Math.min(PICK_VISIBLE, shelfRows.size());
+                case YT_EDIT: return Math.min(PICK_VISIBLE, YouTube.CATEGORIES.length);
                 default: return Prefs.KEYS.length;
             }
         }
@@ -365,7 +380,7 @@ public class SettingsActivity extends Activity {
             c.drawText(Ui.tr("Início e tela de descanso da TV", "Your TV's home screen and screensaver"), cx, 660 * k, subtitle);
             c.drawText(versionName(getContext()), cx, 704 * k, version);
 
-            if (screen == MAIN) drawMain(c, seconds); else if (screen == HOME_CHOICE) drawChoice(c); else if (screen == PICKER) drawPicker(c); else if (screen == SHELF_EDIT) drawShelfEditor(c); else drawList(c);
+            if (screen == MAIN) drawMain(c, seconds); else if (screen == HOME_CHOICE) drawChoice(c); else if (screen == PICKER) drawPicker(c); else if (screen == SHELF_EDIT) drawShelfEditor(c); else if (screen == YT_EDIT) drawYouTube(c); else drawList(c);
         }
 
         private void drawMain(Canvas c, float seconds) {
@@ -374,9 +389,9 @@ public class SettingsActivity extends Activity {
             String mode = freeActive() ? "Free My TV" : Ui.tr("Original", "Original");
             String[] labels = {Ui.tr("Início", "Home Screen"), Ui.tr("Tela de Descanso", "Screensaver"),
                     Ui.tr("Ajustes do Início", "Home Settings"), Ui.tr("Prateleira", "Shelf"),
-                    Ui.tr("Botões do Controle", "Remote Buttons"), Ui.tr("Ajustes da TV", "TV Settings")};
-            String[] values = {working ? "" : mode, Ui.tr("Ver agora", "Preview"), "", "", "", ""};
-            for (int i = 0; i < 6; i++) {
+                    "YouTube", Ui.tr("Botões do Controle", "Remote Buttons"), Ui.tr("Ajustes da TV", "TV Settings")};
+            String[] values = {working ? "" : mode, Ui.tr("Ver agora", "Preview"), "", "", "", "", ""};
+            for (int i = 0; i < 7; i++) {
                 float y = (LIST_TOP + i * (ROW_H + ROW_GAP)) * k;
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + ROW_H * k);
                 float f = drawRowBackground(c, i);
@@ -403,7 +418,7 @@ public class SettingsActivity extends Activity {
                 }
             }
 
-            float y = (LIST_TOP + 6 * (ROW_H + ROW_GAP) + 20) * k;
+            float y = (LIST_TOP + 7 * (ROW_H + ROW_GAP) + 20) * k;
             String error = state.optString("error");
             if (working && (busyText.contains("Permitir") || busyText.contains("Allow") || busyText.contains("разрешите"))) {
                 c.drawText(Ui.tr("Na TV: marque “Sempre permitir” e aperte OK.", "On the TV: tick “Always allow” and press OK."),
@@ -610,8 +625,15 @@ public class SettingsActivity extends Activity {
                             } else if (screen == PICKER) {
                                 focus = pickFor - 1;
                                 screen = REMOTE_KEYS;
+                            } else if (screen == YT_EDIT && ytFromHome) {
+                                backDown = false;
+                                activity.finish();     // opened from the home screen's YouTube tab: back there
+                                return true;
+                            } else if (screen == YT_EDIT) {
+                                focus = 4;
+                                screen = MAIN;
                             } else {
-                                focus = screen == HOME_SETTINGS ? 2 : screen == SHELF_EDIT ? 3 : screen == REMOTE_KEYS ? 4 : 0;
+                                focus = screen == HOME_SETTINGS ? 2 : screen == SHELF_EDIT ? 3 : screen == REMOTE_KEYS ? 5 : 0;
                                 screen = MAIN;
                             }
                         }
@@ -801,11 +823,11 @@ public class SettingsActivity extends Activity {
         }
 
         private boolean scrolling() {
-            return screen == PICKER || screen == SHELF_EDIT;
+            return screen == PICKER || screen == SHELF_EDIT || screen == YT_EDIT;
         }
 
         private int listSize() {
-            return screen == SHELF_EDIT ? shelfRows.size() : pickLabels.size();
+            return screen == SHELF_EDIT ? shelfRows.size() : screen == YT_EDIT ? YouTube.CATEGORIES.length : pickLabels.size();
         }
 
         // MARK: - Shelf editor
@@ -886,6 +908,54 @@ public class SettingsActivity extends Activity {
             c.drawText(Ui.tr("OK põe ou tira da prateleira (até " + HomeApps.MAX_SHELF + "). ← → mudam a ordem.",
                     "OK adds or removes (up to " + HomeApps.MAX_SHELF + "). ← → change the order.",
                     "OK pone o quita del estante (hasta " + HomeApps.MAX_SHELF + "). ← → cambian el orden."), LIST_X * k + 30 * k, hy, hint);
+        }
+
+        // MARK: - YouTube categories
+
+        /** Settings > YouTube, or straight from the YouTube tab's first card (fromHome: Back goes back there). */
+        void openYouTube(boolean fromHome) {
+            List<String> saved = Prefs.youtubeCategories();
+            ytPicked.clear();
+            if (saved != null) ytPicked.addAll(saved);
+            else Prefs.setYoutubeCategories(ytPicked);     // seen once: the tab stops asking (none picked = the mix)
+            ytFromHome = fromHome;
+            pickScroll = 0;
+            focus = 0;
+            screen = YT_EDIT;
+            invalidate();
+            spoken.focusMoved();
+        }
+
+        /** OK: picks the category or takes it out; saved right away (the home screen fetches the new channels). */
+        private void toggleYouTube() {
+            String key = YouTube.CATEGORIES[pickScroll + focus][0];
+            if (!ytPicked.remove(key)) ytPicked.add(key);
+            Prefs.setYoutubeCategories(ytPicked);
+        }
+
+        private void drawYouTube(Canvas c) {
+            Paint heading = Ui.text(Ui.displaySemibold, 34 * k, 0xFFFFFFFF);
+            c.drawText(Ui.tr("YouTube: o que você gosta?", "YouTube: what do you like?", "YouTube: ¿qué te gusta?"),
+                    LIST_X * k + 30 * k, (LIST_TOP - 24) * k, heading);
+            int rows = rowCount();
+            for (int i = 0; i < rows; i++) {
+                String[] cat = YouTube.CATEGORIES[pickScroll + i];
+                boolean on = ytPicked.contains(cat[0]);
+                float y = (LIST_TOP + 20 + i * (LIST_ROW_H + LIST_ROW_GAP)) * k;
+                rowRect.set(LIST_X * k, y, LIST_R * k, y + LIST_ROW_H * k);
+                float f = drawRowBackground(c, i);
+                rowLabel.setColor(blend(on ? 0xF2FFFFFF : 0x99FFFFFF, on ? INK : 0x991C1C1E, f));
+                c.drawText(YouTube.name(cat), rowRect.left + 30 * k, rowRect.centerY() + Ui.halfCap(rowLabel), rowLabel);
+                if (on) {
+                    float cw = Symbols.width(getContext(), "check", 26 * k);
+                    Symbols.draw(getContext(), c, "check", rowRect.right - 30 * k - cw / 2, rowRect.centerY(), 26 * k, blend(0xFFFFFFFF, INK, f));
+                }
+            }
+            Paint hint = Ui.text(Ui.regular, 23 * k, 0x8CFFFFFF);
+            float hy = (LIST_TOP + 20 + rows * (LIST_ROW_H + LIST_ROW_GAP) + 36) * k;
+            c.drawText(Ui.tr("OK escolhe ou tira. Nenhuma: uma mistura. Voltar salva.",
+                    "OK picks or removes. None: a mix. Back saves.",
+                    "OK elige o quita. Ninguna: una mezcla. Atrás guarda."), LIST_X * k + 30 * k, hy, hint);
         }
 
         private void openPicker(int which) {
@@ -992,6 +1062,11 @@ public class SettingsActivity extends Activity {
                 toggleShelfApp();
                 invalidate();
                 return;
+            } else if (screen == YT_EDIT) {
+                toggleYouTube();
+                invalidate();
+                spoken.focusMoved();
+                return;
             } else if (screen == REMOTE_KEYS) {
                 openPicker(focus + 1);
             } else if (screen == HOME_SETTINGS && focus == CITY_ROW) {
@@ -1014,6 +1089,8 @@ public class SettingsActivity extends Activity {
             } else if (focus == 3) {
                 openShelfEditor();
             } else if (focus == 4) {
+                openYouTube(false);
+            } else if (focus == 5) {
                 HomeMode.ensureRemoteService(c, 0);   // the buttons work from inside other apps through this service
                 loadApps();
                 screen = REMOTE_KEYS;

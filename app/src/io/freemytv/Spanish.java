@@ -107,6 +107,8 @@ final class Spanish {
             case "On": return "Activado";
             case "Off": return "Desactivado";
             case "Shelf": return "Estante";
+            case "chosen": return "elegida";
+            case "not chosen": return "no elegida";
             case "on the shelf, place ": return "en el estante, posición ";
             case "not on the shelf": return "fuera del estante";
             case "Remote Buttons": return "Botones del control";
