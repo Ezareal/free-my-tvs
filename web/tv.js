@@ -86,11 +86,15 @@ var TV = (function () {
   // Not shown among LG's apps: the inputs above, LG's own home and launchers.
   var HIDDEN = /^(com\.webos\.app\.(livetv|hdmi\d|home|homeconnect|discovery|launcher)|com\.webos\.app\.inputpicker)$/;
 
+  // Shown among Samsung's apps: store and sideloaded apps (a 10-character package before the dot), minus the
+  // store-shaped platform pieces, plus the few of Samsung's own worth opening. Everything else is internal.
+  var SAMSUNG_SHOWN = /^([A-Za-z0-9]{10}\.(?!WebAccountExtension$|service$|cmsWebApp$|PrivacyChoices$|tvapp$|ADPlayer$|emanual$)[^.]+|org\.tizen\.(browser|netflix-app|primevideo)|com\.samsung\.tv\.(store|tvplus|gaminghub|SmartThingsApp))$/;
+
   // Not shown among Samsung's apps: Smart Hub's own pieces, the platform's tools and players (but its browser and
   // Netflix, which live there too), services, keyboards and ad players. The rest is what Smart Hub shows.
   // Tizen 4 also lists Samsung's own pieces: the YouTube engine's hosts (cobalt-*: "App", "Youtube", "YoutubeTV"),
   // Bixby, search, previews, the weather and notification popups, Apple TV's stand-in and engine.
-  var SAMSUNG_HIDDEN = new RegExp('^(org\\.volt\\.|org\\.tizen\\.(?!browser$|netflix)|org\\.tizen\\.netflixlowmem$|ise-|ug-|d75857a5-)' +
+  var SAMSUNG_HIDDEN = new RegExp('^(org\\.volt\\.|org\\.tizen\\.(?!browser$|netflix|primevideo$)|org\\.tizen\\.netflixlowmem$|ise-|ug-|d75857a5-)' +
       '|[Ss]ervice$|[Dd]aemon|Preview$|syspopup|[Hh]elper$|AdPlayer|AdSuite|[Kk]eyboard|\\.OTApp$' +
       '|^com\\.samsung\\.(calendar-account-manager|tv\\.(cobalt-|aria-(dummy|engine)|airplay-app|ambient-support|' +
       'built-in-app-info-viewer|commonsearch|searchall|preview-|tv-scheduler|csfs|notification-app|mycontents|' +
@@ -179,7 +183,7 @@ var TV = (function () {
         var out = [];
         for (var i = 0; i < list.length; i++) {
           var a = list[i];
-          if (!a.id || a.show === false || a.id === self || SAMSUNG_HIDDEN.test(a.id)) continue;
+          if (!a.id || a.show === false || a.id === self || !SAMSUNG_SHOWN.test(a.id) || SAMSUNG_HIDDEN.test(a.id)) continue;
           var icon = a.iconPath || '';
           if (icon && icon.indexOf('://') < 0) icon = 'file://' + icon;
           if (SAMSUNG_ICONS[a.id]) icon = SAMSUNG_ICONS[a.id];
