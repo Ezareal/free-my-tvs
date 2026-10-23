@@ -111,16 +111,14 @@ final class Prefs {
     static boolean sounds() { return sp().getBoolean("sounds", true); }
     static void setSounds(boolean on) { put("sounds", on); }
 
-    // MARK: - Widgets and coins
+    // MARK: - Widgets
 
     static boolean weather() { return sp().getBoolean("weather", true); }
     static void setWeather(boolean on) { put("weather", on); }
 
-    static boolean quotes() { return sp().getBoolean("quotes", Config.SHOW_CRYPTO); }
-    static void setQuotes(boolean on) { put("quotes", on); }
-
-    static boolean coin(int i) { return sp().getBoolean("coin" + i, true); }
-    static void setCoin(int i, boolean on) { put("coin" + i, on); }
+    /** The BBC News card in the drawer and the headlines on the screensaver. */
+    static boolean news() { return sp().getBoolean("news", Config.SHOW_NEWS); }
+    static void setNews(boolean on) { put("news", on); }
 
     // MARK: - Shelf
 
