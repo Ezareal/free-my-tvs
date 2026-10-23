@@ -310,6 +310,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2), box-shadow 0.3s;
 }
 .tile img { position: absolute; left: 50%; top: 50%; max-width: 76%; max-height: 62%; -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%); }
+.tile img.fill, .cell .face img.fill { top: 0; height: 100%; max-width: none; max-height: none; -webkit-transform: translateX(-50%); transform: translateX(-50%); }
 .tile .word {
   position: absolute;
   left: 8%;

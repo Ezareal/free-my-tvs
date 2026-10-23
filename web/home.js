@@ -94,6 +94,20 @@
     return Math.max(18, Math.min(max, Math.floor(width * 0.8 / (Math.max(4, title.length) * 0.56))));
   }
 
+  /** The color along an icon's left edge, so the face around a square icon looks like the icon (null if unreadable). */
+  function edgeColor(img) {
+    try {
+      var c = document.createElement('canvas'), w = img.naturalWidth, h = img.naturalHeight;
+      c.width = 1; c.height = 1;
+      var g = c.getContext('2d');
+      g.drawImage(img, 0, h * 0.3, Math.max(1, w * 0.04), h * 0.4, 0, 0, 1, 1);
+      var d = g.getImageData(0, 0, 1, 1).data;
+      return d[3] > 240 ? 'rgb(' + d[0] + ',' + d[1] + ',' + d[2] + ')' : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   /** An app's face: its own icon on its brand color (or its name, when the icon can't be read). */
   function face(app, box, wordSize) {
     var k = shelfKey(app);
@@ -104,9 +118,13 @@
     var word = el('div', 'word', box, app.title);
     if (wordSize) word.style.fontSize = wordSize + 'px';
     if (app.icon) {
-      var img = el('img', '', box);
+      // The TV's own icons are whole tiles (LG's are square): full height, on their own edge color, so the face looks
+      // filled without cropping. Our bundled logos sit on the brand color.
+      var fill = app.icon.indexOf('icons/') !== 0;
+      var img = el('img', fill ? 'fill' : '', box);
       word.style.visibility = 'hidden';
       img.onerror = function () { img.parentNode.removeChild(img); word.style.visibility = ''; };
+      if (fill) img.onload = function () { var c = edgeColor(img); if (c) box.style.background = c; };
       img.src = app.icon;
     }
   }
