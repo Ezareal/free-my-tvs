@@ -150,7 +150,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .night #quotes { color: rgba(245, 245, 247, 0.62); }
 .night #quotes svg { fill: rgba(245, 245, 247, 0.55); }
 
-/* Live TV, HDMI Inputs and Settings: glass circles; the focused one turns white, with its name below. */
+/* Headphones (LG), Live TV, HDMI Inputs, Settings: glass circles; the focused one turns white, its name below. */
 .round {
   position: absolute;
   top: 69px;
@@ -166,6 +166,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 }
 .round .sym { position: absolute; left: 20px; top: 20px; width: 28px; height: 28px; }
 .round.focus { background: #FFF; -webkit-transform: scale(1.1); transform: scale(1.1); box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24); }
+.round.on::after { content: ''; position: absolute; top: 4px; right: 4px; width: 14px; height: 14px; border-radius: 7px; background: #30D158; }
 .round .tip {
   position: absolute;
   top: 88px;
@@ -374,7 +375,6 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .key .sym { position: absolute; left: 50%; top: 33px; width: 34px; height: 34px; margin-left: -17px; }
 .key .label { position: absolute; left: 8px; right: 8px; top: 82px; font-size: 23px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .key.off { color: #8E8E93; }
-.key.on::after { content: ''; position: absolute; top: 16px; right: 16px; width: 12px; height: 12px; border-radius: 6px; background: #30D158; }
 .key.focus { background: #F5F5F7; color: #1C1C1E; -webkit-transform: scale(1.07); transform: scale(1.07); box-shadow: 0 16px 34px rgba(0, 0, 0, 0.42); z-index: 2; }
 .night .key { color: rgba(255, 255, 255, 0.95); }
 .night .key.off { color: rgba(255, 255, 255, 0.42); }
