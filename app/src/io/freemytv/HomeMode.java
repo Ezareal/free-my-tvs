@@ -247,7 +247,7 @@ final class HomeMode {
             list.add(REMOTE_SERVICE);
         }
         adb.shell(list.isEmpty() ? "settings delete secure enabled_accessibility_services"
-                : "settings put secure enabled_accessibility_services '" + String.join(":", list) + "'");
+                : "settings put secure enabled_accessibility_services '" + android.text.TextUtils.join(":", list) + "'");
         if (on) adb.shell("settings put secure accessibility_enabled 1");
         else if (list.isEmpty() && state(c).optBoolean("accessibilityWasOff")) adb.shell("settings put secure accessibility_enabled 0");
         AppLog.w("remote buttons service " + (on ? "on" : "off"));
@@ -433,7 +433,7 @@ final class HomeMode {
             } else {
                 List<String> problems = new ArrayList<>(failed);
                 if (!homeOk) problems.add(Ui.tr("the original home screen"));
-                notice(c, Ui.trf("Original mode, but I couldn't turn back on: {list}.", "list", String.join(", ", problems)));
+                notice(c, Ui.trf("Original mode, but I couldn't turn back on: {list}.", "list", android.text.TextUtils.join(", ", problems)));
             }
             busy(c, Ui.tr("Measuring the original home screen…"));
             measureHomeTime(c, adb, ORIGINAL);
@@ -632,8 +632,8 @@ final class HomeMode {
                 return;
             }
             if (!fixed.isEmpty()) {
-                notice(app, updated ? Ui.trf("The TV update turned back on {list}.", "list", String.join(", ", fixed))
-                        : Ui.trf("Turned off what was missing: {list}.", "list", String.join(", ", fixed)));
+                notice(app, updated ? Ui.trf("The TV update turned back on {list}.", "list", android.text.TextUtils.join(", ", fixed))
+                        : Ui.trf("Turned off what was missing: {list}.", "list", android.text.TextUtils.join(", ", fixed)));
             } else if (updated) {
                 notice(app, Ui.tr("The TV was updated; Free My TV is still on."));
             }
@@ -947,7 +947,7 @@ final class HomeMode {
         for (String pkg : sorted(disabled)) if (pkg.matches("[\\w.]+")) list.add(pkg);
         try {
             adb.shell(list.isEmpty() ? "settings delete global " + RECORD
-                    : "settings put global " + RECORD + " " + String.join(",", list));
+                    : "settings put global " + RECORD + " " + android.text.TextUtils.join(",", list));
         } catch (IOException e) {
             AppLog.w("could not save the record of what we turned off: " + e.getMessage());
         }

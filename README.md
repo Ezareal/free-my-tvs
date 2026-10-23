@@ -1,3 +1,5 @@
+> **Fire TV Stick 4K (Fire OS 6 / Android 7.1) edition · Edición para Fire TV Stick 4K (Fire OS 6):** this branch ports Free My TV to API 25 and adds a smart scrolling dock, a Fire-friendly drawer, YouTube row, Aerial Views button and more. See **[FIREOS6.md](FIREOS6.md)** (English / Español).
+
 <div align="center">
 
 <img src="docs/assets/icon-512.png" width="96" alt="">

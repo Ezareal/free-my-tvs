@@ -66,6 +66,11 @@ final class Adb implements Closeable {
 
     /** Connects and authenticates. If the TV doesn't know our key yet, waits up to `approvalMs` for you to accept. */
     static Adb connect(Context c, int approvalMs, Approval approval) throws IOException {
+        // This port is managed externally; never run the Google TV system mutation routines.
+        throw new IOException("Fire OS port: internal ADB is disabled");
+    }
+
+    private static Adb connectOriginal(Context c, int approvalMs, Approval approval) throws IOException {
         KeyPair keys = keys(c);
         Socket s = new Socket();
         try {

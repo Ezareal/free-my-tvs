@@ -66,8 +66,9 @@ final class Ui {
     private static Typeface font(AssetManager a, int opticalSize, int weight) {
         if (has(a, FONT)) {
             try {
-                Typeface t = new Typeface.Builder(a, FONT)
-                        .setFontVariationSettings("'opsz' " + opticalSize + ", 'wght' " + weight).build();
+                Typeface t = Build.VERSION.SDK_INT >= 26
+                        ? Variable.create(a, opticalSize, weight)
+                        : Typeface.createFromAsset(a, "fonts/Inter-" + opticalSize + "-" + weight + ".ttf");
                 if (t != null) return t;
             } catch (RuntimeException ignored) {
             }
@@ -78,6 +79,13 @@ final class Ui {
     }
 
     /** Only this class touches the Android 9 call, so Ui itself still verifies on Android 8 (like Recording.Node). */
+    private static final class Variable {
+        static Typeface create(AssetManager a, int opticalSize, int weight) {
+            return new Typeface.Builder(a, FONT)
+                    .setFontVariationSettings("'opsz' " + opticalSize + ", 'wght' " + weight).build();
+        }
+    }
+
     private static final class Weighted {
         static Typeface create(int weight) {
             return Typeface.create(Typeface.DEFAULT, weight, false);

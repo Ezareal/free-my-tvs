@@ -5,7 +5,7 @@
  "ADB message too large": "mensaje de ADB demasiado grande",
  "ADB refused the command": "ADB rechazó el comando",
  "Accept “Allow USB debugging?” on the TV (tick “Always allow”).": "Acepta “¿Permitir depuración USB?” en el TV (marca “Permitir siempre”).",
- "All Apps": "Todas las apps",
+ "All Apps": "Más aplicaciones",
  "Android didn't accept the new home screen": "Android no aceptó la nueva pantalla de inicio",
  "Automatic": "Automático",
  "BRAVIA CORE button": "Botón BRAVIA CORE",
@@ -17,6 +17,7 @@
  "Connecting…": "Conectando…",
  "Couldn't check Free My TV: {error}": "No se pudo comprobar Free My TV: {error}",
  "Couldn't go back to the original: {error}": "No se pudo volver al modo original: {error}",
+ "Couldn't open the app's page": "No se pudo abrir la ficha de la app",
  "Couldn't open {app}.": "No se pudo abrir {app}.",
  "Couldn't search now: {error}": "No se pudo buscar ahora: {error}",
  "Couldn't turn on Free My TV: {error}": "No se pudo activar Free My TV: {error}",
@@ -170,6 +171,8 @@
  "the screensaver": "el protector de pantalla",
  "unexpected reply from ADB": "respuesta inesperada de ADB",
  "unit|Automatic": "Automático",
+ "{app} is now on the dock": "{app} ahora está en el dock",
+ "{app} moved to More apps": "{app} pasó a Más aplicaciones",
  "{h}h {m}m": "{h} h {m} min",
  "{i} of {n}": "{i} de {n}",
  "{m}m": "{m} min",
@@ -179,5 +182,6 @@
  "{n} h ago": "hace {n} h",
  "{n} min ago": "hace {n} min",
  "{n} ms": "{n} ms",
+ "← → move · ↑ force stop · ↓ to More apps · OK drop": "← → mover · ↑ forzar detención · ↓ a Más aplicaciones · OK soltar",
  "← → to move · OK to drop · Back to cancel": "← → para mover · OK para soltar · Atrás para cancelar"
 }
