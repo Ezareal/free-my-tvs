@@ -1,4 +1,13 @@
-> **Fire TV Stick 4K (Fire OS 6 / Android 7.1) edition · Edición para Fire TV Stick 4K (Fire OS 6):** this branch ports Free My TV to API 25 and adds a smart scrolling dock, a Fire-friendly drawer, YouTube row, Aerial Views button and more. See **[FIREOS6.md](FIREOS6.md)** (English / Español).
+# Free My TV · Fire TV Stick 4K (Fire OS 6 / Android 7.1) edition
+
+![Free My TV on a Fire TV Stick 4K](docs/fireos6/home.jpg)
+
+| Scrollable smart dock | Pinned last app, fixed "More apps" |
+|---|---|
+| ![Dock](docs/fireos6/dock-scrolled.jpg) | ![Pac-Man last](docs/fireos6/pacman-last.jpg) |
+| ![Drawer with YouTube row](docs/fireos6/youtube-drawer-focus.jpg) | ![Aerial Views screensaver](docs/fireos6/screensaver-aerial.jpg) |
+
+> **Fire TV Stick 4K (Fire OS 6 / Android 7.1) edition · Edición para Fire TV Stick 4K:** this branch ports Free My TV to API 25 and adds a smart scrolling dock, a compact drawer with a YouTube row, an Aerial Views button, force-stop from the dock and more. Download the APK from **[Releases](https://github.com/hectorx24/free-my-tv-fireos6/releases/latest)**. Details, install and limits in **[FIREOS6.md](FIREOS6.md)** (English / Español). Real captures from the device.
 
 <div align="center">
 
