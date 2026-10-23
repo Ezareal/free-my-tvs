@@ -2524,6 +2524,21 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         return it.kind == HomeApps.APP && it.pkg != null;
     }
 
+    /** Lifted app, up: the system's page for the app (it has Force stop, Clear cache and Uninstall). */
+    private void openAppInfo() {
+        if (!reordering || shelfIndex >= shelf.size()) return;
+        HomeApps.Item it = shelf.get(shelfIndex);
+        if (it.kind != HomeApps.APP || it.pkg == null) return;
+        cancelReorder(true);
+        okDown = okHeld = false;
+        try {
+            activity.startActivity(new android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    android.net.Uri.parse("package:" + it.pkg)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK));
+        } catch (RuntimeException e) {
+            showToast(Ui.tr("Couldn't open the app's page"));
+        }
+    }
+
     /** Lifted app, down: it leaves the dock for "More apps" (not Pac-Man, which is the dock's end). */
     private void removeFromDock() {
         if (!reordering || shelfIndex >= shelf.size()) return;
@@ -2572,7 +2587,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         reorderAt = SystemClock.uptimeMillis();
         moveLift.target = 1;
         click.open();
-        showToast(Ui.tr("← → to move · ↓ to More apps · OK to drop · Back to cancel"));
+        showToast(Ui.tr("← → move · ↑ force stop · ↓ to More apps · OK drop"));
         retarget(false);    // TalkBack reads "Moving <app>, position i of n"
     }
 
@@ -2584,6 +2599,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
                 if (down) shiftReorder(e.getKeyCode() == KeyEvent.KEYCODE_DPAD_LEFT ? -1 : 1);
                 return true;
             case KeyEvent.KEYCODE_DPAD_UP:
+                if (down) openAppInfo();
                 return true;
             case KeyEvent.KEYCODE_DPAD_DOWN:
                 if (down) removeFromDock();

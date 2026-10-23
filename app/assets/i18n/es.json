@@ -17,6 +17,7 @@
  "Connecting…": "Conectando…",
  "Couldn't check Free My TV: {error}": "No se pudo comprobar Free My TV: {error}",
  "Couldn't go back to the original: {error}": "No se pudo volver al modo original: {error}",
+ "Couldn't open the app's page": "No se pudo abrir la ficha de la app",
  "Couldn't open {app}.": "No se pudo abrir {app}.",
  "Couldn't search now: {error}": "No se pudo buscar ahora: {error}",
  "Couldn't turn on Free My TV: {error}": "No se pudo activar Free My TV: {error}",
@@ -181,6 +182,6 @@
  "{n} h ago": "hace {n} h",
  "{n} min ago": "hace {n} min",
  "{n} ms": "{n} ms",
- "← → to move · OK to drop · Back to cancel": "← → para mover · OK para soltar · Atrás para cancelar",
- "← → to move · ↓ to More apps · OK to drop · Back to cancel": "← → mover · ↓ a Más aplicaciones · OK soltar · Atrás cancelar"
+ "← → move · ↑ force stop · ↓ to More apps · OK drop": "← → mover · ↑ forzar detención · ↓ a Más aplicaciones · OK soltar",
+ "← → to move · OK to drop · Back to cancel": "← → para mover · OK para soltar · Atrás para cancelar"
 }
