@@ -1,5 +1,6 @@
 /*
- * The TV's side of the web home screen: its apps, opening one, its inputs, its settings, the Back key, its time zone.
+ * The TV's side of the web home screen: its apps, opening one, its inputs, its settings, its Bluetooth headphones,
+ * the Back key, its time zone.
  *  - LG webOS: the TV's service bus (Luna), the same calls LG's launcher makes.
  *  - Samsung Tizen: Tizen's web APIs (tizen.application for the apps, tizen.tvwindow for the inputs).
  *  - A desktop browser: a stand-in with sample apps, so the screen can be previewed and tested on a computer.
@@ -353,6 +354,40 @@ var TV = (function () {
     settings: function (done) {
       if (samsung) samsungSettings(done);
       else this.launch('com.palm.app.settings', null, done);
+    },
+
+    /** Headphones and speakers paired with the TV over Bluetooth (LG): [{address, name, connected}]. */
+    headphones: function (done) {
+      if (!webos) {
+        done(samsung ? [] : [{address: 'preview', name: 'AirPods Pro', connected: false}]);
+        return;
+      }
+      luna('luna://com.webos.service.bluetooth2/device/getStatus', {}, function (res) {
+        var out = [], devices = res && res.devices ? res.devices : [];
+        for (var i = 0; i < devices.length; i++) {
+          var d = devices[i];
+          // Audio is major class 4 in the Bluetooth class of device (the remote is 31, uncategorized).
+          if (!d.paired || ((d.classOfDevice >> 8) & 0x1F) !== 4) continue;
+          // AirPods add " - Find My" to their name while they aren't connected.
+          out.push({address: d.address, name: (d.name || d.address).replace(/\s+-\s+Find My$/, ''),
+            connected: (d.connectedProfiles || []).indexOf('a2dp') >= 0});
+        }
+        done(out);
+      });
+    },
+
+    /** Connects (or disconnects) paired headphones; the TV's sound follows them. done(ok). */
+    headphone: function (address, connect, done) {
+      if (!webos) {
+        setTimeout(function () { done(true); }, 600);
+        return;
+      }
+      var uri = 'luna://com.webos.service.bluetooth2/a2dp/' + (connect ? 'connect' : 'disconnect');
+      luna(uri, {address: address}, function (res) {
+        if (res || !connect) { done(!!res); return; }
+        // Headphones that were asleep or still with the phone often miss the first try.
+        setTimeout(function () { luna(uri, {address: address}, function (res2) { done(!!res2); }); }, 1500);
+      });
     },
 
     /** Back on the first screen: back to wherever the person came from. */

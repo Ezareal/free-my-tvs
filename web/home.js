@@ -129,7 +129,7 @@
     }
   }
 
-  var apps = [], shelf = [], others = [], inputs = [];
+  var apps = [], shelf = [], others = [], inputs = [], headphones = [];
 
   function pickShelf() {
     var chosen = Prefs.shelf(), out = [];
@@ -345,6 +345,10 @@
       drawerItems.push({label: x.label || tr('TV aberta', 'Live TV', 'TV en vivo'), symbol: x.symbol, off: !x.connected, run: launcher(x.id, x.label)});
     }
     drawerInputs = drawerItems.length;
+    for (var h = 0; h < headphones.length; h++) {
+      var hp = headphones[h];
+      drawerItems.push({label: hp.name, symbol: 'headphones', on: hp.connected, run: headphone(hp)});
+    }
     drawerItems.push({label: tr('Todos os Apps', 'All Apps', 'Todas las apps'), symbol: 'apps', run: openApps});
     drawerItems.push({label: tr('Ajustes do Início', 'Home Settings', 'Ajustes de inicio'), symbol: 'settings', run: openSettings});
     drawerItems.push({label: tr('Ajustes da TV', 'TV Settings', 'Ajustes del TV'), symbol: 'tv_settings', run: tvSettings});
@@ -357,7 +361,7 @@
         el('div', 'row-title', d, tr('Atalhos', 'Shortcuts', 'Accesos directos')).style.left = (xPos + 4) + 'px';
       }
       if (k === 0 && drawerInputs) el('div', 'row-title', d, tr('Entradas', 'Inputs', 'Entradas')).style.left = '84px';
-      var item = drawerItems[k], key = el('div', 'key glass' + (item.off ? ' off' : ''), d);
+      var item = drawerItems[k], key = el('div', 'key glass' + (item.off ? ' off' : '') + (item.on ? ' on' : ''), d);
       key.style.left = xPos + 'px';
       key.style.width = tw + 'px';
       sym(item.symbol, key);
@@ -365,6 +369,7 @@
       hover(key, Z.DRAWER, k);
       xPos += tw + gap;
     }
+    st.drawer = Math.min(st.drawer, Math.max(0, n - 1));
     renderPanels();
     updateFocus();
   }
@@ -441,6 +446,7 @@
     st.zone = Z.DRAWER;
     st.drawer = Math.min(drawerItems.length - 1, nearest(document.querySelectorAll('#drawer .key'), centerX(tiles[st.shelf])));
     updateFocus();
+    refreshHeadphones();
   }
 
   function closeDrawer() {
@@ -626,6 +632,33 @@
         if (!ok) toast(tr('Não deu para abrir ', "Couldn't open ", 'No se pudo abrir ') + (name || id));
       });
     };
+  }
+
+  /** Connects paired headphones, or disconnects them when they already are (the TV's sound follows). */
+  var pairing = false;
+  function headphone(h) {
+    return function () {
+      if (pairing) return;
+      pairing = true;
+      var connect = !h.connected;
+      if (connect) toast(tr('Conectando ', 'Connecting ', 'Conectando ') + h.name + '…');
+      TV.headphone(h.address, connect, function (ok) {
+        pairing = false;
+        if (ok) toast(connect ? tr('Conectado: ', 'Connected: ', 'Conectado: ') + h.name : tr('Som de volta na TV', 'Sound back on the TV', 'Sonido de vuelta en el TV'));
+        else if (connect) toast(tr('Não deu para conectar ', "Couldn't connect ", 'No se pudo conectar ') + h.name + tr('. Ele está ligado e perto da TV?', '. Is it on and near the TV?', '. ¿Está encendido y cerca del TV?'));
+        else toast(tr('Não deu para desconectar ', "Couldn't disconnect ", 'No se pudo desconectar ') + h.name);
+        refreshHeadphones();
+      });
+    };
+  }
+
+  /** The headphones' state again (they may have connected elsewhere); the drawer is drawn again when it changed. */
+  function refreshHeadphones() {
+    TV.headphones(function (list) {
+      if (JSON.stringify(list) === JSON.stringify(headphones)) return;
+      headphones = list;
+      renderDrawer();
+    });
   }
 
   function tvSettings() {
@@ -864,7 +897,10 @@
       pickShelf();
       TV.inputs(function (list2) {
         inputs = list2;
-        if (done) done();
+        TV.headphones(function (list3) {
+          headphones = list3;
+          if (done) done();
+        });
       });
     });
   }
