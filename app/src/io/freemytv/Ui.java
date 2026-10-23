@@ -405,14 +405,17 @@ final class Ui {
         }
     }
 
-    /** "21:47" (in English, "9:47", like the iPhone in the US). */
+    /** Always the 24-hour clock, in every language: "21:47". */
+    static final DatePattern H24 = new DatePattern("HH:mm", Locale.ROOT);
+
+    /** "21:47". */
     static String clock(long now) {
-        return Ui.datePattern("format|h:mm").format(now);
+        return H24.format(now);
     }
 
-    /** "5:21" (sunrise and sunset; in English, "5:21 AM"). */
+    /** "05:21" (sunrise and sunset, the hours of the forecast). */
     static String time(long at) {
-        return once("time", at, () -> Ui.datePattern("format|h:mm a").format(at));
+        return once("time", at, () -> H24.format(at));
     }
 
     private static final HashMap<String, String> FORMATTED = new HashMap<>();
