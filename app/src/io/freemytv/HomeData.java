@@ -438,7 +438,7 @@ final class HomeData {
     }
 
     static String hour(long at) {
-        return Ui.once("hour", at, () -> Ui.datePattern("format|h a").format(at));
+        return Ui.hour(at);
     }
 
     /** How long ago the data was fetched, if it's stale (no internet): "12 min ago". */

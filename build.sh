@@ -113,11 +113,22 @@ EOF
     "${JAVA_HOME:+$JAVA_HOME/bin/}java" out/FixAssets.java out/base.apk
     ;;
 esac
-# On Windows javac separates paths with ";", and d8 and apksigner are .bat files.
-CPSEP=:; BAT=; case "$(uname -s 2>/dev/null)" in MINGW*|MSYS*|CYGWIN*) CPSEP=";"; BAT=.bat ;; esac
+# On Windows d8 and apksigner are .bat files. Git Bash converts ":" path lists itself, so keep it there
+# (a literal ";" reaches javac as one broken path).
+CPSEP=:; BAT=; case "$(uname -s 2>/dev/null)" in MINGW*|MSYS*|CYGWIN*) BAT=.bat ;; esac
+JAVA="${JAVA_HOME:+$JAVA_HOME/bin/}java"
+# The .bat wrappers lose quoted paths when launched from Git Bash: call their jars instead.
+d8() {
+  if [ -n "$BAT" ]; then "$JAVA" -Xmx1024M -Xss1m -cp "$BT/lib/d8.jar" com.android.tools.r8.D8 "$@"
+  else "$BT/d8" "$@"; fi
+}
+apksigner() {
+  if [ -n "$BAT" ]; then "$JAVA" -Xmx1024M -Xss1m -jar "$BT/lib/apksigner.jar" "$@"
+  else "$BT/apksigner" "$@"; fi
+}
 "$JAVAC" -nowarn -Xlint:-options -source 8 -target 8 -bootclasspath "$AJ$CPSEP$BT/core-lambda-stubs.jar" -classpath "$AJ" \
   -encoding UTF-8 -d out/classes $(find app/src out/gen -name '*.java')
-"$BT/d8$BAT" --release --min-api 26 --lib "$AJ" --output out $(find out/classes -name '*.class')
+d8 --release --min-api 26 --lib "$AJ" --output out $(find out/classes -name '*.class')
 if command -v zip >/dev/null; then (cd out && zip -qj base.apk classes.dex)
 else "${JAVA_HOME:+$JAVA_HOME/bin/}jar" -u -M -f out/base.apk -C out classes.dex; fi # Git Bash has no zip
 "$BT/zipalign" -f -p 4 out/base.apk out/aligned.apk
@@ -127,5 +138,5 @@ if [ ! -f freemytv.keystore ]; then
   "$KEYTOOL" -genkeypair -keystore freemytv.keystore -alias freemytv -keyalg RSA -keysize 2048 -validity 20000 \
     -storepass freemytv -keypass freemytv -dname "CN=Free My TV" >/dev/null 2>&1
 fi
-"$BT/apksigner$BAT" sign --ks freemytv.keystore --ks-pass pass:freemytv --key-pass pass:freemytv --out FreeMyTV.apk out/aligned.apk
+apksigner sign --ks freemytv.keystore --ks-pass pass:freemytv --key-pass pass:freemytv --out FreeMyTV.apk out/aligned.apk
 echo "Built FreeMyTV.apk ($(du -h FreeMyTV.apk | cut -f1)). Install: adb install -r FreeMyTV.apk"

@@ -22,6 +22,7 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.Choreographer;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeProvider;
 import android.view.inputmethod.EditorInfo;
@@ -125,7 +126,7 @@ public class SettingsActivity extends Activity {
         private final SettingsActivity activity;
         private final Scene scene = new Scene();
         private final Handler handler = new Handler(Looper.getMainLooper());
-        private final Spring[] pop = new Spring[12];
+        private final Spring[] pop = new Spring[16];
         private final List<String> appPkgs = new ArrayList<>(), appLabels = new ArrayList<>();
         // The list picker (the app of a remote button): what it shows, which one is in use, where we are.
         private final List<String> pickLabels = new ArrayList<>();
@@ -135,6 +136,8 @@ public class SettingsActivity extends Activity {
         private final List<String> shelfOrder = new ArrayList<>();
         private boolean editingTop;
         private int pickFor, pickCurrent, pickScroll;   // pickFor: the remote button (index + 1)
+        private int homeScroll;   // first visible row of Home Settings (the list is taller than the screen)
+        private float touchX, touchY;
         private static final int PICK_CITY = 0, PICK_LANGUAGE = -1;
         private final List<String[]> cities = new ArrayList<>();
         private String cityStatus = "";
@@ -181,6 +184,7 @@ public class SettingsActivity extends Activity {
             scene.setMotion(0.5f, 0.2f);
             scene.applyPalette();
             setFocusable(true);
+            setClickable(true);
             setContentDescription("Free My TV");
             // TalkBack: one item per row, id = row + 1.
             spoken = new Spoken(this, new Spoken.Source() {
@@ -261,12 +265,38 @@ public class SettingsActivity extends Activity {
             } else if (screen == HOME_CHOICE) {
                 top = LIST_TOP + 20 + row * (CHOICE_H + ROW_GAP);
                 height = CHOICE_H;
+            } else if (screen == HOME_SETTINGS) {
+                int vis = Math.min(listVisible(), rowCount());
+                if (row < homeScroll || row >= homeScroll + vis) {
+                    focusBox.set(0, -10000, 0, -10000);
+                    return focusBox;
+                }
+                top = LIST_TOP + 20 + (row - homeScroll) * (LIST_ROW_H + LIST_ROW_GAP);
+                height = LIST_ROW_H;
             } else {
                 top = LIST_TOP + 20 + row * (LIST_ROW_H + LIST_ROW_GAP);
                 height = LIST_ROW_H;
             }
             focusBox.set(LIST_X * k, top * k, LIST_R * k, (top + height) * k);
             return focusBox;
+        }
+
+        /** How many Home Settings rows fit above the hint. */
+        private int listVisible() {
+            if (h <= 0) return 1;
+            float top = (LIST_TOP + 20) * k, bottom = h - 54 * k;
+            return Math.max(1, (int) ((bottom - top) / ((LIST_ROW_H + LIST_ROW_GAP) * k)));
+        }
+
+        private void ensureVisible() {
+            if (screen != HOME_SETTINGS) {
+                homeScroll = 0;
+                return;
+            }
+            int n = rowCount(), vis = Math.min(listVisible(), n);
+            if (focus < homeScroll) homeScroll = focus;
+            else if (focus >= homeScroll + vis) homeScroll = focus - vis + 1;
+            homeScroll = Math.max(0, Math.min(homeScroll, Math.max(0, n - vis)));
         }
 
         void resume() {
@@ -352,11 +382,13 @@ public class SettingsActivity extends Activity {
 
         @Override protected void onDraw(Canvas c) {
             if (w == 0) return;
+            if (screen == HOME_SETTINGS) ensureVisible();
             long now = System.nanoTime();
             float dt = lastNanos == 0 ? 1 / 60f : Math.min(0.05f, (now - lastNanos) / 1e9f);
             lastNanos = now;
             for (int i = 0; i < pop.length; i++) {
-                pop[i].target = i == focus && i < rowCount() ? 1 : 0;
+                int at = (screen == HOME_SETTINGS ? homeScroll : 0) + i;
+                pop[i].target = at == focus && at < rowCount() ? 1 : 0;
                 pop[i].step(dt);
             }
             long up = SystemClock.uptimeMillis();
@@ -575,14 +607,18 @@ public class SettingsActivity extends Activity {
             boolean down = e.getAction() == KeyEvent.ACTION_DOWN;
             switch (e.getKeyCode()) {
                 case KeyEvent.KEYCODE_DPAD_UP:
-                    if (down && focus > 0) focus--;
-                    else if (down && scrolling() && pickScroll > 0) pickScroll--;
+                    if (down && focus > 0) {
+                        focus--;
+                        ensureVisible();
+                    } else if (down && scrolling() && pickScroll > 0) pickScroll--;
                     invalidate();
                     spoken.focusMoved();
                     return true;
                 case KeyEvent.KEYCODE_DPAD_DOWN:
-                    if (down && focus < rowCount() - 1) focus++;
-                    else if (down && scrolling() && pickScroll + rowCount() < listSize()) pickScroll++;
+                    if (down && focus < rowCount() - 1) {
+                        focus++;
+                        ensureVisible();
+                    } else if (down && scrolling() && pickScroll + rowCount() < listSize()) pickScroll++;
                     invalidate();
                     spoken.focusMoved();
                     return true;
@@ -634,11 +670,89 @@ public class SettingsActivity extends Activity {
             }
         }
 
+        /** A mouse (or a touch screen) clicks a row; the wheel and hover work too. */
+        @Override public boolean onTouchEvent(MotionEvent e) {
+            switch (e.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    touchX = e.getX();
+                    touchY = e.getY();
+                    return true;
+                case MotionEvent.ACTION_UP:
+                    if (Math.hypot(e.getX() - touchX, e.getY() - touchY) < 24 * k) {
+                        int row = rowAt(e.getX(), e.getY());
+                        if (row >= 0) {
+                            focus = row;
+                            ensureVisible();
+                            activate();
+                            invalidate();
+                            spoken.focusMoved();
+                        }
+                    }
+                    return true;
+                default:
+                    return true;
+            }
+        }
+
+        @Override public boolean onHoverEvent(MotionEvent e) {
+            if (e.getActionMasked() == MotionEvent.ACTION_HOVER_MOVE) {
+                int row = rowAt(e.getX(), e.getY());
+                if (row >= 0 && row != focus) {
+                    focus = row;
+                    ensureVisible();
+                    invalidate();
+                    spoken.focusMoved();
+                }
+            }
+            return true;
+        }
+
+        @Override public boolean onGenericMotionEvent(MotionEvent e) {
+            if (e.getActionMasked() == MotionEvent.ACTION_SCROLL) {
+                float v = e.getAxisValue(MotionEvent.AXIS_VSCROLL);
+                if (v != 0) {
+                    wheel(v < 0 ? 1 : -1);
+                    return true;
+                }
+            }
+            return super.onGenericMotionEvent(e);
+        }
+
+        private int rowAt(float x, float y) {
+            if (x < LIST_X * k || x > LIST_R * k) return -1;
+            for (int i = 0; i < rowCount(); i++) {
+                RectF r = rowBox(i);
+                if (!r.isEmpty() && r.contains(x, y)) return i;
+            }
+            return -1;
+        }
+
+        private void wheel(int dir) {
+            if (screen == HOME_SETTINGS) {
+                int n = rowCount(), vis = Math.min(listVisible(), n);
+                if (dir > 0 && homeScroll + vis < n) homeScroll++;
+                else if (dir < 0 && homeScroll > 0) homeScroll--;
+                if (focus < homeScroll) focus = homeScroll;
+                else if (focus >= homeScroll + vis) focus = homeScroll + vis - 1;
+            } else if (scrolling()) {
+                if (dir > 0 && pickScroll + rowCount() < listSize()) pickScroll++;
+                else if (dir < 0 && pickScroll > 0) pickScroll--;
+            } else if (dir > 0 && focus < rowCount() - 1) {
+                focus++;
+            } else if (dir < 0 && focus > 0) {
+                focus--;
+            }
+            invalidate();
+            spoken.focusMoved();
+        }
+
         // MARK: - Home Settings and Remote Buttons
 
-        private static final String[] UNITS = {"auto", "C", "F"}, THEMES = {"auto", "light", "dark"};
-        /** Home Settings: language, temperature, theme, sounds, weather, city, quotes, then one row per coin. */
-        private static final int CITY_ROW = 5, COIN_ROWS = 7;
+        private static final String[] UNITS = {"auto", "C", "F"}, THEMES = {"auto", "light", "dark"},
+                CLOCKS = {"auto", "24", "12"};
+        /** Home Settings: language, temperature, theme, clock, sounds, weather, Android apps, status icons, city, quotes, then one row per coin. */
+        private static final int CITY_ROW = 8, COIN_ROWS = 10, ANDROID_APPS_ROW = 6, STATUS_ICONS_ROW = 7,
+                QUOTES_ROW = 9;
 
         private boolean dollar() {
             return "BRL".equalsIgnoreCase(Config.CURRENCY.trim());
@@ -649,8 +763,11 @@ public class SettingsActivity extends Activity {
             l.add(Ui.tr("Language"));
             l.add(Ui.tr("Temperature"));
             l.add(Ui.tr("Theme"));
+            l.add(Ui.tr("Clock"));
             l.add(Ui.tr("Navigation sounds"));
             l.add(Ui.tr("Weather widget"));
+            l.add(Ui.tr("Android apps"));
+            l.add(Ui.tr("Status icons"));
             l.add(Ui.tr("City"));
             l.add(Ui.tr("Quotes widget"));
             l.add("Bitcoin");
@@ -669,10 +786,14 @@ public class SettingsActivity extends Activity {
             v[1] = unit.equals("C") ? "°C" : unit.equals("F") ? "°F" : Ui.tr("unit|Automatic");
             String theme = Prefs.theme();
             v[2] = theme.equals("light") ? Ui.tr("Light") : theme.equals("dark") ? Ui.tr("Dark") : Ui.tr("Automatic");
-            v[3] = onOff(Prefs.sounds());
-            v[4] = onOff(Prefs.weather());
+            String clock = Prefs.clockFormat();
+            v[3] = clock.equals("24") ? Ui.tr("24 hours") : clock.equals("12") ? Ui.tr("12 hours") : Ui.tr("Automatic");
+            v[4] = onOff(Prefs.sounds());
+            v[5] = onOff(Prefs.weather());
+            v[ANDROID_APPS_ROW] = onOff(Prefs.androidApps());
+            v[STATUS_ICONS_ROW] = onOff(Prefs.statusIcons());
             v[CITY_ROW] = !cityStatus.isEmpty() ? cityStatus : Prefs.city().isEmpty() ? "—" : Prefs.city();
-            v[6] = onOff(Prefs.quotes());
+            v[QUOTES_ROW] = onOff(Prefs.quotes());
             // No quotes widget, nowhere to show prices: the coins read as off (and stay locked) until it is back on.
             for (int i = COIN_ROWS; i < v.length; i++) v[i] = onOff(Prefs.quotes() && Prefs.coin(i - COIN_ROWS));
             return v;
@@ -689,6 +810,14 @@ public class SettingsActivity extends Activity {
 
         private static String onOff(boolean on) {
             return on ? Ui.tr("On") : Ui.tr("Off");
+        }
+
+        /** Android 12 and newer only let an app see Bluetooth connections with this permission. */
+        private void requestBluetooth() {
+            if (android.os.Build.VERSION.SDK_INT >= 31
+                    && activity.checkSelfPermission("android.permission.BLUETOOTH_CONNECT") != PackageManager.PERMISSION_GRANTED) {
+                activity.requestPermissions(new String[] {"android.permission.BLUETOOTH_CONNECT"}, 1);
+            }
         }
 
         private String[] keyLabels() {
@@ -750,10 +879,22 @@ public class SettingsActivity extends Activity {
                     Prefs.setTheme(THEMES[(at + dir + THEMES.length) % THEMES.length]);
                     break;
                 }
-                case 3: Prefs.setSounds(!Prefs.sounds()); break;
-                case 4: Prefs.setWeather(!Prefs.weather()); break;
+                case 3: {
+                    int at = java.util.Arrays.asList(CLOCKS).indexOf(Prefs.clockFormat());
+                    Prefs.setClockFormat(CLOCKS[(at + dir + CLOCKS.length) % CLOCKS.length]);
+                    break;
+                }
+                case 4: Prefs.setSounds(!Prefs.sounds()); break;
+                case 5: Prefs.setWeather(!Prefs.weather()); break;
+                case ANDROID_APPS_ROW: Prefs.setAndroidApps(!Prefs.androidApps()); break;
+                case STATUS_ICONS_ROW: {
+                    boolean on = !Prefs.statusIcons();
+                    Prefs.setStatusIcons(on);
+                    if (on) requestBluetooth();
+                    break;
+                }
                 case CITY_ROW: return;
-                case 6: Prefs.setQuotes(!Prefs.quotes()); break;
+                case QUOTES_ROW: Prefs.setQuotes(!Prefs.quotes()); break;
                 default:
                     if (!Prefs.quotes()) return;
                     Prefs.setCoin(focus - COIN_ROWS, !Prefs.coin(focus - COIN_ROWS));
@@ -957,15 +1098,21 @@ public class SettingsActivity extends Activity {
 
         private void drawList(Canvas c) {
             boolean keys = screen == REMOTE_KEYS;
+            if (!keys) ensureVisible();
             String[] labels = keys ? keyLabels() : settingLabels();
             String[] values = keys ? keyValues() : settingValues();
             Paint heading = Ui.text(Ui.displaySemibold, 34 * k, 0xFFFFFFFF);
             c.drawText(keys ? Ui.tr("Remote Buttons") : Ui.tr("Home Settings"),
                     LIST_X * k + 30 * k, (LIST_TOP - 24) * k, heading);
-            for (int i = 0; i < labels.length; i++) {
-                float y = (LIST_TOP + 20 + i * (LIST_ROW_H + LIST_ROW_GAP)) * k;
+            int n = labels.length;
+            int first = keys ? 0 : homeScroll;
+            int rows = keys ? n : Math.min(listVisible(), n);
+            for (int v = 0; v < rows; v++) {
+                int i = first + v;
+                if (i >= n) break;
+                float y = (LIST_TOP + 20 + v * (LIST_ROW_H + LIST_ROW_GAP)) * k;
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + LIST_ROW_H * k);
-                float f = drawRowBackground(c, i);
+                float f = drawRowBackground(c, v);
                 rowLabel.setColor(blend(0xF2FFFFFF, INK, f));
                 boolean locked = !keys && i >= COIN_ROWS && !Prefs.quotes();
                 rowValue.setColor(blend(locked ? 0x59FFFFFF : 0xB3FFFFFF, locked ? 0x591C1C1E : 0xB31C1C1E, f));
@@ -975,8 +1122,14 @@ public class SettingsActivity extends Activity {
                 c.drawText(values[i], rowRect.right - 30 * k, base, rowValue);
             }
             Paint hint = Ui.text(Ui.regular, 23 * k, 0x8CFFFFFF);
-            float hy = (LIST_TOP + 20 + labels.length * (LIST_ROW_H + LIST_ROW_GAP) + 36) * k;
+            float hy = keys ? (LIST_TOP + 20 + n * (LIST_ROW_H + LIST_ROW_GAP) + 36) * k : h - 30 * k;
             c.drawText(Ui.tr("OK or the arrows change the value."), LIST_X * k + 30 * k, hy, hint);
+            if (!keys && homeScroll + rows < n) {
+                Symbols.draw(getContext(), c, "chevron_down", LIST_R * k - 20 * k, h - 58 * k, 22 * k, 0x8CFFFFFF);
+            }
+            if (!keys && homeScroll > 0) {
+                Symbols.draw(getContext(), c, "chevron_up", LIST_R * k - 20 * k, (LIST_TOP + 6) * k, 22 * k, 0x8CFFFFFF);
+            }
             if (keys) {
                 c.drawText(RemoteKeys.VESTEL ? Ui.tr("YouTube, Prime Video and Google Play: the TV itself controls those buttons.")
                         : RemoteKeys.KTC ? Ui.tr("Netflix, YouTube and Prime Video: the TV itself controls those buttons.")

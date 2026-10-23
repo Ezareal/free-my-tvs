@@ -24,6 +24,7 @@ import android.graphics.drawable.Drawable;
 import android.media.tv.TvContract;
 import android.media.tv.TvInputInfo;
 import android.media.tv.TvInputManager;
+import android.os.Build;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.view.View;
@@ -289,6 +290,11 @@ final class HomeApps {
         return inputs(c, false);
     }
 
+    /** The HY320 projector reports three HDMI ports but has one, and all three switch to the same input. */
+    private static boolean hy320() {
+        return Build.MODEL != null && Build.MODEL.toUpperCase(Locale.ROOT).startsWith("HY320");
+    }
+
     /**
      * HDMI inputs: only the ones with a device sending a signal (or all of them, with `all`). A name you gave the input
      * in the TV's settings is used as the label; without one, the name the device reports over HDMI-CEC ("PlayStation 5").
@@ -315,6 +321,10 @@ final class HomeApps {
             return out;
         }
         Collections.sort(list, (a, b) -> a.getId().compareTo(b.getId()));
+        // HY320 projectors report three HDMI ports but have one: all three switch to the same input.
+        boolean hy = hy320();
+        if (hy && list.size() > 1) list = list.subList(0, 1);
+        boolean single = hy && list.size() == 1;
         Pattern digit = Pattern.compile("(\\d)");
         for (int i = 0; i < list.size(); i++) {
             TvInputInfo info = list.get(i);
@@ -328,7 +338,10 @@ final class HomeApps {
                 state = tim.getInputState(info.getId());
             } catch (RuntimeException ignored) {
             }
-            if (!all && state != TvInputManager.INPUT_STATE_CONNECTED) continue;
+            // The HY320 stays in "connected standby" even with the source on, and its single port always works.
+            boolean connected = state == TvInputManager.INPUT_STATE_CONNECTED
+                    || (hy && state == TvInputManager.INPUT_STATE_CONNECTED_STANDBY);
+            if (!all && !connected) continue;
             CharSequence custom = null;
             try {
                 custom = info.loadCustomLabel(c);
@@ -336,13 +349,13 @@ final class HomeApps {
             }
             String reported = devices.containsKey(info.getId()) ? devices.get(info.getId()) : "";
             String label = custom != null && custom.length() > 0 ? custom.toString()
-                    : !reported.isEmpty() && state == TvInputManager.INPUT_STATE_CONNECTED ? reported : "HDMI " + number;
-            String symbol = state == TvInputManager.INPUT_STATE_CONNECTED || custom != null
-                    ? deviceSymbol(label) : "hdmi";
+                    : !reported.isEmpty() && connected ? reported
+                    : single ? "HDMI" : "HDMI " + number;
+            String symbol = connected || custom != null ? deviceSymbol(label) : "hdmi";
             Item it = shortcut(INPUT, "hdmi" + number, label, symbol);
             it.inputId = info.getId();
             it.number = String.valueOf(number);
-            it.connected = state == TvInputManager.INPUT_STATE_CONNECTED;
+            it.connected = connected;
             out.add(it);
         }
         Collections.sort(out, (a, b) -> a.number.compareTo(b.number));
@@ -403,6 +416,18 @@ final class HomeApps {
         return it;
     }
 
+    /**
+     * Allwinner projectors (HY320 and other AW boards) have no app for the standard input request, and their own live
+     * TV app switches the port when the intent names it ("HDMI1"): its source picker starts it the same way.
+     */
+    private static Intent sourceInput(Context c, Item it) {
+        if (it.number == null) return null;
+        Intent intent = new Intent().setComponent(new ComponentName("com.softwinner.awlivetv", "com.softwinner.awlivetv.MainActivity"))
+                .putExtra("input_source", "HDMI" + it.number)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+        return c.getPackageManager().resolveActivity(intent, 0) != null ? intent : null;
+    }
+
     /** Opens the item with the system zoom transition growing out of the card (the app starts opening right away). */
     static boolean open(Activity a, Item it, View from, int x, int y, int w, int h) {
         Intent intent, plain = null;   // plain: the app's own home, when it won't take the title's address
@@ -419,7 +444,10 @@ final class HomeApps {
                 intent = liveTv(a);
                 break;
             case INPUT:
-                intent = new Intent(Intent.ACTION_VIEW, TvContract.buildChannelUriForPassthroughInput(it.inputId));
+                intent = sourceInput(a, it);
+                if (intent == null) {
+                    intent = new Intent(Intent.ACTION_VIEW, TvContract.buildChannelUriForPassthroughInput(it.inputId));
+                }
                 break;
             case SETTINGS:
                 intent = new Intent().setComponent(new ComponentName(a, SettingsActivity.class));
@@ -508,10 +536,12 @@ final class HomeApps {
             String pkg = ri.activityInfo.packageName;
             if (seen.add(pkg)) out.add(new String[] {pkg, String.valueOf(ri.loadLabel(pm))});
         }
+        // Off: only TV apps. On: normal Android apps too, system ones included (projectors and AOSP boxes).
+        if (!Prefs.androidApps()) return out;
         Intent phone = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER);
         for (ResolveInfo ri : pm.queryIntentActivities(phone, 0)) {
             String pkg = ri.activityInfo.packageName;
-            if ((ri.activityInfo.applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0 || !seen.add(pkg)) continue;
+            if (!seen.add(pkg)) continue;
             out.add(new String[] {pkg, String.valueOf(ri.loadLabel(pm))});
         }
         return out;
